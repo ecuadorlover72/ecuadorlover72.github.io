@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Google — Emulator</title>
+  <style>
+    :root{
+      --bg: #fff;
+      --muted: #70757a;
+      --input-border: #dfe1e5;
+      --glass: rgba(0,0,0,0.03);
+      --shadow: 0 1px 6px rgba(32,33,36,0.28);
+      --accent: #1a73e8;
+      font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:#202124;}
+    .page {
+      min-height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:48px 16px;
+      box-sizing:border-box;
+    }
+
+    /* Logo */
+    .logo {
+      font-size:96px;
+      font-weight:700;
+      letter-spacing:2px;
+      margin-bottom:28px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      user-select:none;
+    }
+    .logo .g{ color:#4285F4;}
+    .logo .o1{ color:#EA4335; }
+    .logo .o2{ color:#FBBC05; }
+    .logo .g2{ color:#34A853; }
+    .logo .l{ color:#EA4335; transform:translateX(-2px); }
+    .logo .e{ color:#4285F4; transform:translateX(-4px); }
+
+    /* Search box */
+    .search-wrap {
+      width:100%;
+      max-width:640px;
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      margin-bottom:18px;
+    }
+    .search {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:10px 14px;
+      border-radius:24px;
+      border:1px solid var(--input-border);
+      box-shadow: var(--shadow);
+      background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,250,250,0.9));
+    }
+    .search:focus-within { box-shadow: 0 6px 18px rgba(32,33,36,0.18); }
+    .search input{
+      border:0;
+      outline:0;
+      flex:1;
+      font-size:18px;
+      background:transparent;
+    }
+    .search .icon {
+      width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+      opacity:0.6;
+    }
+
+    /* Buttons */
+    .controls { display:flex; gap:12px; justify-content:center; margin-top:14px; }
+    .btn {
+      background:#f8f9fa;
+      border:1px solid #f1f3f4;
+      padding:10px 16px;
+      border-radius:4px;
+      cursor:pointer;
+      font-size:14px;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    }
+    .btn.primary { background:var(--accent); color:white; border-color:var(--accent); }
+    .btn:active { transform:translateY(1px); }
+
+    /* Suggestions dropdown */
+    .suggestions {
+      margin-top:6px;
+      border-radius:8px;
+      overflow:hidden;
+      border:1px solid var(--input-border);
+      box-shadow: 0 6px 18px rgba(32,33,36,0.08);
+      background:white;
+    }
+    .suggestion {
+      padding:10px 14px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      cursor:pointer;
+    }
+    .suggestion:hover, .suggestion.active {
+      background:#f1f3f4;
+    }
+    .muted { color:var(--muted); font-size:13px; }
+
+    /* Results page */
+    .results-page {
+      padding:24px;
+      max-width:900px;
+      width:100%;
+      margin:24px auto;
+    }
+    .result {
+      margin-bottom:22px;
+    }
+    .result .url { color:#202124; font-size:14px; font-weight:500; text-decoration:none; }
+    .result .link { color:#1a0dab; font-size:20px; text-decoration:none; display:block; margin:2px 0; }
+    .result .desc { color:var(--muted); font-size:14px; }
+    .meta { color:#70757a; font-size:13px; margin-bottom:6px; }
+
+    /* Tiny responsive tweaks */
+    @media (max-width:520px){
+      .logo { font-size:64px; }
+      .search input{ font-size:16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" id="app" role="main">
+    <!-- HOME / SEARCH -->
+    <div id="home" aria-hidden="false">
+      <div class="logo" aria-hidden="true">
+        <span class="g">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span>
+      </div>
+
+      <div class="search-wrap" role="search" aria-label="Search">
+        <form id="searchForm" class="search" autocomplete="off" spellcheck="false">
+          <div class="icon" aria-hidden="true">🔍</div>
+          <input id="q" name="q" type="search" placeholder="Search the web or type a URL" aria-label="Search query" />
+          <button type="button" title="Clear" id="clearBtn" style="display:none;background:none;border:0;cursor:pointer;font-size:16px;">✕</button>
+        </form>
+
+        <div id="suggestions" class="suggestions" style="display:none" role="listbox" aria-label="Suggestions"></div>
+
+        <div class="controls" style="margin-top:12px;">
+          <button class="btn" id="searchBtn" type="button">Google Search</button>
+          <button class="btn" id="luckyBtn" type="button">I'm Feeling Lucky</button>
+        </div>
+      </div>
+
+      <div class="muted" style="margin-top:22px; text-align:center; max-width:680px;">
+        This is a local emulator for learning and demo purposes — it doesn't send queries to Google unless you choose "Open on Google".
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results" class="results-page" style="display:none" aria-hidden="true">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <a href="#" id="backHome" class="muted" style="text-decoration:none;">← Back</a>
+          <div style="margin-top:6px" class="muted">Search results for <strong id="queryText"></strong></div>
+        </div>
+        <div>
+          <a id="openGoogle" class="btn" href="#" target="_blank" rel="noopener">Open on Google</a>
+        </div>
+      </div>
+
+      <div id="resultsList" style="margin-top:18px;"></div>
+    </div>
+  </main>
+
+  <script>
+    // ====== Demo content + mini search engine ======
+    const SUGGESTIONS = [
+      "weather today", "news", "translate hello", "how to cook rice", "javascript tutorial",
+      "openai chat", "local restaurants", "best laptops 2025", "time in London", "python list comprehension",
+      "how to tie a tie", "who is the president", "covid vaccine info"
+    ];
+
+    // Small fake index of results to display; in real use you'd call an API.
+    const INDEX = [
+      {title:"Weather Today — Local Forecast", url:"https://example.com/weather-today", snippet:"Detailed local weather forecast including hourly and weekly predictions. See expected temperature, precipitation and wind."},
+      {title:"Latest News and Headlines", url:"https://example.com/news", snippet:"Breaking news, world events, and analysis from reliable sources. Stay informed with the latest headlines."},
+      {title:"JavaScript Tutorial — Learn JS", url:"https://developer.example.com/javascript-tutorial", snippet:"Beginner to advanced JavaScript lessons, examples, and exercises to help you become a web developer."},
+      {title:"How to Cook Perfect Rice", url:"https://cooking.example.com/rice", snippet:"Step-by-step guide to cooking fluffy rice every time, with stovetop and rice cooker methods."},
+      {title:"OpenAI: Chat & API", url:"https://openai.example.com", snippet:"Documentation and guides for OpenAI products, APIs, and examples for building AI applications."},
+      {title:"Best Laptops 2025 — Buyer Guide", url:"https://tech.example.com/best-laptops-2025", snippet:"Expert reviews and round-ups of the top laptops for productivity, gaming and creators in 2025."},
+      {title:"Time in London — Current Time", url:"https://time.example.com/london", snippet:"Current local time in London, timezone conversions and world clock utilities."},
+      {title:"Translate 'Hello' — Multiple Languages", url:"https://translate.example.com/hello", snippet:"Quick translations of 'hello' into dozens of languages, plus pronunciation tips."},
+      {title:"Python List Comprehension Examples", url:"https://py.example.com/list-comprehension", snippet:"Practical examples and explanations of list comprehensions and when to use them in Python."},
+      {title:"How to Tie a Tie — Step-by-step", url:"https://style.example.com/tie", snippet:"Easy illustrated guide to tie knots (Windsor, half-Windsor, four-in-hand) and styling tips."}
+    ];
+
+    // ====== Elements ======
+    const qInput = document.getElementById('q');
+    const suggestionsEl = document.getElementById('suggestions');
+    const clearBtn = document.getElementById('clearBtn');
+    const searchBtn = document.getElementById('searchBtn');
+    const luckyBtn = document.getElementById('luckyBtn');
+    const resultsEl = document.getElementById('results');
+    const homeEl = document.getElementById('home');
+    const resultsList = document.getElementById('resultsList');
+    const queryText = document.getElementById('queryText');
+    const backHome = document.getElementById('backHome');
+    const openGoogle = document.getElementById('openGoogle');
+    const searchForm = document.getElementById('searchForm');
+
+    // ====== Helpers ======
+    function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' })[c]); }
+
+    function showSuggestions(list) {
+      if (!list || list.length===0) { suggestionsEl.style.display='none'; return; }
+      suggestionsEl.innerHTML = '';
+      list.forEach((s, idx) => {
+        const div = document.createElement('div');
+        div.className = 'suggestion';
+        div.setAttribute('role','option');
+        div.innerHTML = '<div style="width:22px;text-align:center;">' + (idx+1) + '</div><div><div>' + escapeHtml(s) + '</div><div class="muted" style="margin-top:4px;font-size:12px;">Search</div></div>'
+        div.addEventListener('click', ()=>{
+          qInput.value = s;
+          doSearch(s);
+        });
+        suggestionsEl.appendChild(div);
+      });
+      suggestionsEl.style.display = 'block';
+    }
+
+    function filterSuggestions(q){
+      if (!q) return SUGGESTIONS.slice(0,6);
+      const low = q.toLowerCase();
+      return SUGGESTIONS.filter(s => s.toLowerCase().includes(low)).slice(0,6);
+    }
+
+    function scoreDoc(doc, q){
+      if (!q) return 0;
+      const t = (doc.title + ' ' + doc.snippet + ' ' + doc.url).toLowerCase();
+      const parts = q.toLowerCase().split(/\s+/).filter(Boolean);
+      let score = 0;
+      parts.forEach(p => {
+        if (t.includes(p)) score += 10;
+      });
+      // small boost for startsWith
+      if (doc.title.toLowerCase().startsWith(q.toLowerCase())) score += 6;
+      return score;
+    }
+
+    function searchIndex(q){
+      // score and sort
+      const results = INDEX.map(doc => ({...doc, score: scoreDoc(doc,q)}))
+                           .filter(d => d.score > 0 || q.trim()==='')
+                           .sort((a,b) => b.score - a.score);
+      // If no matches, produce a "no results" fuzzy result
+      if (results.length === 0) {
+        return [{
+          title: `No results found for "${escapeHtml(q)}"`,
+          url: 'about:blank',
+          snippet: `We couldn't find matches for "${escapeHtml(q)}". Try different keywords or open a web search.`,
+          score:0
+        }];
+      }
+      return results;
+    }
+
+    function renderResults(q){
+      const list = searchIndex(q);
+      resultsList.innerHTML = '';
+      list.forEach((r, i) => {
+        const item = document.createElement('div');
+        item.className = 'result';
+        item.innerHTML = `
+          <div class="meta">${escapeHtml(r.url)}</div>
+          <a class="link" href="${r.url}" target="_blank" rel="noopener">${escapeHtml(r.title)}</a>
+          <div class="desc">${escapeHtml(r.snippet)}</div>
+        `;
+        resultsList.appendChild(item);
+      });
+    }
+
+    function doSearch(q){
+      q = (q||'').trim();
+      if (!q) return; // ignore empty search
+      // Show results page
+      homeEl.style.display = 'none';
+      resultsEl.style.display = 'block';
+      resultsEl.setAttribute('aria-hidden','false');
+      homeEl.setAttribute('aria-hidden','true');
+      queryText.textContent = q;
+      renderResults(q);
+      // update "Open on Google" link
+      openGoogle.href = 'https://www.google.com/search?q=' + encodeURIComponent(q);
+      // store last query
+      try { localStorage.setItem('lastQuery', q); } catch(e){}
+    }
+
+    // ====== Events ======
+    qInput.addEventListener('input', (e)=>{
+      const v = e.target.value;
+      clearBtn.style.display = v ? 'inline' : 'none';
+      showSuggestions(filterSuggestions(v));
+    });
+
+    qInput.addEventListener('keydown', (e)=>{
+      const key = e.key;
+      if (key === 'ArrowDown' || key === 'ArrowUp') {
+        // rudimentary keyboard nav: move focus to suggestions list items
+        const items = suggestionsEl.querySelectorAll('.suggestion');
+        if (items.length) {
+          const current = suggestionsEl.querySelector('.suggestion.active');
+          if (current) current.classList.remove('active');
+          let idx = 0;
+          if (key === 'ArrowDown') {
+            idx = current ? Math.min(Array.from(items).indexOf(current)+1, items.length-1) : 0;
+          } else {
+            idx = current ? Math.max(Array.from(items).indexOf(current)-1, 0) : items.length-1;
+          }
+          items[idx].classList.add('active');
+          items[idx].scrollIntoView({block:'nearest'});
+        }
+        e.preventDefault();
+      } else if (key === 'Enter') {
+        e.preventDefault();
+        const active = suggestionsEl.querySelector('.suggestion.active');
+        if (active) {
+          active.click();
+        } else {
+          doSearch(qInput.value);
+        }
+      } else if (key === 'Escape') {
+        suggestionsEl.style.display = 'none';
+      }
+    });
+
+    clearBtn.addEventListener('click', ()=>{
+      qInput.value = '';
+      clearBtn.style.display = 'none';
+      suggestionsEl.style.display = 'none';
+      qInput.focus();
+    });
+
+    searchBtn.addEventListener('click', ()=> doSearch(qInput.value));
+    luckyBtn.addEventListener('click', ()=>{
+      const q = qInput.value.trim();
+      if (!q) return;
+      const results = searchIndex(q);
+      const top = results[0];
+      if (top && top.url && top.url !== 'about:blank') {
+        window.open(top.url,'_blank');
+      } else {
+        // fallback: open Google
+        window.open('https://www.google.com/search?q=' + encodeURIComponent(q), '_blank');
+      }
+    });
+
+    backHome.addEventListener('click', (e)=>{
+      e.preventDefault();
+      resultsEl.style.display = 'none';
+      homeEl.style.display = 'block';
+      resultsEl.setAttribute('aria-hidden','true');
+      homeEl.setAttribute('aria-hidden','false');
+      // restore query
+      try {
+        const last = localStorage.getItem('lastQuery');
+        if (last) qInput.value = last;
+      } catch(e){}
+    });
+
+    // prevent the form from actually submitting
+    searchForm.addEventListener('submit', (e)=>{ e.preventDefault(); doSearch(qInput.value); });
+
+    // On initial load, show some suggestions
+    showSuggestions(filterSuggestions(''));
+
+    // Restore last query if present
+    try {
+      const last = localStorage.getItem('lastQuery');
+      if (last) {
+        qInput.value = last;
+        clearBtn.style.display = 'inline';
+      }
+    } catch(e){}
+
+    // Accessibility: close suggestions if clicking outside
+    document.addEventListener('click', (ev)=>{
+      if (!ev.target.closest('.search-wrap')) {
+        suggestionsEl.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
+ 
