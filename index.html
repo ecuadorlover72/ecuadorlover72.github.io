@@ -1,3 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Game Arcade</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  #sidebar {
+    width: 200px;
+    background: #222;
+    color: #fff;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  #sidebar h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .menu-item {
+    background: #333;
+    padding: 10px;
+    margin: 5px 0;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.2s;
+  }
+  .menu-item:hover {
+    background: #444;
+  }
+
+  /* Game area */
+  #game-container {
+    flex: 1;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* Click the Box game */
+  #click-game-area {
+    width: 400px;
+    height: 400px;
+    background: white;
+    border: 2px solid #333;
+    position: relative;
+    display: none;
+  }
+  #click-box {
+    width: 50px;
+    height: 50px;
+    background: red;
+    position: absolute;
+    cursor: pointer;
+  }
+
+  /* Snake game */
+  #snake-canvas {
+    display: none;
+    background: #111;
+    border: 2px solid #0f0;
+  }
+
+  /* Obby game */
+  #obby-canvas {
+    display: none;
+    background: #cceeff;
+    border: 2px solid #333;
+  }
+
+  #score, #timer {
+    position: absolute;
+    top: 10px;
+    left: 220px;
+    font-size: 18px;
+  }
+</style>
+</head>
+<body>
+  <div id="sidebar">
+    <h2>🎮 Games</h2>
+    <div class="menu-item" onclick="showGame('click')">🟥 Click the Box</div>
+    <div class="menu-item" onclick="showGame('snake')">🐍 Snake</div>
+    <div class="menu-item" onclick="showGame('obby')">🟩 Infinite Obby</div>
+  </div>
+
+  <div id="game-container">
+    <div id="score"></div>
+    <div id="timer"></div>
+
+    <!-- Click the Box -->
+    <div id="click-game-area">
+      <div id="click-box"></div>
+    </div>
+
+    <!-- Snake -->
+    <canvas id="snake-canvas" width="400" height="400"></canvas>
+
+    <!-- Infinite Obby -->
+    <canvas id="obby-canvas" width="500" height="400"></canvas>
+  </div>
+
+<script>
+/* ========== MENU ========== */
+const games = {
+  click: document.getElementById('click-game-area'),
+  snake: document.getElementById('snake-canvas'),
+  obby: document.getElementById('obby-canvas')
+};
+let currentGame = null;
+function showGame(name) {
+  // Hide all games
+  Object.values(games).forEach(g => g.style.display = 'none');
+  document.getElementById('score').textContent = '';
+  document.getElementById('timer').textContent = '';
+  currentGame = name;
+  games[name].style.display = 'block';
+  if (name === 'click') startClickGame();
+  if (name === 'snake') startSnake();
+  if (name === 'obby') startObby();
+}
+
+/* ========== CLICK THE BOX GAME ========== */
+function startClickGame() {
+  const box = document.getElementById('click-box');
+  const area = document.getElementById('click-game-area');
+  let score = 0;
+  let timeLeft = 10;
+  document.getElementById('score').textContent = `Score: ${score}`;
+  document.getElementById('timer').textContent = `Time: ${timeLeft}`;
+  let gameActive = true;
+
+  function moveBox() {
+    const x = Math.random() * (area.clientWidth - box.clientWidth);
+    const y = Math.random() * (area.clientHeight - box.clientHeight);
+    box.style.left = `${x}px`;
+    box.style.top = `${y}px`;
+  }
+
+  box.onclick = () => {
+    if (!gameActive) return;
+    score++;
+    document.getElementById('score').textContent = `Score: ${score}`;
+    moveBox();
+  };
+
+  moveBox();
+  const countdown = setInterval(() => {
+    if (currentGame !== 'click') { clearInterval(countdown); return; }
+    if (timeLeft <= 0) {
+      clearInterval(countdown);
+      gameActive = false;
+      alert(`Game Over! Your score: ${score}`);
+    } else {
+      timeLeft--;
+      document.getElementById('timer').textContent = `Time: ${timeLeft}`;
+    }
+  }, 1000);
+}
+
+/* ========== SNAKE GAME ========== */
+function startSnake() {
+  const canvas = document.getElementById('snake-canvas');
+  const ctx = canvas.getContext('2d');
+  let box = 20;
+  let snake = [{x: 9*box, y: 10*box}];
+  let food = {
+    x: Math.floor(Math.random()*19)*box,
+    y: Math.floor(Math.random()*19)*box
+  };
+  let direction = null;
+  let score = 0;
+  document.addEventListener('keydown', dir);
+  function dir(e){
+    if(e.key==='ArrowLeft' && direction!=='RIGHT') direction='LEFT';
+    if(e.key==='ArrowUp' && direction!=='DOWN') direction='UP';
+    if(e.key==='ArrowRight' && direction!=='LEFT') direction='RIGHT';
+    if(e.key==='ArrowDown' && direction!=='UP') direction='DOWN';
+  }
+
+  const game = setInterval(draw,100);
+  function draw(){
+    if(currentGame!=='snake'){clearInterval(game);return;}
+    ctx.fillStyle='#111'; ctx.fillRect(0,0,400,400);
+    for(let i=0;i<snake.length;i++){
+      ctx.fillStyle=i===0?'#0f0':'#0a0';
+      ctx.fillRect(snake[i].x,snake[i].y,box,box);
+    }
+    ctx.fillStyle='#f00';
+    ctx.fillRect(food.x,food.y,box,box);
+    let snakeX=snake[0].x;
+    let snakeY=snake[0].y;
+    if(direction==='LEFT') snakeX-=box;
+    if(direction==='UP') snakeY-=box;
+    if(direction==='RIGHT') snakeX+=box;
+    if(direction==='DOWN') snakeY+=box;
+
+    if(snakeX===food.x && snakeY===food.y){
+      score++;
+      food={x:Math.floor(Math.random()*19)*box,y:Math.floor(Math.random()*19)*box};
+    } else snake.pop();
+
+    let newHead={x:snakeX,y:snakeY};
+    if(snakeX<0||snakeY<0||snakeX>=400||snakeY>=400||collision(newHead,snake)){
+      clearInterval(game);
+      alert(`Game Over! Score: ${score}`);
+    }
+    snake.unshift(newHead);
+  }
+  function collision(head,array){
+    return array.some(seg=>head.x===seg.x && head.y===seg.y);
+  }
+}
+
 /* ========== INFINITE OBBY GAME ========== */
 function startObby() {
   const canvas = document.getElementById('obby-canvas');
@@ -7,19 +233,15 @@ function startObby() {
   let speed = 4;
   let score = 0;
   let obstacles = [];
-  let platforms = [];
   let gameOver = false;
 
-  // Key controls
-  let spacePressed = false;
   document.addEventListener('keydown', (e) => {
-    if (e.key === ' ' && player.onGround) {
+    if (e.key === ' ' && player.onGround && !gameOver) {
       player.vy = -12;
       player.onGround = false;
     }
   });
 
-  // Reset on switch
   function resetGame() {
     player.x = 50;
     player.y = 300;
@@ -30,48 +252,33 @@ function startObby() {
     gameOver = false;
   }
 
-  resetGame();
-
   function spawnObstacle() {
     const height = 20 + Math.random() * 40;
     const y = 380 - height;
-    obstacles.push({
-      x: 500,
-      y,
-      w: 20,
-      h: height,
-    });
+    obstacles.push({ x: 500, y, w: 20, h: height });
   }
 
   function draw() {
     if (currentGame !== 'obby') return;
 
     ctx.clearRect(0, 0, 500, 400);
-
-    // Background
     ctx.fillStyle = '#cceeff';
     ctx.fillRect(0, 0, 500, 400);
-
-    // Ground
     ctx.fillStyle = '#444';
     ctx.fillRect(0, 380, 500, 20);
 
     // Spawn obstacles
-    if (Math.random() < 0.02) {
-      spawnObstacle();
-    }
+    if (Math.random() < 0.02) spawnObstacle();
 
-    // Update and draw obstacles
+    // Move and draw obstacles
     ctx.fillStyle = '#222';
-    obstacles.forEach((obs) => {
+    obstacles.forEach(obs => {
       obs.x -= speed;
       ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
     });
+    obstacles = obstacles.filter(o => o.x + o.w > 0);
 
-    // Remove off-screen obstacles
-    obstacles = obstacles.filter((o) => o.x + o.w > 0);
-
-    // Gravity and movement
+    // Physics
     player.vy += gravity;
     player.y += player.vy;
     if (player.y + player.h >= 380) {
@@ -80,13 +287,11 @@ function startObby() {
       player.onGround = true;
     }
 
-    // Collision check
-    obstacles.forEach((obs) => {
-      if (
-        player.x < obs.x + obs.w &&
-        player.x + player.w > obs.x &&
-        player.y + player.h > obs.y
-      ) {
+    // Collision
+    obstacles.forEach(obs => {
+      if (player.x < obs.x + obs.w &&
+          player.x + player.w > obs.x &&
+          player.y + player.h > obs.y) {
         gameOver = true;
       }
     });
@@ -102,7 +307,7 @@ function startObby() {
     score += 0.1;
 
     if (gameOver) {
-      ctx.fillStyle = 'black';
+      ctx.fillStyle = '#000';
       ctx.font = '30px Arial';
       ctx.fillText('💀 Game Over!', 150, 200);
       ctx.font = '20px Arial';
@@ -122,5 +327,9 @@ function startObby() {
     }
   }
 
+  resetGame();
   draw();
 }
+</script>
+</body>
+</html>
