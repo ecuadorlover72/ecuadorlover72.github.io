@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Click the Box Game</title>
+  <style>
+    body {
+      background: #f0f0f0;
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      font-family: sans-serif;
+    }
+    #game-area {
+      width: 400px;
+      height: 400px;
+      background: white;
+      border: 2px solid #333;
+      position: relative;
+      overflow: hidden;
+    }
+    #box {
+      width: 50px;
+      height: 50px;
+      background: red;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+    }
+    #score, #timer {
+      margin: 10px;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Click the Box!</h1>
+  <div id="score">Score: 0</div>
+  <div id="timer">Time: 10</div>
+  <div id="game-area">
+    <div id="box"></div>
+  </div>
+
+  <script>
+    const box = document.getElementById('box');
+    const scoreDisplay = document.getElementById('score');
+    const timerDisplay = document.getElementById('timer');
+    const gameArea = document.getElementById('game-area');
+
+    let score = 0;
+    let timeLeft = 10;
+    let gameActive = true;
+
+    // Move the box to a random spot
+    function moveBox() {
+      const x = Math.random() * (gameArea.clientWidth - box.clientWidth);
+      const y = Math.random() * (gameArea.clientHeight - box.clientHeight);
+      box.style.left = `${x}px`;
+      box.style.top = `${y}px`;
+    }
+
+    box.addEventListener('click', () => {
+      if (!gameActive) return;
+      score++;
+      scoreDisplay.textContent = `Score: ${score}`;
+      moveBox();
+    });
+
+    // Countdown timer
+    const countdown = setInterval(() => {
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        gameActive = false;
+        timerDisplay.textContent = "Time's up!";
+        alert(`Game over! Your score: ${score}`);
+      } else {
+        timeLeft--;
+        timerDisplay.textContent = `Time: ${timeLeft}`;
+      }
+    }, 1000);
+
+    moveBox(); // Start position
+  </script>
+</body>
+</html>
