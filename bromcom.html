@@ -6,10 +6,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="apple-itunes-app" content="app-id=1475079148" />
+    <meta name="apple-itunes-app" content="app-id=1475079148"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <title>Student Portal - Dashboard</title>
+    <title>Student Portal - Login</title>
 
     
         <link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.css" />
@@ -17,26 +17,12 @@
     
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700" rel="stylesheet">
     <link rel="stylesheet" href="/lib/fontaswesome/font-awesome.min.css" />
-    <link href="/lib/blankon/css/timeline-type-2.css" rel="stylesheet" />
     <link rel="stylesheet" href="/css/core.min.css" />
     <link rel="stylesheet" href="/css/plugins.min.css" />
-    <link id="theme" rel="stylesheet" href='/lib/blankon/css/themes/blue.theme.css' />
+    <link rel="stylesheet" href="/lib/blankon/css/themes/blue.theme.css" />
+    <link rel="stylesheet" id="loginCSS" href="/lib/blankon/css/sign-type-2.css" />
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
-    <style type="text/css">
-         .weglot_here {
-             margin-top: 7px;
-             margin-right:5px;
-         }
-
-         .wg-drop.country-selector.closed .wgcurrent:after {
-             transform: rotate(0deg) !important;
-         }
-
-    </style>
-
-    <link href="/lib/gridstack/css/gridstack.css" rel="stylesheet" />
-    <link href="/css/dashboard.css" rel="stylesheet" />
-    <link href="/lib/datepicker/css/datepicker.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/lib/pages/css/localisation.css" />
     <script type="text/javascript" data-show-localization="true" data-weglot-key="wg_aeab25919d45b0d3ffaf9fd541fc676d9" src="/lib/pages/js/weglot-integration.js">
     </script>
 <script type="text/javascript">!function(T,l,y){var S=T.location,k="script",D="instrumentationKey",C="ingestionendpoint",I="disableExceptionTracking",E="ai.device.",b="toLowerCase",w="crossOrigin",N="POST",e="appInsightsSDK",t=y.name||"appInsights";(y.name||T[e])&&(T[e]=t);var n=T[t]||function(d){var g=!1,f=!1,m={initialize:!0,queue:[],sv:"5",version:2,config:d};function v(e,t){var n={},a="Browser";return n[E+"id"]=a[b](),n[E+"type"]=a,n["ai.operation.name"]=S&&S.pathname||"_unknown_",n["ai.internal.sdkVersion"]="javascript:snippet_"+(m.sv||m.version),{time:function(){var e=new Date;function t(e){var t=""+e;return 1===t.length&&(t="0"+t),t}return e.getUTCFullYear()+"-"+t(1+e.getUTCMonth())+"-"+t(e.getUTCDate())+"T"+t(e.getUTCHours())+":"+t(e.getUTCMinutes())+":"+t(e.getUTCSeconds())+"."+((e.getUTCMilliseconds()/1e3).toFixed(3)+"").slice(2,5)+"Z"}(),iKey:e,name:"Microsoft.ApplicationInsights."+e.replace(/-/g,"")+"."+t,sampleRate:100,tags:n,data:{baseData:{ver:2}}}}var h=d.url||y.src;if(h){function a(e){var t,n,a,i,r,o,s,c,u,p,l;g=!0,m.queue=[],f||(f=!0,t=h,s=function(){var e={},t=d.connectionString;if(t)for(var n=t.split(";"),a=0;a<n.length;a++){var i=n[a].split("=");2===i.length&&(e[i[0][b]()]=i[1])}if(!e[C]){var r=e.endpointsuffix,o=r?e.location:null;e[C]="https://"+(o?o+".":"")+"dc."+(r||"services.visualstudio.com")}return e}(),c=s[D]||d[D]||"",u=s[C],p=u?u+"/v2/track":d.endpointUrl,(l=[]).push((n="SDK LOAD Failure: Failed to load Application Insights SDK script (See stack for details)",a=t,i=p,(o=(r=v(c,"Exception")).data).baseType="ExceptionData",o.baseData.exceptions=[{typeName:"SDKLoadFailed",message:n.replace(/\./g,"-"),hasFullStack:!1,stack:n+"\nSnippet failed to load ["+a+"] -- Telemetry is disabled\nHelp Link: https://go.microsoft.com/fwlink/?linkid=2128109\nHost: "+(S&&S.pathname||"_unknown_")+"\nEndpoint: "+i,parsedStack:[]}],r)),l.push(function(e,t,n,a){var i=v(c,"Message"),r=i.data;r.baseType="MessageData";var o=r.baseData;return o.message='AI (Internal): 99 message:"'+("SDK LOAD Failure: Failed to load Application Insights SDK script (See stack for details) ("+n+")").replace(/\"/g,"")+'"',o.properties={endpoint:a},i}(0,0,t,p)),function(e,t){if(JSON){var n=T.fetch;if(n&&!y.useXhr)n(t,{method:N,body:JSON.stringify(e),mode:"cors"});else if(XMLHttpRequest){var a=new XMLHttpRequest;a.open(N,t),a.setRequestHeader("Content-type","application/json"),a.send(JSON.stringify(e))}}}(l,p))}function i(e,t){f||setTimeout(function(){!t&&m.core||a()},500)}var e=function(){var n=l.createElement(k);n.src=h;var e=y[w];return!e&&""!==e||"undefined"==n[w]||(n[w]=e),n.onload=i,n.onerror=a,n.onreadystatechange=function(e,t){"loaded"!==n.readyState&&"complete"!==n.readyState||i(0,t)},n}();y.ld<0?l.getElementsByTagName("head")[0].appendChild(e):setTimeout(function(){l.getElementsByTagName(k)[0].parentNode.appendChild(e)},y.ld||0)}try{m.cookie=l.cookie}catch(p){}function t(e){for(;e.length;)!function(t){m[t]=function(){var e=arguments;g||m.queue.push(function(){m[t].apply(m,e)})}}(e.pop())}var n="track",r="TrackPage",o="TrackEvent";t([n+"Event",n+"PageView",n+"Exception",n+"Trace",n+"DependencyData",n+"Metric",n+"PageViewPerformance","start"+r,"stop"+r,"start"+o,"stop"+o,"addTelemetryInitializer","setAuthenticatedUserContext","clearAuthenticatedUserContext","flush"]),m.SeverityLevel={Verbose:0,Information:1,Warning:2,Error:3,Critical:4};var s=(d.extensionConfig||{}).ApplicationInsightsAnalytics||{};if(!0!==d[I]&&!0!==s[I]){var c="onerror";t(["_"+c]);var u=T[c];T[c]=function(e,t,n,a,i){var r=u&&u(e,t,n,a,i);return!0!==r&&m["_"+c]({message:e,url:t,lineNumber:n,columnNumber:a,error:i}),r},d.autoExceptionInstrumented=!0}return m}(y.cfg);function a(){y.onInit&&y.onInit(n)}(T[t]=n).queue&&0===n.queue.length?(n.queue.push(a),n.trackPageView({})):a()}(window,document,{
@@ -45,452 +31,138 @@ crossOrigin: "anonymous",
 cfg: { // Application Insights Configuration
     connectionString: 'InstrumentationKey=9220e510-9e20-4575-8bd2-9411505e2dc7;IngestionEndpoint=https://uksouth-1.in.applicationinsights.azure.com/;LiveEndpoint=https://uksouth.livediagnostics.monitor.azure.com/'
 }});</script></head>
-<body class="page-header-fixed page-sidebar-fixed page-footer-fixed page-headerContent-fixed">
+<body>
+    <header></header>
+    
 
-    <!-- START WRAPPER -->
-    <section id="wrapper">
-        <div class="wait" style="display: none;">
-            <img id="loading" src="/images/loadingIcon1.gif" width="350" height="300" alt="please wait......" />
-        </div>
-        
 
-<header id="header">
-    <div class="header-left">
-        <div class="navbar-minimize-mobile left">
-            <i class="fa fa-bars"></i>
-        </div>
 
-        <!-- Top Bar-1: Logo -->
-        <div class="navbar-header">
-            <!-- Start brand -->
-            <a class="navbar-brand" href="javascript:;">
-                <img class="logo" src="/images/StudentPortalLogo.png" alt="StudentPortal">
-            </a>
+<div id="sign-wrapper">
+    <!-- Logo -->
+
+    <form class="sign-in form-horizontal shadow rounded no-overflow" action="/" method="post">
+        <div><br /></div>
+        <div class="brand">
+            <img src="/images/StudentPortalLogo.png" width="300" alt="Student Portal" />
         </div>
 
-        <div class="navbar-minimize-mobile right">
-            <i class="fa fa-cog"></i>
+        <!-- Login form -->
+        <div class="sign-header">
+            <div class="form-group">
+
+                <div class="sign-text">
+                    <span>Student Login</span>
+                </div>
+            </div>
         </div>
+        <div class="sign-body">
+            <input id="SpaceId" name="SpaceId" type="hidden" value="" />
 
-        <div class="clearfix"></div>
-    </div>
+                <div class="form-group">
+                    <div class="input-group input-group-lg rounded no-overflow" id="SchoolTextBoxDIV">
+                        <input type="text" class="form-control input-sm" placeholder="School ID" name="schoolid" id="schoolid" value="" />
+                        <span class="input-group-addon" title="School ID"><i class="fa fa-building fontColor"></i></span>
+                    </div>
+                </div>
 
-    <div class="header-right">
-            <div class="navbar navbar-toolbar ">
-                <ul class="nav navbar-nav navbar-left">
-
-                    <!-- Top Bar-2: Minimize Left Side Menu -->
-                    <li class="navbar-minimize">
-                        <a href="javascript:void(0);" title="Minimize sidebar">
-                            <i class="fa fa-bars"></i>
-                        </a>
-                    </li>
-
-                    <!-- Top Bar-3: School Name -->
-                    <li class="navbar-search" style="padding-top:3px">
-                        <span class="avatar">
-                            <img src="/AccountSettings/GetSchoolPhoto" class="img-circle img-school" alt="User Logo" onerror="this.onerror=null;this.parentNode.removeChild(this);" />
-                        </span>
-                        <a href="javascript:void(0);" class="schoolNameHeader" id="SchoolNameLabel" title="School Name">Ashton-on-Mersey School</a>
-                    </li>
-
-                    <li>
-                        <span id="WelcomeMessage"></span>
-                    </li>
-
-                </ul>
-
-                <ul class="nav navbar-nav navbar-right">
-                    <li class="dropdown navbar-message">
-                    <div id="weglot_here" ></div>
-                    </li>
-                    <!-- Top Bar-4: Contact School -->
-                    <li class="dropdown navbar-message">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="Contact School">
-                            <i class="fa fa-phone"></i>
-                        </a>
-
-                        <div class="dropdown-menu animated flipInX" style="min-height: 200px;">
-                            <table class="table table-theme" style="color: #000;">
-                                <thead>
-                                    <tr>
-                                        <th colspan="3" class="text-center success" style="height: 37px;">School Contact Information</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="text-center"><i class="fa fa-home fa-3" aria-hidden="true"></i></td>
-                                        <td>Address:</td>
-                                        <td><span class="text" id="AddressLabel" />Cecil Avenue, SALE, Cheshire, M33 5BP</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-center"><i class="fa fa-phone fa-3" aria-hidden="true"></i></td>
-                                        <td>Phone:</td>
-                                        <td><span class="text" id="PhoneLabel" />0161 973 1179</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-center"><i class="fa fa-fax fa-3" aria-hidden="true"></i></td>
-                                        <td>Fax:</td>
-                                        <td><span class="text" id="FaxLabel" />2343</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-center"><i class="fa fa-envelope-o fa-3" aria-hidden="true"></i></td>
-                                        <td>Email:</td>
-                                        <td><a id="EmailLabelLink" target="_blank"><span class="text" id="EmailLabel" />office@aom.trafford.sch.uk</a></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-center"><i class="fa fa-globe fa-3" aria-hidden="true"></i></td>
-                                        <td>Website:</td>
-                                        <td><a id="WebsiteLabelLink" target="_blank"><span class="text" id="WebsiteLabel" />www.aomschool.co.uk</a></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-center"><i class="fa fa-user fa-3" aria-hidden="true"></i></td>
-                                        <td><span class="text" id="PrincipalTitleLabel" />Head Teacher:</td>
-                                        <td><span class="text" id="PrincipalNameLabel" />Mr L Mcconaghie</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+            <div class="form-group" style="text-align: center; display: none;" id="SchoolNameDIV">
+                <span id="SchoolNameLabel" class="loginSchoolName fontColor"></span>
+            </div>
+            <div class="form-group">
+                <div class="input-group input-group-lg rounded no-overflow">
+                    <input type="text" class="form-control input-sm" autocomplete="nope" placeholder="Username" name="username" id="username" value="" />
+                    <span class="input-group-addon" title="Username"><i class="fa fa-user fontColor"></i></span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="input-group input-group-lg rounded no-overflow">
+                    <input type="password" class="form-control input-sm" autocomplete="new-password" placeholder="Password" name="password" id="password" />
+                    <span class="input-group-addon" title="Password"><i class="fa fa-lock fontColor"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="sign-footer">
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-xs-12">
+                        <div class="ckbox ckbox-theme" style="display:flex">
+                            <input id="rememberme" name="rememberme" type="checkbox" value="true" />
+                            <label for="rememberme" style="padding-left:15px" class="rounded fontColor">Remember School ID and Username</label>
                         </div>
-                    </li>
-
-                    <!-- Top Bar-7: Logged in user -->
-                    <li class="dropdown navbar-profile">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="User Profile">
-                            <span class="meta">
-                                <span class="avatar">
-                                    <img src="/AccountSettings/GetPersonPhoto" class="img-circle img-small" alt="User Logo" onerror="this.onerror=null;this.src='/images/app_icon_192.png';" />
-                                </span>
-                                <span class="text hidden-xs hidden-sm text-muted" id="UsernameLabel" data-wg-notranslate>Thomas Porter</span>
-                                <span class="caret"></span>
-                            </span>
-                        </a>
-                        <ul class="dropdown-menu animated flipInX" id="UserMenuUL">
-                                        <li class="">
-                <a href="/AccountSettings" data-weglot="true" data-menuName="AccountSettings">
-                    <span class="icon"><i class="fa fa-gear"></i></span>
-                    <span class="text">Account Settings</span>
-                </a>
-            </li>
-                <li class="divider"></li>
-            <li class="">
-                <a href="/Auth/Logout" data-weglot="true" data-menuName="Logout">
-                    <span class="icon"><i class="fa fa-sign-out"></i></span>
-                    <span class="text">Logout</span>
-                </a>
-            </li>
-
-                        </ul>
-                    </li>
-
-                    <!-- Top Bar-8: User Settings -->
-                    <li class="navbar-setting pull-right">
-                        <a href="javascript:void(0);" title="Colour Schemes"><i class="fa fa-cog"></i></a>
-                    </li>
-
-                </ul>
+                    </div>
+                </div>
+                <div class="row forgottenContent">
+                    <div class="col-xs-12">
+                        <a data-weglot="true" href="/Auth/Forgot" title="Forgotten Login Details?">Forgotten Login Details?</a>
+                    </div>
+                </div>
+                <div class="row forgottenContent">
+                    <div class="col-xs-12">
+                        <a data-weglot="true" href="/Auth/RedeemInvitationCode" title="Redeem Invitation Code?">Redeem Invitation Code?</a>
+                    </div>
+                </div>
             </div>
-    </div>
-</header>
-
-
-        
-    <aside id="sidebar-left" class="sidebar-circle ">
-
-        <!-- Menu Navigation-->
-        <ul class="sidebar-menu" runat="server" id="PagesUL">
-                        <li class="active">
-                <a href="/Home/Dashboard" data-weglot="true" data-menuName="Dashboard">
-                    <span class="icon"><i class="fa fa-home"></i></span>
-                    <span class="text">Dashboard</span>
-                </a>
-            </li>
-            <li class="">
-                <a href="/Subjects" data-weglot="true" data-menuName="Subjects">
-                    <span class="icon"><i class="fa fa-file-o"></i></span>
-                    <span class="text">My Subjects</span>
-                </a>
-            </li>
-            <li class="">
-                <a href="/Timetable" data-weglot="true" data-menuName="Timetable">
-                    <span class="icon"><i class="fa fa-clock-o"></i></span>
-                    <span class="text">My Timetable</span>
-                </a>
-            </li>
-            <li class="">
-                <a href="/Attendance" data-weglot="true" data-menuName="Attendance">
-                    <span class="icon"><i class="fa fa-check"></i></span>
-                    <span class="text">Attendance</span>
-                </a>
-            </li>
-            <li class="">
-                <a href="/Assessment" data-weglot="true" data-menuName="Assessment">
-                    <span class="icon"><i class="fa fa-list-alt"></i></span>
-                    <span class="text">Assessment</span>
-                </a>
-            </li>
-            <li class="">
-                <a href="/Behaviour" data-weglot="true" data-menuName="Behaviour">
-                    <span class="icon"><i class="fa fa-graduation-cap"></i></span>
-                    <span class="text">Behaviour</span>
-                </a>
-            </li>
-            <li class="">
-                <a href="/ExamTimetable" data-weglot="true" data-menuName="ExamTimeTables">
-                    <span class="icon"><i class="fa fa-list-alt"></i></span>
-                    <span class="text">Exam Timetables</span>
-                </a>
-            </li>
-            <li class="">
-                <a href="/Homework" data-weglot="true" data-menuName="Homework">
-                    <span class="icon"><i class="fa fa-pencil"></i></span>
-                    <span class="text">Homework</span>
-                </a>
-            </li>
-            <li class="">
-                <a href="/LessonPlan" data-weglot="true" data-menuName="Lesson Plans">
-                    <span class="icon"><i class="fa fa-book"></i></span>
-                    <span class="text">Lesson Plans</span>
-                </a>
-            </li>
-
-        </ul>
-    </aside>
-
-
-        <!-- START PAGE CONTENT -->
-        <section id="page-content">
-
-                <div class="header-content">
-        <h2 id="PageNameLabel">
-            <i class="fa fa-home"></i>
-            Dashboard
-            <span id="subtitle">Dashboard</span>
-        </h2>
-        <div class="breadcrumb-wrapper hidden-xs">
-            <span class="label">You are here:</span>
-            <ol class="breadcrumb" id="BreadcrumbDiv">Home > Dashboard</ol>
-        </div>
-    </div>
-
-
-            <div class="body-content animated fadeIn">
-                
-<div class="row">
-    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" id="widgetsDahsboard" style="padding-bottom: 50px;">
-        <div class="grid-stack" data-gs-width="12" style="">
-        </div>
-    </div>
-</div>
-
+            <div class="form-group">
+                <button type="submit" class="btn btn-theme btn-lg btn-block no-margin rounded" id="LoginButton">Login</button>
             </div>
-            <br />
 
-            <footer class="footer-content">
-    <div class="pull-left">&copy; 2025 - Bromcom Computers Plc</div>
-    <div class="pull-right" id="footerPages"></div>
-    <div class="clearfix"></div>
-</footer>
-        </section>
-        <!--/ END PAGE CONTENT -->
 
-        
-<aside id="sidebar-right">
-    <div class="panel panel-tab">
-        <div class="panel-heading no-padding">
-            <div class="pull-right">
-                <ul class="nav nav-tabs">
-                    <li class="active">
-                        <a href="#sidebar-setting" data-toggle="tab" id="sidebarRightClose" title="Close">
-                            <i class="fa fa-times"></i>
-                        </a>
-                    </li>
-                </ul>
+
+            <div class="form-group" id="LoginPageErrorDIV" style="display: none;">
+                <span class="error" id="LoginPageError"></span>
             </div>
-            <div class="clearfix"></div>
-        </div>
-        <div class="panel-body no-padding">
-            <div class="tab-content">
-                <div class="tab-pane in active" id="sidebar-setting">
-                    <div class="sidebar-setting">
-                        <ul class="sidebar-menu">
-
-                            <!-- Right Sidebar-1: Color Schemes -->
-                            <li class="sidebar-category">
-                                <span>COLOUR SCHEMES</span>
-                                <span class="pull-right"><i class="fa fa-tint"></i></span>
-                            </li>
-                            <li>
-                                <div id="color-theme" class="sidebar-themes color-schemes">
-
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #81b71a" data-toggle="tooltip" data-placement="right" data-original-title="Default"><span class="hide">default</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #00B1E1" data-toggle="tooltip" data-placement="top" data-original-title="Blue"><span class="hide">blue</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #37BC9B" data-toggle="tooltip" data-placement="top" data-original-title="Cyan"><span class="hide">cyan</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #8CC152" data-toggle="tooltip" data-placement="top" data-original-title="Green"><span class="hide">green</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #E9573F" data-toggle="tooltip" data-placement="top" data-original-title="Red"><span class="hide">red</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #F6BB42" data-toggle="tooltip" data-placement="top" data-original-title="Yellow"><span class="hide">yellow</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #906094" data-toggle="tooltip" data-placement="top" data-original-title="Purple"><span class="hide">purple</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #D39174" data-toggle="tooltip" data-placement="top" data-original-title="Brown"><span class="hide">brown</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #9FB478" data-toggle="tooltip" data-placement="left" data-original-title="Green Army"><span class="hide">green-army</span></a>
-
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #63D3E9" data-toggle="tooltip" data-placement="right" data-original-title="Blue Sea"><span class="hide">blue-sea</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #5577B4" data-toggle="tooltip" data-placement="top" data-original-title="Blue Gray"><span class="hide">blue-gray</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #AF86B9" data-toggle="tooltip" data-placement="top" data-original-title="Purple Gray"><span class="hide">purple-gray</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #CC6788" data-toggle="tooltip" data-placement="top" data-original-title="Purple Wine"><span class="hide">purple-wine</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #F06F6F" data-toggle="tooltip" data-placement="top" data-original-title="Alizarin Crimson"><span class="hide">alizarin-crimson</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #979797" data-toggle="tooltip" data-placement="top" data-original-title="Black And White"><span class="hide">black-and-white</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #8BC4B9" data-toggle="tooltip" data-placement="top" data-original-title="Amazon"><span class="hide">amazon</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #B0B069" data-toggle="tooltip" data-placement="top" data-original-title="Amber"><span class="hide">amber</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #A9C784" data-toggle="tooltip" data-placement="left" data-original-title="Android green"><span class="hide">android-green</span></a>
-
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #B3998A" data-toggle="tooltip" data-placement="right" data-original-title="Antique brass"><span class="hide">antique-brass</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #8D8D6E" data-toggle="tooltip" data-placement="top" data-original-title="Antique Bronze"><span class="hide">antique-bronze</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #B0B69D" data-toggle="tooltip" data-placement="top" data-original-title="Artichoke"><span class="hide">artichoke</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #F19B69" data-toggle="tooltip" data-placement="top" data-original-title="Atomic Tangerine"><span class="hide">atomic-tangerine</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #98777B" data-toggle="tooltip" data-placement="top" data-original-title="Bazaar"><span class="hide">bazaar</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #C3A961" data-toggle="tooltip" data-placement="top" data-original-title="Bistre Brown"><span class="hide">bistre-brown</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #D6725E" data-toggle="tooltip" data-placement="top" data-original-title="Bittersweet"><span class="hide">bittersweet</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #7789D1" data-toggle="tooltip" data-placement="top" data-original-title="Blueberry"><span class="hide">blueberry</span></a>
-                                    <a class="theme" href="javascript:void(0);" style="background-color: #6FA362" data-toggle="tooltip" data-placement="left" data-original-title="Bud Green"><span class="hide">bud-green</span></a>
-
-                                </div>
-                            </li>
-
-                            <!-- Right Sidebar-2: Navbar Color -->
-                            <li class="sidebar-category">
-                                <span>NAVBAR COLOUR</span>
-                                <span class="pull-right"><i class="fa fa-tint"></i></span>
-                            </li>
-                            <li>
-                                <div id="color-theme" class="sidebar-themes navbar-color">
-
-                                    <a class="theme bg-dark" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Dark"><span class="hide">dark</span></a>
-                                    <a class="theme bg-light" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Light"><span class="hide">light</span></a>
-                                    <a class="theme bg-primary" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Primary"><span class="hide">primary</span></a>
-                                    <a class="theme bg-success" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Success"><span class="hide">success</span></a>
-                                    <a class="theme bg-info" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Info"><span class="hide">info</span></a>
-                                    <a class="theme bg-warning" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Warning"><span class="hide">warning</span></a>
-                                    <a class="theme bg-danger" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Danger"><span class="hide">danger</span></a>
-
-                                </div>
-                            </li>
-
-                            <!-- Right Sidebar-3: Left Sidebar Color -->
-                            <li class="sidebar-category">
-                                <span>SIDEBAR COLOUR</span>
-                                <span class="pull-right"><i class="fa fa-tint"></i></span>
-                            </li>
-                            <li>
-                                <div id="color-theme" class="sidebar-themes sidebar-color">
-
-                                    <a class="theme bg-dark" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Dark"><span class="hide">dark</span></a>
-                                    <a class="theme bg-light" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Light"><span class="hide">light</span></a>
-                                    <a class="theme bg-primary" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Primary"><span class="hide">primary</span></a>
-                                    <a class="theme bg-success" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Success"><span class="hide">success</span></a>
-                                    <a class="theme bg-info" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Info"><span class="hide">info</span></a>
-                                    <a class="theme bg-warning" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Warning"><span class="hide">warning</span></a>
-                                    <a class="theme bg-danger" href="javascript:void(0);" data-toggle="tooltip" data-placement="top" data-original-title="Danger"><span class="hide">danger</span></a>
-
-                                </div>
-                            </li>
-                        </ul>
+            <div class="row">
+                <div class="col-xs-12" style="text-align:center">
+                    <label class="rounded fontColor">Single Sign-On Providers</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <a id="btnLinkGoogleAccount" href="https://services.bromcom.com/CommunicationServer/Customer/AuthenticationService/OAuthLogon.aspx?SSOProvider=Google&amp;SSOAccessKey=oAmMFq4GqTz8Ov73cezGo0P7K7IgaRsfQiweoCy3Yq60gG4t%2fHXBrnaFZzD6fZD4QCmqehw%2bxYedU6V8UO6BLTxC6Jfr00IP%2bWALk2pCC7cex6RWo0MZ0os19D0reC6A5PeQIDACC3Cd5zayDeSolLJi%2bAxZcgc0VkRZJ8d3weeyq0u1cY7SdQ12nc0GGdIn" style="text-decoration:none"><button class="btn btn-danger btn-block btn-outline" type="button"><img src="/images/logo_google.svg" alt="Google" height="24px" width="24px">   Login with <b>Google</b> Account</button></a><br />
+                <a id="btnLinkMicrosoftAccount" href="https://services.bromcom.com/CommunicationServer/Customer/AuthenticationService/OAuthLogon.aspx?SSOProvider=Microsoft&amp;SSOAccessKey=x8fMotqGc5baLk72PIk8Gu8seJIU00%2fXoiO%2fihlPl7Er1%2f%2fs2COG4lBk%2fvBwim185PKXxTRUYQNnkGPjJgJ35RCBVFWCjOYQI7yGbOzu0zm2kdi12Nm0Jo2JdJH%2b0dg77FX4rKPb9e5ffIszvx0Hnuyr5BXzSGRUTFg%2bUyzmAYiQagMrXFR1EhnmxfwY7BR3" style="text-decoration:none"><button class="btn btn-info btn-block btn-outline" type="button"><img src="/images/logo_microsoft.svg" alt="Microsoft" height="24px" width="24px">   Login with <b>Microsoft</b> Account</button></a><br />
+            </div>
+            <div class="form-group">
+                <div class="pull-left versionNumberContainer">
+                    <span id="VersionNumberLabel" class="fontColor">v5.2020.9428.28887</span>
+                    <div class="pull-right">
+                        <span class="fontColor">Powered by</span>
+                        <img src="/images/BromcomLogo.png" width="100" alt="Bromcom" />
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</aside>
-    </section>
-    <!--/ END WRAPPER -->
-    <!-- SCROLL PAGE BUTTON -->
-    <!--===================================================-->
-    <div id="back-top" class="circle  animated pulse" style="display: none;">
-        <i class="fa fa-angle-up"></i>
-    </div>
-    <!--===================================================-->
-
-    <div class="modal fade" id="studentPortalModal" tabindex="-1" data-backdrop="static" role="dialog" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" onclick="popUpClosed();" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    <h4 class="modal-title"></h4>
-                </div>
-                <div class="modal-body">
-                    <div id="partial"></div>
-                </div>
-            </div>
+    <input name="__RequestVerificationToken" type="hidden" value="CfDJ8B6RMEul8FZMtGQL6Mh6jE5Dt68RHdaMCadPfIL9YCMEHEiqm6kNTQqJijtFs4HNg9nu2eNpclBHEL3wuQA7Ornk3wLYLeLQj0xO0w8IIceQAgg7hKgnV40gPR39g0z9ZLVzarOtD1F0hMIHq4OVhcH492wsStimoGAtNCPxHKKzjN48osWvWTyjsE1_9OBB1g" /><input name="rememberme" type="hidden" value="false" /></form>
+    <div class="row" id="app-row" style="text-align: center;">
+        <br />
+        <div class="col-sm-12 col-md-12 col-lg-12">
+            <a href="https://itunes.apple.com/gb/app/bromcom-student-app/id1475079148?mt=8" target="_blank">
+                <img src="/images/icon_appstore_apple.png" alt="Apple" />
+            </a>
+        </div>
+        <div class="col-sm-12 col-md-12 col-lg-12">
+            <a href="https://play.google.com/store/apps/details?id=com.bromcom.studentapp" target="_blank">
+                <img src="/images/icon_appstore_google.png" alt="Google" />
+            </a>
         </div>
     </div>
+</div>
 
-    <div class="modal fade" id="resourcesModal" tabindex="-1" data-backdrop="static" role="dialog" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" onclick="popResourceClosed();" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    <h4 class="modal-title"></h4>
-                </div>
-                <div class="modal-body">
-                    <div id="partial"></div>
-                </div>
-                <div class="modal-footer">
-                    <button id='submit' onclick="selectResourceFile()" class='btn btn-success '>Select</button>
-                    <button id='Close' onclick="popResourceClosed()" class='btn btn-danger '>Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
+    <footer></footer>
     
         <script src="/lib/jquery/dist/jquery.js"></script>
         <script src="/lib/bootstrap/js/bootstrap.js"></script>
+        <script src="/js/core.min.js?v=N2XovTfXK4-Z0TDVhqsFo3uLqi9ZHn-JbHoK0w_7Nfw" crossorigin="anonymous"></script>
+        <script src="/lib/blankon/js/blankon.sign.js?v=Q1jQ9NOuxti1sarUS-GWzRaVEbCEUMlQtuk9jBiZF0U" crossorigin="anonymous"></script>
+        <script src="/lib/blankon/js/blankon.sign.type2.js?v=Pe_cEzZeXJrDTeV_FW4Ffo74ePuFQuQFN6nQNut-Krw" crossorigin="anonymous"></script>
+        <script src="/lib/pages/js/login.js?v=4Dg3Ffi1h-9_IZQahN3vym4ubgdJV2kylcU1-crbAqE" crossorigin="anonymous"></script>
     
     
-    <script src="/js/core.min.js?v=N2XovTfXK4-Z0TDVhqsFo3uLqi9ZHn-JbHoK0w_7Nfw" crossorigin="anonymous"></script>
-    <script src="/js/blankon.min.js?v=VqcWxN6gwDr2NRygOGpxOk3VR_EiufIaMWv9GQP_OP8" crossorigin="anonymous"></script>
-    <script src="/js/userGuiding.js" crossorigin="anonymous"></script>
-    <script src="/lib/misc/js/datetime-moment.js?v=HxQ5Y1SR1z4bzlhML2pwPmP43vlWcdipvghezTlIQAA" crossorigin="anonymous"></script>
 
+    
     <script type="text/javascript">
-        (function (c, l, a, r, i, t, y) {
-            c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
-            t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
-            y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
-        })(window, document, "clarity", "script", "580xg1gf55");
-
-        function registerUserGuidingVariables() {
-
-            if ('true' == "true") {
-                //userGuiding attributes
-                if (window.userGuiding !== undefined && window.userGuiding !== null) {
-                    window.userGuiding.identify('3264' + '$' + '13084', {
-                        name: 'Thomas Porter',
-                        email: 'Porter3264',
-                        school_id: 13084,                        
-                        is_student: true
-                    })
-                }
-            }
-        }
-        registerUserGuidingVariables();
+        var serviceUrl = "https://cloudmis.bromcom.com/Nucleus/API/",
+            id = "";
     </script>
-
-    <script type="text/javascript">
-    var themecolor = "",
-        bodyContentMaxHeight = $(window).height() - 120;
-        $('.body-content').css('max-height', bodyContentMaxHeight.toString() + 'px');
-    </script>
-    
-    
-        <script src="/lib/pages/js/dashboard.js?v=BH_t6BrXJ-8Mqmss8dpq2tHRXYAOCI99NqiT4hDpMrE" crossorigin="anonymous"></script>
-        <script src="/lib/pages/js/securityValidations.js?v=DsBcXSEbKdIxlFm2Mh-tKTFmk6YsSnf5ctWZNEnqt9c" crossorigin="anonymous"></script>
-        <script src="/lib/gridstack/js/gridstack.js?v=dU5VzIYs9gndwwr0h9u0-PlslA64OmbCJichzUr4XIk" crossorigin="anonymous"></script>
-        <script src="/lib/datepicker/js/bootstrap-datepicker.js?v=ldiIv6cGPBZ9cCfE-DTyeQker_zF8zqf6IGEA-w1Vl8" crossorigin="anonymous"></script>
-    
-    
-
 
 </body>
 </html>
