@@ -1,33 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>YouTube API Example</title>
+  <meta charset="UTF-8">
+  <title>Reddit API Example</title>
 </head>
 <body>
-  <h1>Latest videos from a channel</h1>
-  <ul id="videos"></ul>
+  <h1>r/technology — Latest Posts</h1>
+  <ul id="posts"></ul>
 
   <script>
-    const API_KEY = "YOUR_PUBLIC_YOUTUBE_API_KEY"; // get from Google Cloud Console
-    const CHANNEL_ID = "UC_x5XG1OV2P6uZZ5FSM9Ttw"; // example: Google Developers
-    const API_URL = `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet,id&order=date&maxResults=5`;
+    async function loadReddit() {
+      try {
+        const res = await fetch("https://www.reddit.com/r/technology.json");
+        const data = await res.json();
 
-    fetch(API_URL)
-      .then(response => response.json())
-      .then(data => {
-        const list = document.getElementById('videos');
-        data.items.forEach(item => {
-          const li = document.createElement('li');
+        const posts = data.data.children;
+        const list = document.getElementById("posts");
+        list.innerHTML = "";
+
+        posts.forEach(post => {
+          const item = post.data;
+          const li = document.createElement("li");
           li.innerHTML = `
-            <img src="${item.snippet.thumbnails.default.url}" alt="">
-            <a href="https://www.youtube.com/watch?v=${item.id.videoId}" target="_blank">
-              ${item.snippet.title}
-            </a>`;
+            <a href="https://www.reddit.com${item.permalink}" target="_blank">
+              ${item.title}
+            </a> 
+            <small>(${item.ups} upvotes)</small>`;
           list.appendChild(li);
         });
-      })
-      .catch(console.error);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadReddit();
   </script>
 </body>
 </html>
