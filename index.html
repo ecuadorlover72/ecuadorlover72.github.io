@@ -3,144 +3,213 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Portal - Dashboard</title>
+<title>🎓 Student Portal - Game Hub</title>
 <style>
+  * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Poppins', sans-serif;
     display: flex;
     height: 100vh;
     overflow: hidden;
+    color: #222;
   }
 
   /* Sidebar */
   #sidebar {
-    width: 200px;
-    background: #222;
+    width: 230px;
+    background: linear-gradient(180deg, #1f1f1f, #292929);
     color: #fff;
-    padding: 20px;
+    padding: 25px;
     display: flex;
     flex-direction: column;
+    box-shadow: 4px 0 10px rgba(0,0,0,0.3);
   }
   #sidebar h2 {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+    font-weight: 600;
   }
   .menu-item {
     background: #333;
-    padding: 10px;
-    margin: 5px 0;
+    padding: 12px;
+    margin: 6px 0;
     text-align: center;
     cursor: pointer;
-    border-radius: 5px;
-    transition: background 0.2s;
+    border-radius: 8px;
+    transition: 0.25s;
+    font-weight: 500;
   }
   .menu-item:hover {
-    background: #444;
+    background: #4caf50;
+    transform: translateY(-2px);
   }
 
-  /* Game area */
+  /* Game container */
   #game-container {
     flex: 1;
-    background: #f0f0f0;
+    background: linear-gradient(135deg, #e8f0f7, #ffffff);
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    overflow: hidden;
   }
 
-  /* Click the Box game */
-  #click-game-area {
-    width: 400px;
-    height: 400px;
-    background: white;
-    border: 2px solid #333;
-    position: relative;
+  /* UI overlays */
+  #score, #timer {
+    position: absolute;
+    top: 15px;
+    left: 260px;
+    font-size: 18px;
+    background: rgba(255,255,255,0.8);
+    padding: 6px 12px;
+    border-radius: 6px;
+  }
+  #timer {
+    left: auto;
+    right: 30px;
+  }
+
+  /* Game panels */
+  #click-game-area, #snake-canvas, #obby-canvas {
     display: none;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  }
+
+  #click-game-area {
+    width: 420px;
+    height: 420px;
+    background: #fff;
+    border: 3px solid #444;
+    position: relative;
   }
   #click-box {
     width: 50px;
     height: 50px;
-    background: red;
+    background: #f44336;
     position: absolute;
     cursor: pointer;
+    transition: transform 0.1s;
   }
+  #click-box:hover { transform: scale(1.1); }
 
-  /* Snake game */
   #snake-canvas {
-    display: none;
     background: #111;
-    border: 2px solid #0f0;
+    border: 3px solid #0f0;
   }
 
-  /* Obby game */
   #obby-canvas {
-    display: none;
-    background: #cceeff;
-    border: 2px solid #333;
+    background: linear-gradient(to top, #a8eaff, #cceeff);
+    border: 3px solid #444;
   }
 
-  #score, #timer {
+  /* Overlay for instructions/game over */
+  .overlay {
     position: absolute;
-    top: 10px;
-    left: 220px;
-    font-size: 18px;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 10;
   }
+  .overlay button {
+    background: #4caf50;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 10px;
+    color: white;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .overlay button:hover { background: #45a049; }
 </style>
 </head>
 <body>
   <div id="sidebar">
-    <h2>Games</h2>
+    <h2>🎮 Game Hub</h2>
     <div class="menu-item" onclick="showGame('click')">🟥 Click the Box</div>
     <div class="menu-item" onclick="showGame('snake')">🐍 Snake</div>
-    <div class="menu-item" onclick="showGame('obby')">🟩 Obstacle</div>
+    <div class="menu-item" onclick="showGame('obby')">🟩 Obstacle Run</div>
   </div>
 
   <div id="game-container">
     <div id="score"></div>
     <div id="timer"></div>
 
-    <!-- Click the Box -->
+    <!-- Overlays -->
+    <div class="overlay" id="overlay">
+      <h2 id="overlay-title"></h2>
+      <p id="overlay-text"></p>
+      <button id="overlay-btn">Start</button>
+    </div>
+
+    <!-- Games -->
     <div id="click-game-area">
       <div id="click-box"></div>
     </div>
 
-    <!-- Snake -->
     <canvas id="snake-canvas" width="400" height="400"></canvas>
-
-    <!-- Infinite Obby -->
     <canvas id="obby-canvas" width="500" height="400"></canvas>
   </div>
 
 <script>
-/* ========== MENU ========== */
 const games = {
   click: document.getElementById('click-game-area'),
   snake: document.getElementById('snake-canvas'),
   obby: document.getElementById('obby-canvas')
 };
 let currentGame = null;
+
+/* ======== SHOW GAME ======== */
 function showGame(name) {
-  // Hide all games
   Object.values(games).forEach(g => g.style.display = 'none');
   document.getElementById('score').textContent = '';
   document.getElementById('timer').textContent = '';
+  document.getElementById('overlay').style.display = 'flex';
+
   currentGame = name;
   games[name].style.display = 'block';
-  if (name === 'click') startClickGame();
-  if (name === 'snake') startSnake();
-  if (name === 'obby') startObby();
+
+  const overlay = document.getElementById('overlay');
+  const title = document.getElementById('overlay-title');
+  const text = document.getElementById('overlay-text');
+  const btn = document.getElementById('overlay-btn');
+
+  if (name === 'click') {
+    title.textContent = '🟥 Click the Box';
+    text.textContent = 'Click the red box as many times as possible within 10 seconds!';
+    btn.onclick = () => { overlay.style.display = 'none'; startClickGame(); };
+  }
+  if (name === 'snake') {
+    title.textContent = '🐍 Snake Game';
+    text.textContent = 'Use Arrow Keys to eat food and grow. Avoid walls and yourself!';
+    btn.onclick = () => { overlay.style.display = 'none'; startSnake(); };
+  }
+  if (name === 'obby') {
+    title.textContent = '🟩 Obstacle Run';
+    text.textContent = 'Press SPACE to jump. Avoid obstacles and survive as long as you can!';
+    btn.onclick = () => { overlay.style.display = 'none'; startObby(); };
+  }
 }
 
-/* ========== CLICK THE BOX GAME ========== */
+/* ======== CLICK GAME ======== */
 function startClickGame() {
   const box = document.getElementById('click-box');
   const area = document.getElementById('click-game-area');
   let score = 0;
   let timeLeft = 10;
+  let gameActive = true;
   document.getElementById('score').textContent = `Score: ${score}`;
   document.getElementById('timer').textContent = `Time: ${timeLeft}`;
-  let gameActive = true;
 
   function moveBox() {
     const x = Math.random() * (area.clientWidth - box.clientWidth);
@@ -148,6 +217,7 @@ function startClickGame() {
     box.style.left = `${x}px`;
     box.style.top = `${y}px`;
   }
+  moveBox();
 
   box.onclick = () => {
     if (!gameActive) return;
@@ -156,13 +226,12 @@ function startClickGame() {
     moveBox();
   };
 
-  moveBox();
   const countdown = setInterval(() => {
     if (currentGame !== 'click') { clearInterval(countdown); return; }
     if (timeLeft <= 0) {
       clearInterval(countdown);
       gameActive = false;
-      alert(`Game Over! Your score: ${score}`);
+      showOverlay('Game Over', `Your score: ${score}`, () => showGame('click'));
     } else {
       timeLeft--;
       document.getElementById('timer').textContent = `Time: ${timeLeft}`;
@@ -170,27 +239,30 @@ function startClickGame() {
   }, 1000);
 }
 
-/* ========== SNAKE GAME ========== */
+/* ======== SNAKE ======== */
 function startSnake() {
   const canvas = document.getElementById('snake-canvas');
   const ctx = canvas.getContext('2d');
-  let box = 20;
+  const box = 20;
   let snake = [{x: 9*box, y: 10*box}];
-  let food = {
-    x: Math.floor(Math.random()*19)*box,
-    y: Math.floor(Math.random()*19)*box
-  };
+  let food = spawnFood();
   let direction = null;
   let score = 0;
-  document.addEventListener('keydown', dir);
+
+  function spawnFood() {
+    return {x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box};
+  }
+
   function dir(e){
     if(e.key==='ArrowLeft' && direction!=='RIGHT') direction='LEFT';
     if(e.key==='ArrowUp' && direction!=='DOWN') direction='UP';
     if(e.key==='ArrowRight' && direction!=='LEFT') direction='RIGHT';
     if(e.key==='ArrowDown' && direction!=='UP') direction='DOWN';
   }
+  document.addEventListener('keydown', dir);
 
-  const game = setInterval(draw,100);
+  const game = setInterval(draw, 100);
+
   function draw(){
     if(currentGame!=='snake'){clearInterval(game);return;}
     ctx.fillStyle='#111'; ctx.fillRect(0,0,400,400);
@@ -200,6 +272,7 @@ function startSnake() {
     }
     ctx.fillStyle='#f00';
     ctx.fillRect(food.x,food.y,box,box);
+
     let snakeX=snake[0].x;
     let snakeY=snake[0].y;
     if(direction==='LEFT') snakeX-=box;
@@ -209,126 +282,92 @@ function startSnake() {
 
     if(snakeX===food.x && snakeY===food.y){
       score++;
-      food={x:Math.floor(Math.random()*19)*box,y:Math.floor(Math.random()*19)*box};
+      food = spawnFood();
     } else snake.pop();
 
     let newHead={x:snakeX,y:snakeY};
     if(snakeX<0||snakeY<0||snakeX>=400||snakeY>=400||collision(newHead,snake)){
       clearInterval(game);
-      alert(`Game Over! Score: ${score}`);
+      showOverlay('Game Over', `Your Score: ${score}`, () => showGame('snake'));
     }
     snake.unshift(newHead);
   }
+
   function collision(head,array){
     return array.some(seg=>head.x===seg.x && head.y===seg.y);
   }
 }
 
-/* ========== INFINITE OBBY GAME ========== */
+/* ======== OBBY ======== */
 function startObby() {
   const canvas = document.getElementById('obby-canvas');
   const ctx = canvas.getContext('2d');
   let player = { x: 50, y: 300, w: 30, h: 30, vy: 0, onGround: false };
-  let gravity = 0.6;
-  let speed = 4;
-  let score = 0;
-  let obstacles = [];
-  let gameOver = false;
+  let gravity = 0.6, speed = 4, score = 0, obstacles = [], gameOver = false;
+
+  function reset() {
+    player = { x: 50, y: 300, w: 30, h: 30, vy: 0, onGround: false };
+    obstacles = []; score = 0; gameOver = false;
+  }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === ' ' && player.onGround && !gameOver) {
-      player.vy = -12;
-      player.onGround = false;
+      player.vy = -12; player.onGround = false;
     }
   });
 
-  function resetGame() {
-    player.x = 50;
-    player.y = 300;
-    player.vy = 0;
-    player.onGround = false;
-    obstacles = [];
-    score = 0;
-    gameOver = false;
-  }
-
   function spawnObstacle() {
-    const height = 20 + Math.random() * 40;
-    const y = 380 - height;
-    obstacles.push({ x: 500, y, w: 20, h: height });
+    const height = 20 + Math.random()*40;
+    obstacles.push({ x: 500, y: 380-height, w: 20, h: height });
   }
 
   function draw() {
     if (currentGame !== 'obby') return;
-
     ctx.clearRect(0, 0, 500, 400);
-    ctx.fillStyle = '#cceeff';
-    ctx.fillRect(0, 0, 500, 400);
-    ctx.fillStyle = '#444';
-    ctx.fillRect(0, 380, 500, 20);
+    ctx.fillStyle = '#cceeff'; ctx.fillRect(0, 0, 500, 400);
+    ctx.fillStyle = '#444'; ctx.fillRect(0, 380, 500, 20);
 
-    // Spawn obstacles
     if (Math.random() < 0.02) spawnObstacle();
-
-    // Move and draw obstacles
     ctx.fillStyle = '#222';
-    obstacles.forEach(obs => {
-      obs.x -= speed;
-      ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-    });
+    obstacles.forEach(o => { o.x -= speed; ctx.fillRect(o.x,o.y,o.w,o.h); });
     obstacles = obstacles.filter(o => o.x + o.w > 0);
 
-    // Physics
-    player.vy += gravity;
-    player.y += player.vy;
-    if (player.y + player.h >= 380) {
-      player.y = 380 - player.h;
-      player.vy = 0;
-      player.onGround = true;
-    }
+    player.vy += gravity; player.y += player.vy;
+    if (player.y + player.h >= 380) { player.y = 380 - player.h; player.vy = 0; player.onGround = true; }
 
-    // Collision
-    obstacles.forEach(obs => {
-      if (player.x < obs.x + obs.w &&
-          player.x + player.w > obs.x &&
-          player.y + player.h > obs.y) {
+    for (let o of obstacles) {
+      if (player.x < o.x + o.w && player.x + player.w > o.x && player.y + player.h > o.y) {
         gameOver = true;
       }
-    });
+    }
 
-    // Player
-    ctx.fillStyle = gameOver ? 'red' : '#00cc00';
+    ctx.fillStyle = gameOver ? 'red' : '#0c0';
     ctx.fillRect(player.x, player.y, player.w, player.h);
-
-    // Score
-    ctx.fillStyle = '#000';
-    ctx.font = '20px Arial';
+    ctx.fillStyle = '#000'; ctx.font = '20px Poppins';
     ctx.fillText(`Score: ${Math.floor(score)}`, 20, 30);
     score += 0.1;
 
     if (gameOver) {
-      ctx.fillStyle = '#000';
-      ctx.font = '30px Arial';
-      ctx.fillText('💀 Game Over!', 150, 200);
-      ctx.font = '20px Arial';
-      ctx.fillText('Press Space to Restart', 135, 240);
-      document.addEventListener('keydown', restartHandler);
+      showOverlay('💀 Game Over', `Your Score: ${Math.floor(score)}`, () => showGame('obby'));
       return;
     }
-
     requestAnimationFrame(draw);
   }
 
-  function restartHandler(e) {
-    if (e.key === ' ') {
-      document.removeEventListener('keydown', restartHandler);
-      resetGame();
-      draw();
-    }
-  }
+  reset(); draw();
+}
 
-  resetGame();
-  draw();
+/* ======== OVERLAY CONTROL ======== */
+function showOverlay(title, text, callback) {
+  const overlay = document.getElementById('overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('overlay-title').textContent = title;
+  document.getElementById('overlay-text').textContent = text;
+  document.getElementById('overlay-btn').textContent = 'Play Again';
+  document.getElementById('overlay-btn').onclick = () => {
+    overlay.style.display = 'none';
+    callback();
+  };
 }
 </script>
 </body>
