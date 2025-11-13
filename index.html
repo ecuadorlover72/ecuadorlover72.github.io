@@ -4,404 +4,320 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Student Portal - Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
 <style>
-  * { box-sizing: border-box; }
+  :root {
+    --sidebar-bg: #111;
+    --accent: #00bcd4;
+    --bg: #0f0f0f;
+    --card-bg: #1a1a1a;
+    --text: #eee;
+    --danger: #e53935;
+    --success: #4caf50;
+  }
 
   body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
-    height: 100vh;
     display: flex;
+    height: 100vh;
+    background: var(--bg);
     overflow: hidden;
-    background: radial-gradient(circle at top left, #1a1a1a, #111);
-    color: #f5f5f5;
+    color: var(--text);
   }
 
   /* Sidebar */
   #sidebar {
-    width: 260px;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-right: 1px solid rgba(255,255,255,0.1);
-    padding: 30px 20px;
+    width: 240px;
+    background: var(--sidebar-bg);
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    padding: 20px;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
   }
 
   #sidebar h2 {
-    font-weight: 600;
     text-align: center;
-    margin-bottom: 30px;
-    background: linear-gradient(45deg, #00c6ff, #0072ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--accent);
+    font-size: 22px;
+    margin-bottom: 25px;
   }
 
   .menu-item {
-    background: rgba(255,255,255,0.05);
-    padding: 15px;
-    margin: 8px 0;
-    text-align: center;
+    background: var(--card-bg);
+    padding: 12px;
+    margin: 6px 0;
     border-radius: 10px;
+    text-align: center;
     cursor: pointer;
-    transition: 0.3s;
-    border: 1px solid rgba(255,255,255,0.1);
+    transition: 0.25s;
   }
 
   .menu-item:hover {
-    background: linear-gradient(135deg, #0072ff, #00c6ff);
-    color: #fff;
-    transform: translateY(-3px);
+    background: var(--accent);
+    color: #000;
+    transform: scale(1.05);
   }
 
   /* Game container */
   #game-container {
     flex: 1;
-    position: relative;
+    background: #121212;
     display: flex;
-    justify-content: center;
     align-items: center;
-    overflow: hidden;
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    justify-content: center;
+    position: relative;
+    border-left: 2px solid #222;
   }
 
-  /* Info text */
   #score, #timer {
     position: absolute;
-    top: 20px;
-    background: rgba(255,255,255,0.1);
-    padding: 8px 14px;
-    border-radius: 10px;
-    font-size: 16px;
-    backdrop-filter: blur(6px);
+    top: 15px;
+    left: 270px;
+    font-size: 18px;
+    color: var(--accent);
   }
-  #score { left: 280px; }
-  #timer { right: 30px; }
 
-  /* Game frames */
   canvas, #click-game-area {
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-    display: none;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    background: #1e1e1e;
+    box-shadow: 0 0 15px rgba(0, 188, 212, 0.3);
   }
 
   #click-game-area {
-    width: 420px;
-    height: 420px;
-    background: rgba(255,255,255,0.1);
-    border: 2px solid rgba(255,255,255,0.2);
+    width: 400px;
+    height: 400px;
     position: relative;
-    backdrop-filter: blur(8px);
+    display: none;
   }
 
   #click-box {
     width: 50px;
     height: 50px;
-    background: #ff4d4d;
-    border-radius: 8px;
+    background: var(--danger);
     position: absolute;
     cursor: pointer;
-    transition: transform 0.1s, background 0.3s;
+    border-radius: 6px;
   }
 
-  #click-box:hover {
-    transform: scale(1.1);
-    background: #ff6666;
-  }
-
-  #snake-canvas {
-    width: 420px;
-    height: 420px;
-    background: #000;
-    border: 2px solid rgba(0,255,0,0.4);
-  }
-
-  #obby-canvas {
-    width: 500px;
-    height: 400px;
-    background: linear-gradient(to top, #6dd5fa, #2980b9);
-    border: 2px solid rgba(255,255,255,0.2);
-  }
-
-  /* Overlay */
-  .overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(10px);
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    text-align: center;
-    z-index: 10;
-  }
-
-  .overlay h2 {
-    font-size: 32px;
-    background: linear-gradient(45deg, #00c6ff, #0072ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 15px;
-  }
-
-  .overlay p { font-size: 18px; margin-bottom: 20px; }
-
-  .overlay button {
-    background: linear-gradient(135deg, #0072ff, #00c6ff);
-    border: none;
-    color: white;
-    font-size: 16px;
-    padding: 12px 24px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: transform 0.3s, box-shadow 0.3s;
-  }
-
-  .overlay button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,114,255,0.4);
-  }
-
-  /* Responsive */
-  @media (max-width: 800px) {
-    #sidebar { width: 180px; padding: 20px 10px; }
-    #score { left: 200px; }
-    .menu-item { padding: 12px; font-size: 14px; }
-  }
+  .hidden { display: none; }
 </style>
 </head>
 <body>
   <div id="sidebar">
-    <h2>Game Portal</h2>
+    <h2>🎮 Arcade Hub</h2>
     <div class="menu-item" onclick="showGame('click')">🟥 Click the Box</div>
     <div class="menu-item" onclick="showGame('snake')">🐍 Snake</div>
     <div class="menu-item" onclick="showGame('obby')">🟩 Obstacle Run</div>
+    <div class="menu-item" onclick="showGame('pong')">🏓 Pong Duel</div>
+    <div class="menu-item" onclick="showGame('memory')">🧠 Memory Match</div>
+    <div class="menu-item" onclick="showGame('flappy')">🐤 Flappy Block</div>
   </div>
 
   <div id="game-container">
     <div id="score"></div>
     <div id="timer"></div>
 
-    <div class="overlay" id="overlay">
-      <h2 id="overlay-title"></h2>
-      <p id="overlay-text"></p>
-      <button id="overlay-btn">Start</button>
-    </div>
+    <!-- Click the Box -->
+    <div id="click-game-area"><div id="click-box"></div></div>
 
-    <div id="click-game-area">
-      <div id="click-box"></div>
-    </div>
+    <!-- Snake -->
+    <canvas id="snake-canvas" width="400" height="400" class="hidden"></canvas>
 
-    <canvas id="snake-canvas" width="400" height="400"></canvas>
-    <canvas id="obby-canvas" width="500" height="400"></canvas>
+    <!-- Obstacle Run -->
+    <canvas id="obby-canvas" width="500" height="400" class="hidden"></canvas>
+
+    <!-- Pong -->
+    <canvas id="pong-canvas" width="500" height="400" class="hidden"></canvas>
+
+    <!-- Memory Match -->
+    <div id="memory-game" class="hidden" style="width:420px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+
+    <!-- Flappy -->
+    <canvas id="flappy-canvas" width="400" height="400" class="hidden"></canvas>
   </div>
 
 <script>
 const games = {
   click: document.getElementById('click-game-area'),
   snake: document.getElementById('snake-canvas'),
-  obby: document.getElementById('obby-canvas')
+  obby: document.getElementById('obby-canvas'),
+  pong: document.getElementById('pong-canvas'),
+  memory: document.getElementById('memory-game'),
+  flappy: document.getElementById('flappy-canvas')
 };
 let currentGame = null;
-
-/* ======== SHOW GAME ======== */
-function showGame(name) {
-  Object.values(games).forEach(g => g.style.display = 'none');
-  document.getElementById('score').textContent = '';
-  document.getElementById('timer').textContent = '';
-  document.getElementById('overlay').style.display = 'flex';
-
+function showGame(name){
+  Object.values(games).forEach(g => g.style.display='none');
+  document.getElementById('score').textContent='';
+  document.getElementById('timer').textContent='';
   currentGame = name;
-  games[name].style.display = 'block';
-
-  const overlay = document.getElementById('overlay');
-  const title = document.getElementById('overlay-title');
-  const text = document.getElementById('overlay-text');
-  const btn = document.getElementById('overlay-btn');
-
-  if (name === 'click') {
-    title.textContent = '🟥 Click the Box';
-    text.textContent = 'Click the red box as many times as you can in 10 seconds!';
-    btn.onclick = () => { overlay.style.display = 'none'; startClickGame(); };
-  } else if (name === 'snake') {
-    title.textContent = '🐍 Snake Game';
-    text.textContent = 'Use Arrow Keys to move. Eat red squares, don’t hit yourself!';
-    btn.onclick = () => { overlay.style.display = 'none'; startSnake(); };
-  } else if (name === 'obby') {
-    title.textContent = '🟩 Obstacle Run';
-    text.textContent = 'Press SPACE to jump. Avoid blocks and stay alive!';
-    btn.onclick = () => { overlay.style.display = 'none'; startObby(); };
-  }
+  games[name].style.display='block';
+  if(name==='click') startClickGame();
+  if(name==='snake') startSnake();
+  if(name==='obby') startObby();
+  if(name==='pong') startPong();
+  if(name==='memory') startMemory();
+  if(name==='flappy') startFlappy();
 }
 
-/* ======== CLICK GAME ======== */
-function startClickGame() {
-  const box = document.getElementById('click-box');
-  const area = document.getElementById('click-game-area');
-  let score = 0, timeLeft = 10, gameActive = true;
-  document.getElementById('score').textContent = `Score: ${score}`;
-  document.getElementById('timer').textContent = `Time: ${timeLeft}`;
-
-  function moveBox() {
-    const x = Math.random() * (area.clientWidth - box.clientWidth);
-    const y = Math.random() * (area.clientHeight - box.clientHeight);
-    box.style.left = `${x}px`;
-    box.style.top = `${y}px`;
+/* CLICK GAME */
+function startClickGame(){
+  const box=document.getElementById('click-box');
+  const area=document.getElementById('click-game-area');
+  let score=0,time=10;
+  document.getElementById('score').textContent=`Score: ${score}`;
+  document.getElementById('timer').textContent=`Time: ${time}`;
+  let active=true;
+  function moveBox(){
+    box.style.left=Math.random()*(area.clientWidth-50)+'px';
+    box.style.top=Math.random()*(area.clientHeight-50)+'px';
   }
+  box.onclick=()=>{if(!active)return;score++;document.getElementById('score').textContent=`Score: ${score}`;moveBox();};
   moveBox();
-
-  box.onclick = () => {
-    if (!gameActive) return;
-    score++;
-    document.getElementById('score').textContent = `Score: ${score}`;
-    moveBox();
-  };
-
-  const countdown = setInterval(() => {
-    if (currentGame !== 'click') { clearInterval(countdown); return; }
-    if (timeLeft <= 0) {
-      clearInterval(countdown);
-      gameActive = false;
-      showOverlay('Game Over', `Your score: ${score}`, () => showGame('click'));
-    } else {
-      timeLeft--;
-      document.getElementById('timer').textContent = `Time: ${timeLeft}`;
-    }
-  }, 1000);
+  const t=setInterval(()=>{if(currentGame!=='click'){clearInterval(t);return;}
+    if(time<=0){active=false;clearInterval(t);alert(`Game Over! Score: ${score}`);}else{time--;document.getElementById('timer').textContent=`Time: ${time}`;}
+  },1000);
 }
 
-/* ======== SNAKE ======== */
-function startSnake() {
-  const canvas = document.getElementById('snake-canvas');
-  const ctx = canvas.getContext('2d');
-  const box = 20;
-  let snake = [{x: 9*box, y: 10*box}];
-  let food = spawnFood();
-  let direction = null;
-  let score = 0;
-
-  function spawnFood() {
-    return {x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box};
-  }
-
-  function dir(e){
-    if(e.key==='ArrowLeft' && direction!=='RIGHT') direction='LEFT';
-    if(e.key==='ArrowUp' && direction!=='DOWN') direction='UP';
-    if(e.key==='ArrowRight' && direction!=='LEFT') direction='RIGHT';
-    if(e.key==='ArrowDown' && direction!=='UP') direction='DOWN';
-  }
-  document.addEventListener('keydown', dir);
-
-  const game = setInterval(draw, 100);
-
+/* SNAKE */
+function startSnake(){
+  const c=document.getElementById('snake-canvas');
+  const ctx=c.getContext('2d');
+  let box=20,snake=[{x:9*box,y:10*box}],food={x:Math.floor(Math.random()*19)*box,y:Math.floor(Math.random()*19)*box},dir=null,score=0;
+  document.addEventListener('keydown',d);
+  function d(e){if(e.key==='ArrowLeft'&&dir!=='RIGHT')dir='LEFT';if(e.key==='ArrowUp'&&dir!=='DOWN')dir='UP';if(e.key==='ArrowRight'&&dir!=='LEFT')dir='RIGHT';if(e.key==='ArrowDown'&&dir!=='UP')dir='DOWN';}
+  const game=setInterval(draw,100);
   function draw(){
     if(currentGame!=='snake'){clearInterval(game);return;}
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,400,400);
-    for(let i=0;i<snake.length;i++){
-      ctx.fillStyle=i===0?'#00ff88':'#008844';
-      ctx.fillRect(snake[i].x,snake[i].y,box,box);
-    }
-    ctx.fillStyle='#ff4d4d';
-    ctx.fillRect(food.x,food.y,box,box);
-
-    let snakeX=snake[0].x, snakeY=snake[0].y;
-    if(direction==='LEFT') snakeX-=box;
-    if(direction==='UP') snakeY-=box;
-    if(direction==='RIGHT') snakeX+=box;
-    if(direction==='DOWN') snakeY+=box;
-
-    if(snakeX===food.x && snakeY===food.y){
-      score++;
-      food = spawnFood();
-    } else snake.pop();
-
-    let newHead={x:snakeX,y:snakeY};
-    if(snakeX<0||snakeY<0||snakeX>=400||snakeY>=400||collision(newHead,snake)){
-      clearInterval(game);
-      showOverlay('Game Over', `Your Score: ${score}`, () => showGame('snake'));
-    }
-    snake.unshift(newHead);
-  }
-
-  function collision(head,array){
-    return array.some(seg=>head.x===seg.x && head.y===seg.y);
+    ctx.fillStyle='#111';ctx.fillRect(0,0,400,400);
+    for(let i=0;i<snake.length;i++){ctx.fillStyle=i===0?'#0f0':'#0a0';ctx.fillRect(snake[i].x,snake[i].y,box,box);}
+    ctx.fillStyle='#f00';ctx.fillRect(food.x,food.y,box,box);
+    let X=snake[0].x,Y=snake[0].y;
+    if(dir==='LEFT')X-=box;if(dir==='UP')Y-=box;if(dir==='RIGHT')X+=box;if(dir==='DOWN')Y+=box;
+    if(X===food.x&&Y===food.y){score++;food={x:Math.floor(Math.random()*19)*box,y:Math.floor(Math.random()*19)*box};}else snake.pop();
+    let newH={x:X,y:Y};
+    if(X<0||Y<0||X>=400||Y>=400||snake.some(s=>s.x===X&&s.y===Y)){clearInterval(game);alert(`Game Over! Score: ${score}`);}
+    snake.unshift(newH);
   }
 }
 
-/* ======== OBBY ======== */
-function startObby() {
-  const canvas = document.getElementById('obby-canvas');
-  const ctx = canvas.getContext('2d');
-  let player = { x: 50, y: 300, w: 30, h: 30, vy: 0, onGround: false };
-  let gravity = 0.6, speed = 4, score = 0, obstacles = [], gameOver = false;
-
-  function reset() {
-    player = { x: 50, y: 300, w: 30, h: 30, vy: 0, onGround: false };
-    obstacles = []; score = 0; gameOver = false;
-  }
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === ' ' && player.onGround && !gameOver) {
-      player.vy = -12; player.onGround = false;
-    }
-  });
-
-  function spawnObstacle() {
-    const height = 20 + Math.random()*40;
-    obstacles.push({ x: 500, y: 380-height, w: 20, h: height });
-  }
-
-  function draw() {
-    if (currentGame !== 'obby') return;
-    ctx.clearRect(0, 0, 500, 400);
-    ctx.fillStyle = '#6dd5fa'; ctx.fillRect(0, 0, 500, 400);
-    ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, 380, 500, 20);
-
-    if (Math.random() < 0.02) spawnObstacle();
-    ctx.fillStyle = '#1a1a1a';
-    obstacles.forEach(o => { o.x -= speed; ctx.fillRect(o.x,o.y,o.w,o.h); });
-    obstacles = obstacles.filter(o => o.x + o.w > 0);
-
-    player.vy += gravity; player.y += player.vy;
-    if (player.y + player.h >= 380) { player.y = 380 - player.h; player.vy = 0; player.onGround = true; }
-
-    for (let o of obstacles) {
-      if (player.x < o.x + o.w && player.x + player.w > o.x && player.y + player.h > o.y) {
-        gameOver = true;
-      }
-    }
-
-    ctx.fillStyle = gameOver ? '#ff4d4d' : '#00ff88';
-    ctx.fillRect(player.x, player.y, player.w, player.h);
-    ctx.fillStyle = '#fff'; ctx.font = '20px Poppins';
-    ctx.fillText(`Score: ${Math.floor(score)}`, 20, 30);
-    score += 0.1;
-
-    if (gameOver) {
-      showOverlay('💀 Game Over', `Your Score: ${Math.floor(score)}`, () => showGame('obby'));
-      return;
-    }
+/* OBBY */
+function startObby(){
+  const c=document.getElementById('obby-canvas');
+  const ctx=c.getContext('2d');
+  let p={x:50,y:300,w:30,h:30,vy:0,onGround:false},grav=0.6,speed=4,score=0,obs=[],gameOver=false;
+  document.addEventListener('keydown',jump);
+  function jump(e){if(e.key===' '&&p.onGround&&!gameOver){p.vy=-12;p.onGround=false;}}
+  function reset(){p={x:50,y:300,w:30,h:30,vy:0,onGround:false};obs=[];score=0;gameOver=false;}
+  function spawn(){let h=20+Math.random()*40,y=380-h;obs.push({x:500,y,w:20,h});}
+  function draw(){
+    if(currentGame!=='obby')return;
+    ctx.fillStyle='#cceeff';ctx.fillRect(0,0,500,400);ctx.fillStyle='#444';ctx.fillRect(0,380,500,20);
+    if(Math.random()<0.02)spawn();
+    obs.forEach(o=>{o.x-=speed;ctx.fillStyle='#222';ctx.fillRect(o.x,o.y,o.w,o.h);});
+    obs=obs.filter(o=>o.x+o.w>0);
+    p.vy+=grav;p.y+=p.vy;
+    if(p.y+p.h>=380){p.y=350;p.vy=0;p.onGround=true;}
+    obs.forEach(o=>{if(p.x<o.x+o.w&&p.x+p.w>o.x&&p.y+p.h>o.y)gameOver=true;});
+    ctx.fillStyle=gameOver?'red':'#0f0';ctx.fillRect(p.x,p.y,p.w,p.h);
+    ctx.fillStyle='#000';ctx.font='20px Arial';ctx.fillText(`Score: ${Math.floor(score)}`,20,30);
+    score+=0.1;
+    if(gameOver){ctx.fillText('💀 Game Over',180,200);return;}
     requestAnimationFrame(draw);
   }
-
-  reset(); draw();
+  reset();draw();
 }
 
-/* ======== Overlay ======== */
-function showOverlay(title, text, callback) {
-  const overlay = document.getElementById('overlay');
-  overlay.style.display = 'flex';
-  document.getElementById('overlay-title').textContent = title;
-  document.getElementById('overlay-text').textContent = text;
-  document.getElementById('overlay-btn').textContent = 'Play Again';
-  document.getElementById('overlay-btn').onclick = () => {
-    overlay.style.display = 'none';
-    callback();
-  };
+/* PONG */
+function startPong(){
+  const c=document.getElementById('pong-canvas');
+  const ctx=c.getContext('2d');
+  let player={x:20,y:150,w:10,h:80},ai={x:470,y:150,w:10,h:80},ball={x:250,y:200,r:8,dx:4,dy:4};
+  let score=0;
+  document.addEventListener('mousemove',e=>{
+    const rect=c.getBoundingClientRect();
+    player.y=e.clientY-rect.top-player.h/2;
+  });
+  function draw(){
+    if(currentGame!=='pong')return;
+    ctx.fillStyle='#000';ctx.fillRect(0,0,500,400);
+    ctx.fillStyle='#0f0';ctx.fillRect(player.x,player.y,player.w,player.h);
+    ctx.fillStyle='#f00';ctx.fillRect(ai.x,ai.y,ai.w,ai.h);
+    ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    ball.x+=ball.dx;ball.y+=ball.dy;
+    if(ball.y<0||ball.y>400)ball.dy*=-1;
+    if(ball.x<player.x+player.w&&ball.y>player.y&&ball.y<player.y+player.h)ball.dx*=-1;
+    if(ball.x>ai.x-ai.w&&ball.y>ai.y&&ball.y<ai.y+ai.h)ball.dx*=-1;
+    ai.y+=(ball.y-ai.y-40)*0.08;
+    if(ball.x<0||ball.x>500){ball.x=250;ball.y=200;ball.dx*=-1;score=0;}
+    ctx.fillStyle='#0f0';ctx.fillText(`Score: ${score++}`,10,20);
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+/* MEMORY GAME */
+function startMemory(){
+  const board=document.getElementById('memory-game');
+  board.innerHTML='';
+  const emojis=['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼'];
+  const cards=[...emojis,...emojis].sort(()=>Math.random()-0.5);
+  let flipped=[],matched=[];
+  cards.forEach((emoji,i)=>{
+    const card=document.createElement('div');
+    card.textContent='❓';
+    card.style.background='#333';
+    card.style.padding='25px';
+    card.style.textAlign='center';
+    card.style.fontSize='28px';
+    card.style.borderRadius='10px';
+    card.style.cursor='pointer';
+    card.onclick=()=>{
+      if(flipped.length<2&&!flipped.includes(i)&&!matched.includes(i)){
+        card.textContent=emoji;flipped.push(i);
+        if(flipped.length===2){
+          const [a,b]=flipped;
+          if(cards[a]===cards[b]){matched.push(a,b);}
+          setTimeout(()=>{flipped.forEach(j=>{if(!matched.includes(j))board.children[j].textContent='❓';});flipped=[];},700);
+        }
+      }
+    };
+    board.appendChild(card);
+  });
+}
+
+/* FLAPPY BLOCK */
+function startFlappy(){
+  const c=document.getElementById('flappy-canvas');
+  const ctx=c.getContext('2d');
+  let p={x:50,y:200,w:30,h:30,vy:0},grav=0.6,pipes=[],gap=100,score=0;
+  document.addEventListener('keydown',e=>{if(e.key===' ')p.vy=-8;});
+  function spawn(){let top=Math.random()*200+50;pipes.push({x:400,top,bottom:top+gap});}
+  function draw(){
+    if(currentGame!=='flappy')return;
+    ctx.fillStyle='#87ceeb';ctx.fillRect(0,0,400,400);
+    if(Math.random()<0.02)spawn();
+    pipes.forEach(pipe=>{
+      pipe.x-=3;
+      ctx.fillStyle='#0f0';
+      ctx.fillRect(pipe.x,0,40,pipe.top);
+      ctx.fillRect(pipe.x,pipe.bottom,40,400-pipe.bottom);
+    });
+    pipes=pipes.filter(p=>p.x+40>0);
+    p.vy+=grav;p.y+=p.vy;
+    ctx.fillStyle='#f00';ctx.fillRect(p.x,p.y,p.w,p.h);
+    pipes.forEach(pipe=>{
+      if(p.x<pipe.x+40&&p.x+p.w>pipe.x&&(p.y<pipe.top||p.y+p.h>pipe.bottom)){
+        alert(`Game Over! Score: ${score}`);
+        score=0;p.y=200;p.vy=0;pipes=[];
+      }
+    });
+    ctx.fillStyle='#000';ctx.fillText(`Score: ${Math.floor(score)}`,10,20);
+    score+=0.1;
+    requestAnimationFrame(draw);
+  }
+  draw();
 }
 </script>
 </body>
