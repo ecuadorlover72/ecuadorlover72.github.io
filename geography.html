@@ -37,16 +37,35 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // Initialize map
     const map = L.map("map").setView([20, 0], 2);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 5
     }).addTo(map);
 
-    let countryLookup = {};
+    let countryLookup = {};        // official names → layer
+    let aliasLookup = {};          // short names → official names
 
-    // Load country shapes
+    // List of alternate country names
+    const aliases = {
+        "united states": ["usa", "u.s.a", "us", "u.s", "america"],
+        "united kingdom": ["uk", "u.k", "britain", "england"],
+        "russia": ["russian federation"],
+        "south korea": ["korea", "republic of korea", "rok"],
+        "north korea": ["dprk", "democratic people's republic of korea"],
+        "china": ["prc", "people's republic of china"],
+        "vatican city": ["holy see"],
+        "iran": ["iran, islamic republic of"],
+        "syria": ["syrian arab republic"],
+        "tanzania": ["tanzania, united republic of"],
+        "moldova": ["republic of moldova"],
+        "bolivia": ["bolivia, plurinational state of"],
+        "venezuela": ["venezuela, bolivarian republic of"],
+        "laos": ["lao people's democratic republic"]
+        // You can add more as needed
+    };
+
+    // Load GeoJSON country borders
     fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
         .then(res => res.json())
         .then(data => {
@@ -59,14 +78,19 @@
                     fillOpacity: 0.5
                 },
                 onEachFeature: (feature, layer) => {
-                    const name = feature.properties.name.toLowerCase();
+                    const official = feature.properties.name.toLowerCase();
 
-                    // No popup, no label (REMOVE country names)
-                    layer.bindPopup(""); // disabled effectively
-                    layer.on("mouseover", e => e.target.closePopup());
+                    // No popup → NO country name shown
+                    // No hover handler
 
-                    // Store layer by country name
-                    countryLookup[name] = layer;
+                    countryLookup[official] = layer;
+
+                    // Add aliases for this specific country
+                    if (aliases[official]) {
+                        aliases[official].forEach(alias => {
+                            aliasLookup[alias.toLowerCase()] = official;
+                        });
+                    }
                 }
             }).addTo(map);
         });
@@ -74,18 +98,26 @@
     const input = document.getElementById("country-input");
 
     input.addEventListener("keyup", () => {
-        const guess = input.value.trim().toLowerCase();
+        let guess = input.value.trim().toLowerCase();
 
-        if (countryLookup[guess]) {
-            const layer = countryLookup[guess];
+        let officialGuess = guess;
 
-            // Highlight green
+        // Convert alias → official name
+        if (aliasLookup[guess]) {
+            officialGuess = aliasLookup[guess];
+        }
+
+        // If country exists (either official name or alias)
+        if (countryLookup[officialGuess]) {
+            const layer = countryLookup[officialGuess];
+
+            // Highlight
             layer.setStyle({
                 fillColor: "green",
-                fillOpacity: 0.8
+                fillOpacity: 0.85
             });
 
-            // CLEAR the input box
+            // Clear search bar
             input.value = "";
         }
     });
