@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Country Guessing Game</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 100vh;
+        }
+        #input-box {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            font-size: 16px;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        #input-box input {
+            padding: 10px;
+            width: 300px;
+            font-size: 16px;
+        }
+        .correct {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="input-box">
+        <input type="text" id="country-input" placeholder="Type a country..." />
+    </div>
+
+    <!-- Add Leaflet.js -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Add GeoJSON for countries -->
+    <script src="https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json"></script>
+    
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([20, 0], 2); // Set the initial map view (lat, lon)
+
+        // Add a Tile Layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Load GeoJSON data for countries
+        var countriesLayer = L.geoJSON(countriesGeoJSON, {
+            onEachFeature: function (feature, layer) {
+                layer.options.fillColor = "lightgray";  // Set default color
+                layer.options.fillOpacity = 0.7;
+                layer.options.weight = 1;
+                layer.options.color = "white";
+                layer.options.dashArray = "3";
+                layer.options.fillOpacity = 0.5;
+                layer.bindPopup(feature.properties.name); // Bind country name as a popup
+            }
+        }).addTo(map);
+
+        // Store the countries in a lowercase object for easy checking
+        var countryNames = {};
+        countriesGeoJSON.features.forEach(function (feature) {
+            countryNames[feature.properties.name.toLowerCase()] = feature;
+        });
+
+        // Get the country input field
+        var inputField = document.getElementById("country-input");
+
+        // Add an event listener for the country input field
+        inputField.addEventListener("keyup", function () {
+            var countryName = inputField.value.toLowerCase();
+            if (countryNames[countryName]) {
+                var country = countryNames[countryName];
+                var countryLayer = countriesLayer.getLayer(countryNames[countryName].id);
+
+                if (countryLayer) {
+                    // Highlight the country on the map
+                    countryLayer.setStyle({
+                        fillColor: 'green',  // Change fill color to green
+                        fillOpacity: 0.7
+                    });
+
+                    // Display a success message in green
+                    inputField.classList.add('correct');
+                }
+            } else {
+                inputField.classList.remove('correct');
+            }
+        });
+    </script>
+</body>
+</html>
