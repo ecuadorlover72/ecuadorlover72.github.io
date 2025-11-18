@@ -2,37 +2,34 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Country Guessing Game 2.67</title>
+<title>Country Guessing Game</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
     html, body { margin: 0; height: 100%; font-family: Arial, sans-serif; }
-    #map { height: 100%; }
+    #map { height: 100%; margin-left: 320px; }
 
-    #input-box {
-        position: absolute;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1000;
+    #sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 320px;
+        height: 100%;
         background: rgba(255, 255, 255, 0.95);
-        padding: 12px 16px;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        padding: 16px;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+        overflow-y: auto;
     }
 
     #country-input {
-        width: 300px;
+        width: 100%;
         font-size: 16px;
         padding: 10px 12px;
         border-radius: 6px;
         border: 1px solid #aaa;
         outline: none;
-        transition: all 0.2s;
+        margin-bottom: 16px;
     }
 
     #country-input:focus {
@@ -40,25 +37,46 @@
         box-shadow: 0 0 6px rgba(0,123,255,0.5);
     }
 
-    #score {
-        margin-top: 8px;
+    h3 {
+        margin: 8px 0 4px;
         font-size: 16px;
-        font-weight: bold;
-        color: #333;
+    }
+
+    ul {
+        list-style: none;
+        padding-left: 10px;
+        margin-bottom: 12px;
+        max-height: 100px;
+        overflow-y: auto;
+    }
+
+    ul li {
+        background: #007bff;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin: 2px 0;
+        font-size: 14px;
     }
 </style>
 </head>
 <body>
 
-<div id="map"></div>
-
-<div id="input-box">
+<div id="sidebar">
     <input id="country-input" type="text" placeholder="Type a country..." autocomplete="off">
-    <div id="score">0/0</div>
+    <div id="continent-lists">
+        <h3>Africa</h3><ul id="africa"></ul>
+        <h3>Asia</h3><ul id="asia"></ul>
+        <h3>Europe</h3><ul id="europe"></ul>
+        <h3>North America</h3><ul id="north-america"></ul>
+        <h3>South America</h3><ul id="south-america"></ul>
+        <h3>Oceania</h3><ul id="oceania"></ul>
+    </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div id="map"></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const map = L.map("map").setView([20, 0], 2);
 
@@ -67,7 +85,6 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 5 }
 let countryLookup = {};
 let aliasLookup = {};
 let guessedCountries = [];
-let totalCountries = 0;
 
 // Country aliases
 const aliases = {
@@ -87,20 +104,25 @@ const aliases = {
     "laos": ["lao people's democratic republic"]
 };
 
-// Load country GeoJSON
+// Continent mapping (simplified, you can refine as needed)
+const countryContinents = {
+    "africa": ["algeria","nigeria","egypt","tanzania","south africa"], 
+    "asia": ["china","india","japan","south korea","north korea","iran","syria"],
+    "europe": ["france","germany","russia","uk","vatican city","moldova"],
+    "north-america": ["canada","usa","mexico"],
+    "south-america": ["brazil","argentina","venezuela","bolivia"],
+    "oceania": ["australia","new zealand"]
+};
+
+// Load countries
 fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
     .then(res => res.json())
     .then(data => {
-        totalCountries = data.features.length;
-        updateScore();
-
         L.geoJSON(data, {
             style: { color: "#444", weight: 1, fillColor: "#cccccc", fillOpacity: 0.5 },
             onEachFeature: (feature, layer) => {
                 const official = feature.properties.name.toLowerCase();
                 countryLookup[official] = layer;
-
-                // No tooltip -> country names hidden
 
                 // Add aliases
                 if (aliases[official]) {
@@ -113,7 +135,6 @@ fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.g
     });
 
 const input = document.getElementById("country-input");
-const scoreDisplay = document.getElementById("score");
 
 input.addEventListener("keyup", () => {
     let guess = input.value.trim().toLowerCase();
@@ -121,19 +142,29 @@ input.addEventListener("keyup", () => {
 
     if (countryLookup[officialGuess] && !guessedCountries.includes(officialGuess)) {
         const layer = countryLookup[officialGuess];
-
-        // Highlight guessed country
         layer.setStyle({ fillColor: "green", fillOpacity: 0.85 });
-
         guessedCountries.push(officialGuess);
-        updateScore();
+
+        addCountryToContinent(officialGuess);
 
         input.value = "";
     }
 });
 
-function updateScore() {
-    scoreDisplay.textContent = `${guessedCountries.length}/${totalCountries}`;
+function addCountryToContinent(country) {
+    for (let continent in countryContinents) {
+        if (countryContinents[continent].includes(country)) {
+            const ul = document.getElementById(continent);
+            const li = document.createElement("li");
+            li.textContent = capitalize(country);
+            ul.appendChild(li);
+            break;
+        }
+    }
+}
+
+function capitalize(str) {
+    return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 </script>
 </body>
