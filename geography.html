@@ -40,25 +40,11 @@
         box-shadow: 0 0 6px rgba(0,123,255,0.5);
     }
 
-    #guessed-list {
+    #score {
         margin-top: 8px;
-        font-size: 14px;
-        color: #555;
-        max-height: 100px;
-        overflow-y: auto;
-        width: 100%;
-        text-align: left;
-    }
-
-    #guessed-list span {
-        display: inline-block;
-        margin-right: 6px;
-        background: #007bff;
-        color: white;
-        padding: 2px 6px;
-        border-radius: 4px;
-        margin-bottom: 4px;
-        font-size: 13px;
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
     }
 </style>
 </head>
@@ -68,7 +54,7 @@
 
 <div id="input-box">
     <input id="country-input" type="text" placeholder="Type a country..." autocomplete="off">
-    <div id="guessed-list"></div>
+    <div id="score">0/0</div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -81,6 +67,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 5 }
 let countryLookup = {};
 let aliasLookup = {};
 let guessedCountries = [];
+let totalCountries = 0;
 
 // Country aliases
 const aliases = {
@@ -104,14 +91,16 @@ const aliases = {
 fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
     .then(res => res.json())
     .then(data => {
+        totalCountries = data.features.length;
+        updateScore();
+
         L.geoJSON(data, {
             style: { color: "#444", weight: 1, fillColor: "#cccccc", fillOpacity: 0.5 },
             onEachFeature: (feature, layer) => {
                 const official = feature.properties.name.toLowerCase();
                 countryLookup[official] = layer;
 
-                // Hover popup
-                layer.bindTooltip(feature.properties.name, { sticky: true });
+                // No tooltip -> country names hidden
 
                 // Add aliases
                 if (aliases[official]) {
@@ -124,11 +113,9 @@ fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.g
     });
 
 const input = document.getElementById("country-input");
-const guessedList = document.getElementById("guessed-list");
+const scoreDisplay = document.getElementById("score");
 
-input.addEventListener("keyup", (e) => {
-    if (e.key !== "Enter") return; // Only respond on Enter key
-
+input.addEventListener("keyup", () => {
     let guess = input.value.trim().toLowerCase();
     let officialGuess = aliasLookup[guess] || guess;
 
@@ -138,24 +125,15 @@ input.addEventListener("keyup", (e) => {
         // Highlight guessed country
         layer.setStyle({ fillColor: "green", fillOpacity: 0.85 });
 
-        // Zoom to country bounds
-        map.fitBounds(layer.getBounds(), { maxZoom: 5 });
-
-        // Update guessed list
         guessedCountries.push(officialGuess);
-        updateGuessedList();
+        updateScore();
 
-        // Clear input
         input.value = "";
     }
 });
 
-function updateGuessedList() {
-    guessedList.innerHTML = guessedCountries.map(c => `<span>${capitalize(c)}</span>`).join('');
-}
-
-function capitalize(str) {
-    return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+function updateScore() {
+    scoreDisplay.textContent = `${guessedCountries.length}/${totalCountries}`;
 }
 </script>
 </body>
