@@ -1,30 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <title>Country Guessing Game</title>
+<meta charset="UTF-8">
+<title>Country Guessing Game</title>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-    <style>
-        html, body { margin: 0; height: 100%; }
-        #map { height: 100%; }
-        #input-box {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            background: white;
-            padding: 10px;
-            border-radius: 6px;
-            box-shadow: 0 0 5px rgba(0,0,0,0.3);
-        }
-        #country-input {
-            width: 300px;
-            font-size: 18px;
-            padding: 8px;
-        }
-    </style>
+<style>
+    html, body { margin: 0; height: 100%; font-family: Arial, sans-serif; }
+    #map { height: 100%; }
+
+    #input-box {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 12px 16px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #country-input {
+        width: 300px;
+        font-size: 16px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        border: 1px solid #aaa;
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    #country-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 6px rgba(0,123,255,0.5);
+    }
+
+    #guessed-list {
+        margin-top: 8px;
+        font-size: 14px;
+        color: #555;
+        max-height: 100px;
+        overflow-y: auto;
+        width: 100%;
+        text-align: left;
+    }
+
+    #guessed-list span {
+        display: inline-block;
+        margin-right: 6px;
+        background: #007bff;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-bottom: 4px;
+        font-size: 13px;
+    }
+</style>
 </head>
 <body>
 
@@ -32,96 +68,95 @@
 
 <div id="input-box">
     <input id="country-input" type="text" placeholder="Type a country..." autocomplete="off">
+    <div id="guessed-list"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    const map = L.map("map").setView([20, 0], 2);
+const map = L.map("map").setView([20, 0], 2);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 5
-    }).addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 5 }).addTo(map);
 
-    let countryLookup = {};        // official names → layer
-    let aliasLookup = {};          // short names → official names
+let countryLookup = {};
+let aliasLookup = {};
+let guessedCountries = [];
 
-    // List of alternate country names
-    const aliases = {
-        "united states of america": ["usa", "u.s.a", "us", "u.s", "america"],
-        "united kingdom": ["uk", "u.k", "britain", "england"],
-        "russia": ["russian federation"],
-        "south korea": ["korea", "republic of korea", "rok"],
-        "north korea": ["dprk", "democratic people's republic of korea"],
-        "china": ["prc", "people's republic of china"],
-        "vatican city": ["holy see"],
-        "iran": ["iran, islamic republic of"],
-        "syria": ["syrian arab republic"],
-        "tanzania": ["tanzania, united republic of"],
-        "moldova": ["republic of moldova"],
-        "bolivia": ["bolivia, plurinational state of"],
-        "venezuela": ["venezuela, bolivarian republic of"],
-        "laos": ["lao people's democratic republic"]
-        // You can add more as needed
-    };
+// Country aliases
+const aliases = {
+    "united states of america": ["usa", "u.s.a", "us", "u.s", "america"],
+    "united kingdom": ["uk", "u.k", "britain", "england"],
+    "russia": ["russian federation"],
+    "south korea": ["korea", "republic of korea", "rok"],
+    "north korea": ["dprk", "democratic people's republic of korea"],
+    "china": ["prc", "people's republic of china"],
+    "vatican city": ["holy see"],
+    "iran": ["iran, islamic republic of"],
+    "syria": ["syrian arab republic"],
+    "tanzania": ["tanzania, united republic of"],
+    "moldova": ["republic of moldova"],
+    "bolivia": ["bolivia, plurinational state of"],
+    "venezuela": ["venezuela, bolivarian republic of"],
+    "laos": ["lao people's democratic republic"]
+};
 
-    // Load GeoJSON country borders
-    fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
-        .then(res => res.json())
-        .then(data => {
+// Load country GeoJSON
+fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
+    .then(res => res.json())
+    .then(data => {
+        L.geoJSON(data, {
+            style: { color: "#444", weight: 1, fillColor: "#cccccc", fillOpacity: 0.5 },
+            onEachFeature: (feature, layer) => {
+                const official = feature.properties.name.toLowerCase();
+                countryLookup[official] = layer;
 
-            L.geoJSON(data, {
-                style: {
-                    color: "#444",
-                    weight: 1,
-                    fillColor: "#cccccc",
-                    fillOpacity: 0.5
-                },
-                onEachFeature: (feature, layer) => {
-                    const official = feature.properties.name.toLowerCase();
+                // Hover popup
+                layer.bindTooltip(feature.properties.name, { sticky: true });
 
-                    // No popup → NO country name shown
-                    // No hover handler
-
-                    countryLookup[official] = layer;
-
-                    // Add aliases for this specific country
-                    if (aliases[official]) {
-                        aliases[official].forEach(alias => {
-                            aliasLookup[alias.toLowerCase()] = official;
-                        });
-                    }
+                // Add aliases
+                if (aliases[official]) {
+                    aliases[official].forEach(alias => {
+                        aliasLookup[alias.toLowerCase()] = official;
+                    });
                 }
-            }).addTo(map);
-        });
-
-    const input = document.getElementById("country-input");
-
-    input.addEventListener("keyup", () => {
-        let guess = input.value.trim().toLowerCase();
-
-        let officialGuess = guess;
-
-        // Convert alias → official name
-        if (aliasLookup[guess]) {
-            officialGuess = aliasLookup[guess];
-        }
-
-        // If country exists (either official name or alias)
-        if (countryLookup[officialGuess]) {
-            const layer = countryLookup[officialGuess];
-
-            // Highlight
-            layer.setStyle({
-                fillColor: "green",
-                fillOpacity: 0.85
-            });
-
-            // Clear search bar
-            input.value = "";
-        }
+            }
+        }).addTo(map);
     });
-</script>
 
+const input = document.getElementById("country-input");
+const guessedList = document.getElementById("guessed-list");
+
+input.addEventListener("keyup", (e) => {
+    if (e.key !== "Enter") return; // Only respond on Enter key
+
+    let guess = input.value.trim().toLowerCase();
+    let officialGuess = aliasLookup[guess] || guess;
+
+    if (countryLookup[officialGuess] && !guessedCountries.includes(officialGuess)) {
+        const layer = countryLookup[officialGuess];
+
+        // Highlight guessed country
+        layer.setStyle({ fillColor: "green", fillOpacity: 0.85 });
+
+        // Zoom to country bounds
+        map.fitBounds(layer.getBounds(), { maxZoom: 5 });
+
+        // Update guessed list
+        guessedCountries.push(officialGuess);
+        updateGuessedList();
+
+        // Clear input
+        input.value = "";
+    }
+});
+
+function updateGuessedList() {
+    guessedList.innerHTML = guessedCountries.map(c => `<span>${capitalize(c)}</span>`).join('');
+}
+
+function capitalize(str) {
+    return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+</script>
 </body>
 </html>
