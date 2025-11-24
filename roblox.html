@@ -47,7 +47,6 @@ function proxyWrap(url) {
 }
 
 function setLoading(flag) {
-  // Optionally: could show a spinner
   console.log('Loading:', flag);
 }
 
@@ -124,6 +123,26 @@ async function renderProfile(username){
     const id = user.id;
     const profile = await getUserProfile(id);
 
+    const friends = await tryMulti([
+      `https://friends.roproxy.com/v1/users/${id}/friends?limit=200`,
+      `https://friends.rprxy.xyz/v1/users/${id}/friends?limit=200`,
+      proxyWrap(`https://friends.roblox.com/v1/users/${id}/friends?limit=200`)
+    ]);
+    const groups = await tryMulti([
+      `https://groups.roproxy.com/v2/users/${id}/groups/roles`,
+      `https://groups.rprxy.xyz/v2/users/${id}/groups/roles`,
+      proxyWrap(`https://groups.roblox.com/v2/users/${id}/groups/roles`)
+    ]);
+    const badges = await tryMulti([
+      `https://badges.roproxy.com/v1/users/${id}/badges?limit=100`,
+      `https://badges.rprxy.xyz/v1/users/${id}/badges?limit=100`,
+      proxyWrap(`https://badges.roblox.com/v1/users/${id}/badges?limit=100`)
+    ]);
+
+    const friendsList = (friends?.data||[]).map(f=>f.name);
+    const groupsList = (groups?.data||[]).map(g=>`${g.group.name} — ${g.role?.name||'Member'}`);
+    const badgeList = (badges?.data||[]).map(b=>b.name);
+
     rbxResults.innerHTML = '';
 
     function makeCard(title,body,list,onClickName){
@@ -145,6 +164,9 @@ async function renderProfile(username){
       Created: ${profile.created? new Date(profile.created).toLocaleDateString(): 'Unknown'}<br>
       Description: <span class="small">${profile.description || '(none)'}</span>
     `);
+    makeCard('Friends',friendsList.slice(0,6).join(', ')||'None',friendsList,name=>renderProfile(name));
+    makeCard('Groups',groupsList.slice(0,5).join('<br>')||'None',groupsList,null);
+    if(badgeList.length) makeCard('Badges',badgeList.slice(0,5).join(', '),badgeList,null);
 
   }catch(err){
     rbxResults.innerHTML = `<div class="card"><h3>Error</h3><p>${err.message}</p></div>`;
