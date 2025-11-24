@@ -1,1 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roblox Account Lookup</title>
 
+<style>
+:root {
+    --bg: #f2f2f2;
+    --fg: #111;
+    --border: #222;
+    --mono: "JetBrains Mono", Consolas, monospace;
+}
+body {
+    margin: 0;
+    padding: 20px;
+    background: var(--bg);
+    font-family: var(--mono);
+    color: var(--fg);
+}
+h1 {
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 5px;
+}
+.container {
+    max-width: 500px;
+    margin: auto;
+    border: 1px solid var(--border);
+    background: #fff;
+    padding: 15px;
+}
+label { font-size: 13px; }
+input {
+    width: 100%;
+    margin-top: 4px;
+    margin-bottom: 10px;
+    padding: 7px;
+    border: 1px solid var(--border);
+    background: #fff;
+    font-family: var(--mono);
+}
+button {
+    width: 100%;
+    padding: 8px;
+    background: #000;
+    color: #fff;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: var(--mono);
+}
+button:hover {
+    background: #333;
+}
+#output {
+    margin-top: 15px;
+    border: 1px solid var(--border);
+    padding: 10px;
+    background: #fff;
+    white-space: pre-wrap;
+    font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<h1>Roblox Account Lookup</h1>
+
+<div class="container">
+    <label>Username:</label>
+    <input id="usernameInput" placeholder="Enter Roblox username">
+
+    <button onclick="fetchData()">Fetch Account Data</button>
+
+    <div id="output">Waiting for input...</div>
+</div>
+
+<script>
+async function fetchData() {
+    const username = document.getElementById("usernameInput").value.trim();
+    const output = document.getElementById("output");
+
+    if (!username) {
+        output.textContent = "Error: No username provided.";
+        return;
+    }
+
+    output.textContent = "Fetching user data...";
+
+    try {
+        // Step 1: Get userId from username
+        const userRes = await fetch(`https://users.roblox.com/v1/usernames/users`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({usernames: [username], excludeBannedUsers: false})
+        });
+
+        const userData = await userRes.json();
+
+        if (!userData.data || userData.data.length === 0) {
+            output.textContent = "User not found.";
+            return;
+        }
+
+        const user = userData.data[0];
+        const userId = user.id;
+
+        // Step 2: Get profile info
+        const infoRes = await fetch(`https://users.roblox.com/v1/users/${userId}`);
+        const info = await infoRes.json();
+
+        // Format output
+        output.textContent =
+            "== ACCOUNT DATA ==\n" +
+            `Username: ${info.name}\n` +
+            `Display Name: ${info.displayName}\n` +
+            `User ID: ${info.id}\n` +
+            `Created: ${info.created}\n` +
+            `Description:\n${info.description || "(none)"}\n`;
+    }
+    catch (err) {
+        output.textContent = "Error fetching data.\n" + err;
+    }
+}
+</script>
+
+</body>
+</html>
