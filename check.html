@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Roblox User Lookup</title>
+<style>
+  body{font-family:sans-serif;margin:20px;}
+  input,button{padding:5px;margin:5px;}
+  .card{border:1px solid #ccc;padding:10px;margin:10px 0;border-radius:5px;}
+  .tag{background:#eee;padding:2px 5px;margin-right:5px;border-radius:3px;}
+  img.avatar{width:100px;height:100px;border-radius:50%;}
+</style>
+</head>
+<body>
+
+<h2>Roblox User Lookup</h2>
+<input id="rbxUser" placeholder="Enter username">
+<button id="rbxFetch">Fetch Account Data</button>
+
+<div id="rbxResults"></div>
+
+<script>
+// ---------------- Utility ----------------
+function proxyWrap(url){ return url; } // placeholder, implement if needed
+async function fetchJson(url,opts){ return (await fetch(url,opts)).json(); }
+async function tryMulti(urls){ for(const url of urls){ try{ return await fetchJson(url); }catch{} } throw new Error('All endpoints failed'); }
+function setLoading(flag){ /* optional loading UI */ }
+
+// ---------------- User Lookup ----------------
+const usernameEndpoints = [
+  'https://users.roproxy.com/v1/usernames/users',
+  'https://users.rprxy.xyz/v1/usernames/users',
+  proxyWrap('https://users.roblox.com/v1/usernames/users')
+];
+
+async function lookupUser(name){
+  const payload = {usernames:[name],excludeBannedUsers:false};
+  for(const url of usernameEndpoints){
+    try{
+      const data = await fetchJson(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      if(data?.data?.length) return data.data[0];
+    }catch{}
+  }
+  throw new Error('Unable to reach Roblox user services.');
+}
+
+async function getUserProfile(id){
+  return await tryMulti([
+    `https://users.roproxy.com/v1/users/${id}`,
+    `https://users.rprxy.xyz/v1/users/${id}`,
+    proxyWrap(`https://users.roblox.com/v1/users/${id}`)
+  ]);
+}
+
+// ---------------- Main ----------------
+const rbxInput = document.getElementById('rbxUser');
+const rbxResults = document.getElementById('rbxResults');
+
+document.getElementById('rbxFetch').onclick = ()=>renderProfile(rbxInput.value.trim());
+
+async function renderProfile(username){
+  if(!username) return;
+  rbxResults.innerHTML = `<div class="card">Loading profile for <b>${username}</b>...</div>`;
+  setLoading(true);
+
+  try{
+    const user = await lookupUser(username);
+    const id = user.id;
+    const profile = await getUserProfile(id);
+
+    // Avatar
+    const avatarUrl = `https://www.roblox.com/headshot-thumbnail/image?userId=${id}&width=150&height=150&format=png`;
+
+    // Friends
+    const friends = await tryMulti([
+      `https://friends.roproxy.com/v1/users/${id}/friends?limit=200`,
+      `https://friends.rprxy.xyz/v1/users/${id}/friends?limit=200`,
+      proxyWrap(`https://friends.roblox.com/v1/users/${id}/friends?limit=200`)
+    ]);
+    const friendsList = (friends?.data||[]).map(f=>f.name);
+
+    // Groups
+    const groups = await tryMulti([
+      `https://groups.roproxy.com/v2/users/${id}/groups/roles`,
+      `https://groups.rprxy.xyz/v2/users/${id}/groups/roles`,
+      proxyWrap(`https://groups.roblox.com/v2/users/${id}/groups/roles`)
+    ]);
+    const groupsList = (groups?.data||[]).map(g=>`${g.group.name} — ${g.role?.name||'Member'}`);
+
+    // Badges
+    const badges = await tryMulti([
+      `https://badges.roproxy.com/v1/users/${id}/badges?limit=100`,
+      `https://badges.rprxy.xyz/v1/users/${id}/badges?limit=100`,
+      proxyWrap(`https://badges.roblox.com/v1/users/${id}/badges?limit=100`)
+    ]);
+    const badgeList = (badges?.data||[]).map(b=>b.name);
+
+    // Render
+    rbxResults.innerHTML = '';
+    function makeCard(title,body,list){ 
+      const c = document.createElement('div');
+      c.className='card';
+      c.innerHTML=`<h3>${title}</h3>${body}`;
+      if(list && list.length) c.innerHTML += `<p>Preview: ${list.slice(0,5).join(', ')}${list.length>5?'...':''}</p>`;
+      rbxResults.appendChild(c);
+    }
+
+    makeCard('Profile',`
+      <img class="avatar" src="${avatarUrl}" alt="Avatar"><br>
+      <span class="tag">ID: ${id}</span><br>
+      <b>${profile.displayName}</b><br>@${profile.name}<br>
+      Created: ${profile.created? new Date(profile.created).toLocaleDateString(): 'Unknown'}<br>
+      Description: <span class="small">${profile.description || '(none)'}</span>
+    `);
+    makeCard('Friends',friendsList.slice(0,6).join(', ')||'None',friendsList);
+    makeCard('Groups',groupsList.slice(0,5).join('<br>')||'None',groupsList);
+    makeCard('Badges',badgeList.slice(0,5).join(', ')||'None',badgeList);
+
+  }catch(err){
+    rbxResults.innerHTML = `<div class="card"><h3>Error</h3><p>${err.message}</p></div>`;
+  }
+  setLoading(false);
+}
+</script>
+
+</body>
+</html>
