@@ -1,398 +1,265 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Esports Country Guessing Game</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Esports Country Guessing — Revamped</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-/* ---------- GENERAL ---------- */
-html, body {
-    margin: 0;
-    height: 100%;
-    font-family: "Orbitron", Arial, sans-serif;
-    background: #0a0a0a;
-    color: #ffffff;
-    overflow: hidden;
+:root{
+  --bg:#07060a; --panel:#0f0f15cc; --accent:#ff2fd6; --accent2:#06f3ff; --muted:#9aa3b2;
 }
-#map {
-    height: 100%;
-    transition: margin-bottom 0.3s;
-}
-
-/* ---------- HUD BAR BOTTOM ---------- */
-#hud-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 140px;
-    background: rgba(10,10,10,0.95);
-    border-top: 2px solid #ff00ff;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 10px 20px;
-    box-sizing: border-box;
-    z-index: 1000;
-    backdrop-filter: blur(6px);
-}
-#stats-panel, #xp-panel, #timer-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: #00ffff;
-    font-weight: bold;
-}
-#stats-panel span, #xp-panel span, #timer-panel span {
-    font-size: 14px;
-}
-
-/* ---------- ACHIEVEMENT POPUP ---------- */
-#achievement-popup {
-    position: fixed;
-    right: 20px;
-    top: 20px;
-    min-width: 220px;
-    padding: 12px 16px;
-    background: rgba(20,0,40,0.85);
-    border-left: 4px solid #ff00ff;
-    border-radius: 8px;
-    color: #ffffff;
-    font-weight: bold;
-    font-size: 14px;
-    opacity: 0;
-    transform: translateX(150%);
-    z-index: 1100;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    pointer-events: none;
-}
-#achievement-popup.show {
-    animation: slideIn 0.7s forwards, fadeOut 0.7s 2.2s forwards;
-}
-@keyframes slideIn {
-    from { transform: translateX(150%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-@keyframes fadeOut {
-    from { opacity:1; }
-    to { opacity:0; }
-}
-
-/* ---------- INPUT ---------- */
-#country-input {
-    position: fixed;
-    bottom: 160px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 320px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    border: 2px solid #ff00ff;
-    background: #120012;
-    color: #ffffff;
-    font-size: 16px;
-    outline: none;
-    z-index: 1000;
-}
-#country-input:focus {
-    box-shadow: 0 0 12px #ff00ff;
-}
-
-/* ---------- SCORE PANEL ---------- */
-#score {
-    position: fixed;
-    bottom: 310px;
-    right: 30px;
-    background: rgba(10,10,10,0.85);
-    padding: 10px 16px;
-    border-left: 4px solid #ff00ff;
-    border-radius: 6px;
-    font-weight: bold;
-    color: #00ffff;
-    font-size: 16px;
-    z-index: 1000;
-}
-
-/* ---------- LISTS PANEL ---------- */
-#lists-panel {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    width: 300px;
-    max-height: 80%;
-    background: rgba(10,10,10,0.85);
-    backdrop-filter: blur(6px);
-    border: 2px solid #ff00ff;
-    border-radius: 12px;
-    padding: 14px;
-    overflow-y: auto;
-    color: #ffffff;
-    font-size: 14px;
-    z-index: 1000;
-}
-#lists-panel h3 {
-    margin: 6px 0 4px;
-    text-transform: uppercase;
-    color: #ff00ff;
-    font-weight: bold;
-}
-#lists-panel ul {
-    list-style: none;
-    padding-left: 6px;
-    margin-bottom: 12px;
-}
-#lists-panel ul li {
-    background: #00ffff;
-    color: #0a0a0a;
-    padding: 4px 6px;
-    border-radius: 4px;
-    margin: 2px 0;
-    font-size: 13px;
-}
-
-/* ---------- HEXAGONAL PANEL BACKGROUND ---------- */
-.hex-bg {
-    background-image: repeating-linear-gradient(
-        60deg, 
-        rgba(255,0,255,0.05) 0, 
-        rgba(255,0,255,0.05) 1px, 
-        transparent 1px, 
-        transparent 20px
-    ), repeating-linear-gradient(
-        120deg, 
-        rgba(0,255,255,0.05) 0, 
-        rgba(0,255,255,0.05) 1px, 
-        transparent 1px, 
-        transparent 20px
-    );
-}
-
-/* ---------- GUESS ANIMATION ---------- */
-@keyframes guessFlash {
-    0% { fill: #ff00ff; fill-opacity: 1; }
-    50% { fill: #00ffff; fill-opacity: 0.8; }
-    100% { fill: #28a745; fill-opacity: 0.85; }
-}
-
-/* ---------- BUTTONS ---------- */
-button {
-    font-family: "Orbitron", Arial, sans-serif;
-    cursor: pointer;
-    background: #ff00ff;
-    color: #0a0a0a;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-weight: bold;
-    text-transform: uppercase;
-    box-shadow: 0 0 8px #ff00ff;
-}
-button:hover {
-    box-shadow: 0 0 14px #ff00ff;
-}
-
-/* ---------- RESPONSIVE ---------- */
-@media (max-width: 768px) {
-    #lists-panel {
-        width: 240px;
-        font-size: 12px;
-    }
-    #country-input { width: 260px; }
-    #hud-bar { height: 120px; flex-direction: column; gap: 6px; }
-}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#06050a 0%, #0b0b10 60%);color:#e6eef6;}
+#app{height:100vh;display:grid;grid-template-rows:1fr auto}
+#map{height:100%;filter:contrast(1.03) saturate(1.1)}
+/* Top HUD */
+.hud{position:fixed;left:18px;top:18px;display:flex;gap:12px;align-items:center;z-index:1200}
+.brand{display:flex;flex-direction:column;gap:2px}
+.brand h1{margin:0;font-size:16px;letter-spacing:1px;color:var(--accent)}
+.brand p{margin:0;font-size:12px;color:var(--muted)}
+.controls{display:flex;gap:8px;align-items:center}
+.btn{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#061117;border:none;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(4,4,6,0.6)}
+.icon-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px;border-radius:10px;color:var(--muted);cursor:pointer}
+/* Center search */
+.center-ui{position:fixed;left:50%;transform:translateX(-50%);top:22px;z-index:1200;width:min(720px,92%);display:flex;gap:10px;align-items:center}
+.search{flex:1;display:flex;background:var(--panel);border-radius:12px;padding:8px;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.03)}
+#country-input{flex:1;background:transparent;border:0;padding:12px 8px;color:inherit;font-size:16px;outline:none}
+.suggest-list{position:absolute;top:64px;left:50%;transform:translateX(-50%);width:min(720px,92%);max-height:260px;overflow:auto;background:rgba(6,6,8,0.96);border-radius:10px;padding:8px;border:1px solid rgba(255,255,255,0.03);z-index:1300}
+.suggest-item{padding:8px;border-radius:8px;color:#d9e7f0;cursor:pointer}
+.suggest-item:hover{background:linear-gradient(90deg, rgba(255,47,214,0.08), rgba(6,243,255,0.06))}
+/* Right sidebar */
+.sidebar{position:fixed;right:18px;top:18px;width:320px;max-height:calc(100% - 36px);padding:14px;border-radius:12px;background:linear-gradient(180deg,rgba(12,12,18,0.82),rgba(6,6,8,0.7));backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.03);z-index:1200;overflow:auto}
+.sidebar h3{margin:0 0 8px;color:var(--accent)}
+.stat{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,0.02);}
+.progress{height:10px;background:#0a0a0a;border-radius:999px;overflow:hidden}
+.progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%}
+/* Achievements */
+.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ach{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px}
+.ach.locked{opacity:0.35}
+/* Bottom HUD */
+.bottom-bar{position:fixed;left:18px;right:18px;bottom:18px;height:96px;background:linear-gradient(180deg, rgba(8,8,12,0.9), rgba(3,3,6,0.85));border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;z-index:1200;border:1px solid rgba(255,255,255,0.03)}
+.score-big{width:120px;height:72px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg, rgba(255,47,214,0.08), rgba(6,243,255,0.06));font-weight:800;color:var(--accent)}
+.hud-details{flex:1;display:flex;justify-content:space-between;gap:12px}
+.hud-col{display:flex;flex-direction:column;gap:6px}
+.timer{font-size:20px;font-weight:800;color:var(--accent2)}
+/* small screens */
+@media (max-width:880px){.sidebar{display:none}.center-ui{top:12px}.hud{left:12px;top:12px}}
+/* subtle animations */
+.fade-in{animation:fadeIn .5s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
-<!-- MAP -->
-<div id="map"></div>
+<div id="app">
+  <div id="map"></div>
 
-<!-- INPUT -->
-<input id="country-input" type="text" placeholder="Type a country...">
+  <!-- top HUD -->
+  <div class="hud">
+    <div class="brand">
+      <h1>ESPORTS GEO CHALLENGE</h1>
+      <p>Type countries. Win the globe.</p>
+    </div>
+    <div class="controls">
+      <button class="btn" id="btn-new">New Game</button>
+      <button class="icon-btn" id="btn-help" title="How to play">❔</button>
+      <button class="icon-btn" id="btn-settings" title="Settings">⚙️</button>
+    </div>
+  </div>
 
-<!-- SCORE -->
-<div id="score">0/0</div>
+  <!-- center search & suggestions -->
+  <div class="center-ui">
+    <div class="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="opacity:.6"><path d="M21 21l-4.35-4.35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <input id="country-input" placeholder="Type a country name or alias (e.g. 'USA', 'Britain')" autocomplete="off" aria-label="Country guess input">
+      <button class="btn" id="btn-guess">Guess</button>
+    </div>
+  </div>
 
-<!-- LISTS PANEL -->
-<div id="lists-panel" class="hex-bg">
-    <h3>Africa</h3><ul id="africa"></ul>
-    <h3>Asia</h3><ul id="asia"></ul>
-    <h3>Europe</h3><ul id="europe"></ul>
-    <h3>North America</h3><ul id="north-america"></ul>
-    <h3>South America</h3><ul id="south-america"></ul>
-    <h3>Oceania</h3><ul id="oceania"></ul>
+  <!-- suggestion list -->
+  <div id="suggest" class="suggest-list" style="display:none"></div>
+
+  <!-- right sidebar -->
+  <aside class="sidebar fade-in" id="sidebar">
+    <h3>Progress</h3>
+    <div class="stat"><div>Guessed</div><div id="stat-guessed">0</div></div>
+    <div class="stat"><div>Total countries</div><div id="stat-total">0</div></div>
+    <div class="stat"><div>Accuracy</div><div id="stat-acc">0%</div></div>
+
+    <h3 style="margin-top:12px">XP & Level</h3>
+    <div class="stat"><div>XP</div><div style="width:60%"><div class="progress"><i id="xp-bar"></i></div></div></div>
+    <div class="stat"><div>Level</div><div id="level">1</div></div>
+
+    <h3 style="margin-top:12px">Achievements</h3>
+    <div class="ach-grid" id="ach-grid"></div>
+  </aside>
+
+  <!-- bottom bar -->
+  <div class="bottom-bar">
+    <div class="score-big" id="score">0 / 0</div>
+    <div class="hud-details">
+      <div class="hud-col">
+        <div style="color:var(--muted);font-size:12px">Correct</div>
+        <div id="stat-correct" style="font-weight:800">0</div>
+      </div>
+      <div class="hud-col">
+        <div style="color:var(--muted);font-size:12px">Total</div>
+        <div id="stat-total-bottom" style="font-weight:800">0</div>
+      </div>
+      <div class="hud-col">
+        <div style="color:var(--muted);font-size:12px">Time</div>
+        <div class="timer" id="timer">00:00</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn" id="btn-reveal">Reveal</button>
+        <button class="icon-btn" id="btn-sound">🔊</button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- ACHIEVEMENT POPUP -->
-<div id="achievement-popup"></div>
-
-<!-- HUD BAR -->
-<div id="hud-bar">
-    <div id="stats-panel">
-        <span id="stat-correct">Correct: 0</span>
-        <span id="stat-total">Total: 0</span>
-        <span id="stat-accuracy">Accuracy: 0%</span>
-    </div>
-    <div id="xp-panel">
-        <span>XP</span>
-        <div style="width:120px;height:12px;background:#120012;border-radius:6px;margin-top:4px;overflow:hidden;">
-            <div id="xp-bar" style="height:100%;width:0%;background:#ff00ff;"></div>
-        </div>
-        <span id="level">Level 1</span>
-    </div>
-    <div id="timer-panel">
-        <span>Timer</span>
-        <span id="timer">00:00</span>
-    </div>
-</div>
-
-<!-- LIGHTWEIGHT SFX -->
-<audio id="sfx-correct"><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQgAAAA=" type="audio/wav"></audio>
-<audio id="sfx-achievement"><source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQgAAAA=" type="audio/wav"></audio>
-<audio id="sfx-timer"><source src="data:audio/wav;base64,UklGRiAAAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQgAAAA=" type="audio/wav"></audio>
+<!-- audio -->
+<audio id="sfx-correct" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQgAAAA="></audio>
+<audio id="sfx-achieve" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQgAAAA="></audio>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-/* --- MAP INIT --- */
-const map = L.map("map").setView([20,0],2);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:5 }).addTo(map);
-
-/* --- GAME DATA --- */
-let countryLookup = {}, aliasLookup = {}, guessedCountries = [], totalCountries = 0, xp=0, level=1;
-let timerStarted = false, startTime, timerInterval;
-
-/* --- ALIASES --- */
-const aliases = {
-    "united states of america":["usa","u.s.a","us","u.s","america"],
-    "united kingdom":["uk","u.k","britain","england"],
-    "russia":["russian federation"],
-    "south korea":["korea","republic of korea","rok"],
-    "north korea":["dprk","democratic people's republic of korea"],
-    "china":["prc","people's republic of china"],
-    "vatican city":["holy see"],
-    "iran":["iran, islamic republic of"],
-    "syria":["syrian arab republic"],
-    "tanzania":["tanzania, united republic of"],
-    "moldova":["republic of moldova"],
-    "bolivia":["bolivia, plurinational state of"],
-    "venezuela":["venezuela, bolivarian republic of"],
-    "laos":["lao people's democratic republic"]
+/* ==== CONFIG & STATE ==== */
+const GEOJSON_URL = 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json';
+let countryLookup = {};
+let nameList = [];
+let aliases = {
+  'united states of america':['usa','us','u.s.a','america'],
+  'united kingdom':['uk','britain','england'],
+  'russian federation':['russia','russian federation','russian fed.','russian'],
+  'korea, republic of':['south korea','korea','rok'],
+  'korea, democratic people\'s republic of':['north korea','dprk'],
+  'china':['prc','people\'s republic of china'],
+  'vatican':['vatican city','holy see']
 };
+let guessed = new Set();
+let xp = 0, level = 1;
+let startTime = null, timerInterval = null;
+let sounds = true;
 
-/* --- CONTINENTS --- */
-const countryContinents = {
-    "africa":["algeria","nigeria","egypt","tanzania","south africa"], 
-    "asia":["china","india","japan","south korea","north korea","iran","syria"],
-    "europe":["france","germany","russia","united kingdom","vatican city","moldova"],
-    "north-america":["canada","united states of america","mexico"],
-    "south-america":["brazil","argentina","venezuela","bolivia"],
-    "oceania":["australia","new zealand"]
-};
+/* ==== MAP ==== */
+const map = L.map('map',{zoomControl:false,attributionControl:false}).setView([18,0],2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:6}).addTo(map);
 
-/* --- LOAD COUNTRIES --- */
-fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
-.then(res => res.json())
-.then(data => {
-    totalCountries = data.features.length;
-    updateScore();
-    L.geoJSON(data, {
-        style:{color:"#444",weight:0.7,fillColor:"#1a1a1a",fillOpacity:0.5},
-        onEachFeature: (feature, layer) => {
-            const official = feature.properties.name.toLowerCase();
-            countryLookup[official] = layer;
-            if (aliases[official]){
-                aliases[official].forEach(a => aliasLookup[a.toLowerCase()] = official);
-            }
-        }
-    }).addTo(map);
+/* load geojson */
+fetch(GEOJSON_URL).then(r=>r.json()).then(data=>{
+  const features = data.features;
+  document.getElementById('stat-total').textContent = features.length;
+  document.getElementById('stat-total-bottom').textContent = features.length;
+  document.getElementById('score').textContent = `0 / ${features.length}`;
+  features.forEach(f=>{
+    const name = (f.properties.name||f.properties.NAME||'').toLowerCase();
+    nameList.push(name);
+  });
+
+  L.geoJSON(data,{style:baseStyle,onEachFeature:onEach}).addTo(map);
 });
 
-/* --- INPUT HANDLER --- */
-const input = document.getElementById("country-input");
-input.addEventListener("keyup", () => {
-    let guess = input.value.trim().toLowerCase();
-    let officialGuess = aliasLookup[guess] || guess;
-    if (!timerStarted && officialGuess) startTimer();
-    if (countryLookup[officialGuess] && !guessedCountries.includes(officialGuess)){
-        const layer = countryLookup[officialGuess];
-        const geo = layer.getElement();
-        if(geo){ geo.style.animation = "guessFlash 1s ease-out"; setTimeout(()=>geo.style.animation="",1000);}
-        layer.setStyle({fillColor:"#28a745",fillOpacity:0.85});
-        guessedCountries.push(officialGuess);
-        addCountryToContinent(officialGuess);
-        updateScore();
-        gainXP(10);
-        input.value = "";
-        document.getElementById("sfx-correct").play();
-        checkAchievements();
-    }
-});
+function baseStyle(){return {color:'#111',weight:0.6,fillColor:'#0d0d12',fillOpacity:0.7}}
+function guessedStyle(){return {color:'#0b0b0d',weight:0.6,fillColor:'#17c964',fillOpacity:0.9}}
 
-/* --- ADD TO CONTINENT --- */
-function addCountryToContinent(country){
-    for(let cont in countryContinents){
-        if(countryContinents[cont].includes(country)){
-            const ul = document.getElementById(cont);
-            const li = document.createElement("li");
-            li.textContent = capitalize(country);
-            ul.appendChild(li);
-            break;
-        }
-    }
-}
-function capitalize(str){ return str.split(" ").map(w=>w[0].toUpperCase()+w.slice(1)).join(" "); }
-
-/* --- UPDATE SCORE & STATS --- */
-function updateScore(){
-    document.getElementById("score").textContent = `${guessedCountries.length}/${totalCountries}`;
-    document.getElementById("stat-correct").textContent = `Correct: ${guessedCountries.length}`;
-    document.getElementById("stat-total").textContent = `Total: ${totalCountries}`;
-    const acc = totalCountries? Math.round(guessedCountries.length/totalCountries*100):0;
-    document.getElementById("stat-accuracy").textContent = `Accuracy: ${acc}%`;
+function onEach(feature,layer){
+  const name = (feature.properties.name||'').toLowerCase();
+  countryLookup[name]=layer;
+  // add tooltip
+  layer.bindTooltip(capitalize(name), {permanent:false, direction:'center',className:'country-tip'});
 }
 
-/* --- XP & LEVEL --- */
-function gainXP(amount){
-    xp += amount;
-    const bar = document.getElementById("xp-bar");
-    if(xp>=100){ level++; xp=0; document.getElementById("level").textContent="Level "+level;}
-    bar.style.width = xp+"%";
+/* ==== UTILITIES ==== */
+function normalize(s){return (s||'').toLowerCase().replace(/[\s\.\'\,]/g,'').normalize('NFD').replace(/\p{Diacritic}/gu,'')}
+function capitalize(s){return s.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ')}
+
+// fuzzy: simple substring + Levenshtein distance fallback
+function levenshtein(a,b){if(!a||!b) return Math.max(a? a.length:0, b? b.length:0);const m=a.length,n=b.length;let dp=Array(n+1).fill(0).map((_,i)=>i);for(let i=1;i<=m;i++){let prev=i;for(let j=1;j<=n;j++){let cur=dp[j]; if(a[i-1]===b[j-1]) dp[j]=prev; else dp[j]=Math.min(prev,dp[j-1],dp[j])+1; prev=cur;}}return dp[n];}
+
+function findBestMatch(query){
+  const q=normalize(query);
+  if(!q) return null;
+  // exact from aliases
+  for(const [official,als] of Object.entries(aliases)){
+    if(official.replace(/[^a-z]/g,'')===q) return official;
+    for(const a of als) if(a.replace(/[^a-z]/g,'')===q) return official;
+  }
+  // exact name
+  for(const n of nameList) if(n.replace(/[^a-z]/g,'')===q) return n;
+  // substring
+  for(const n of nameList) if(normalize(n).includes(q)) return n;
+  // lev
+  let best=null,score=9999;
+  for(const n of nameList){const d=levenshtein(normalize(n),q); if(d<score){score=d;best=n;}}
+  if(score<=3) return best; // threshold
+  return null;
 }
 
-/* --- TIMER --- */
-function startTimer(){
-    timerStarted = true;
-    startTime = Date.now();
-    timerInterval = setInterval(()=> {
-        const diff = Date.now() - startTime;
-        const minutes = String(Math.floor(diff/60000)).padStart(2,'0');
-        const seconds = String(Math.floor(diff/1000)%60).padStart(2,'0');
-        document.getElementById("timer").textContent = minutes+":"+seconds;
-    },1000);
+/* ==== UI INTERACTIONS ==== */
+const input = document.getElementById('country-input');
+const suggest = document.getElementById('suggest');
+input.addEventListener('input', onType);
+input.addEventListener('keydown', e=>{ if(e.key==='Enter') attemptGuess(); if(e.key==='ArrowDown') focusSuggest(0); });
+
+function onType(){const q=input.value.trim(); if(!q){suggest.style.display='none'; return;} const qn=normalize(q);
+  const matches = nameList.filter(n=>normalize(n).includes(qn)).slice(0,12);
+  // also include alias matches
+  for(const [off,als] of Object.entries(aliases)) if(als.some(a=>normalize(a).includes(qn)) && !matches.includes(off)) matches.unshift(off);
+  renderSuggest(matches);
+}
+function renderSuggest(arr){ if(arr.length===0){suggest.style.display='none'; return;} suggest.innerHTML=''; arr.forEach(n=>{const d=document.createElement('div'); d.className='suggest-item'; d.textContent=capitalize(n); d.onclick=()=>{input.value=capitalize(n); attemptGuess();}; suggest.appendChild(d);}); suggest.style.display='block';}
+function focusSuggest(i){const items=suggest.querySelectorAll('.suggest-item'); if(items[i]) items[i].focus();}
+
+function attemptGuess(){ const raw = input.value.trim(); if(!raw) return; if(!startTime) startTimer(); const match = findBestMatch(raw); if(!match){shake(input); return;} if(guessed.has(match)) {flashBorder('#ffcc00'); input.value=''; return;} markGuessed(match); input.value=''; suggest.style.display='none';}
+
+function markGuessed(name){guessed.add(name); const layer = countryLookup[name]; if(layer){layer.setStyle(guessedStyle()); layer.bringToFront();}
+ updateStats(); gainXP(10); play('sfx-correct'); checkAchievements(); saveState();}
+
+function updateStats(){const total = parseInt(document.getElementById('stat-total').textContent,10)||0; const got = guessed.size; document.getElementById('stat-guessed').textContent = got; document.getElementById('stat-correct').textContent = got; document.getElementById('score').textContent = `${got} / ${total}`; document.getElementById('stat-total-bottom').textContent = total; const acc = total? Math.round(got/total*100):0; document.getElementById('stat-acc').textContent = acc+'%';}
+
+function gainXP(n){xp += n; if(xp>=100){level++; xp -= 100; flashLevel();}
+ document.getElementById('xp-bar').style.width = Math.min(100,xp)+'%'; document.getElementById('level').textContent = level;}
+function flashLevel(){const el = document.getElementById('level'); el.animate([{transform:'scale(1)'},{transform:'scale(1.18)'}],{duration:420,iterations:2,direction:'alternate'}); play('sfx-achieve');}
+
+/* achievements */
+const ACH = [ {id:'first',name:'First Blood',cond:()=>guessed.size>=1}, {id:'ten',name:'Explorer',cond:()=>guessed.size>=10}, {id:'twenty',name:'Globetrotter',cond:()=>guessed.size>=20} ];
+function renderAchievements(){const grid=document.getElementById('ach-grid'); grid.innerHTML=''; ACH.forEach(a=>{const d=document.createElement('div'); d.className='ach '+(a.unlocked?'':'locked'); d.textContent=a.name; grid.appendChild(d);});}
+function checkAchievements(){let unlockedAny=false; ACH.forEach(a=>{ if(!a.unlocked && a.cond()){ a.unlocked=true; unlockedAny=true; showAchievement(a.name);} }); if(unlockedAny) renderAchievements();}
+function showAchievement(name){const el=document.createElement('div'); el.style.position='fixed'; el.style.right='22px'; el.style.bottom='120px'; el.style.padding='12px 16px'; el.style.background='linear-gradient(90deg,var(--accent),var(--accent2))'; el.style.color='#061117'; el.style.fontWeight='800'; el.style.borderRadius='12px'; el.style.zIndex=1400; el.textContent='🏆 '+name; document.body.appendChild(el); setTimeout(()=>el.remove(),2600);} 
+
+/* misc UI helpers */
+function shake(el){el.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:420}); play('sfx-reject');}
+function flashBorder(col){const el=document.getElementById('country-input'); const o=el.style.boxShadow; el.style.boxShadow=`0 0 14px ${col}`; setTimeout(()=>el.style.boxShadow=o,700);} 
+function play(id){ if(!sounds) return; const a=document.getElementById(id); if(a) a.play().catch(e=>{});} 
+
+/* timer */
+function startTimer(){ if(startTime) return; startTime=Date.now(); timerInterval=setInterval(()=>{const diff=Date.now()-startTime; const m=Math.floor(diff/60000).toString().padStart(2,'0'); const s=Math.floor(diff/1000)%60; document.getElementById('timer').textContent = `${m}:${s.toString().padStart(2,'0')}`; },1000);} 
+
+/* settings & buttons */
+document.getElementById('btn-new').onclick = ()=>{ if(confirm('Start a new game? Progress will reset.')) resetGame(); };
+document.getElementById('btn-guess').onclick = attemptGuess;
+document.getElementById('btn-reveal').onclick = revealRemaining;
+document.getElementById('btn-sound').onclick = ()=>{ sounds = !sounds; document.getElementById('btn-sound').textContent = sounds? '🔊':'🔇'; };
+
+document.getElementById('btn-help').onclick = ()=>{
+  alert('How to play:\n- Type a country name or alias and press Enter or Guess.\n- Correct guesses highlight the country on the map and earn XP.\n- Achievements unlock at milestones.\n- Progress persists in your browser.');
 }
 
-/* --- ACHIEVEMENTS --- */
-const achievements = [
-    {name:"First Blood", condition:()=>guessedCountries.length>=1, unlocked:false},
-    {name:"Explorer", condition:()=>guessedCountries.length>=10, unlocked:false},
-    {name:"Globetrotter", condition:()=>guessedCountries.length>=20, unlocked:false}
-];
-function checkAchievements(){
-    achievements.forEach(a=>{
-        if(!a.unlocked && a.condition()){
-            a.unlocked=true;
-            showAchievement(a.name);
-            document.getElementById("sfx-achievement").play();
-        }
-    });
-}
-function showAchievement(name){
-    const popup = document.getElementById("achievement-popup");
-    popup.textContent = "🏆 "+name;
-    popup.classList.add("show");
-    setTimeout(()=>popup.classList.remove("show"),3000);
-}
+/* reveal */
+function revealRemaining(){ if(!confirm('Reveal and mark all remaining countries as guessed?')) return; nameList.forEach(n=>{ if(!guessed.has(n)) markGuessed(n); }); }
+
+/* persistence */
+function saveState(){localStorage.setItem('geo_guess_state',JSON.stringify({guessed:Array.from(guessed),xp,level}));}
+function loadState(){const s=localStorage.getItem('geo_guess_state'); if(!s) return; try{const o=JSON.parse(s); if(o.guessed) o.guessed.forEach(g=>{ if(countryLookup[g]) markGuessed(g); else guessed.add(g); }); if(typeof o.xp==='number') xp=o.xp; if(typeof o.level==='number') level=o.level; document.getElementById('xp-bar').style.width = Math.min(100,xp)+'%'; document.getElementById('level').textContent=level; updateStats(); renderAchievements(); }catch(e){console.warn(e);} }
+
+/* initial render */
+renderAchievements(); loadState();
+
+/* graceful unload */
+window.addEventListener('beforeunload',()=>saveState());
+
 </script>
 </body>
 </html>
