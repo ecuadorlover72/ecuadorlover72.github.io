@@ -8,17 +8,44 @@
 
 <style>
 /* ---------- GLOBAL ---------- */
+:root {
+    --bg: #f0f2f5;
+    --text: #222;
+    --panel: rgba(255,255,255,0.75);
+    --panel-blur: blur(16px);
+    --accent: #0066ff;
+    --tag-bg: #0066ff;
+    --tag-text: white;
+    --input-bg: white;
+    --border: #ccc;
+}
+
+/* DARK MODE VARIABLES */
+.dark {
+    --bg: #0d1117;
+    --text: #e6edf3;
+    --panel: rgba(20,23,30,0.75);
+    --panel-blur: blur(18px);
+    --accent: #4ea1ff;
+    --tag-bg: #4ea1ff;
+    --tag-text: black;
+    --input-bg: #161b22;
+    --border: #30363d;
+}
+
 html, body {
     margin: 0;
     height: 100%;
     font-family: "Inter", Arial, sans-serif;
-    background: #f0f2f5;
+    background: var(--bg);
+    color: var(--text);
     overflow: hidden;
+    transition: background 0.3s, color 0.3s;
 }
 
 #map {
     height: 100%;
-    transition: margin-left 0.3s ease;
+    transition: margin-left 0.3s ease, filter 0.3s;
 }
 
 /* ---------- SIDEBAR ---------- */
@@ -28,13 +55,13 @@ html, body {
     top: 0;
     width: 340px;
     height: 100%;
-    background: rgba(255,255,255,0.7);
-    backdrop-filter: blur(16px);
+    background: var(--panel);
+    backdrop-filter: var(--panel-blur);
     padding: 20px 20px 40px;
     box-shadow: 4px 0 16px rgba(0,0,0,0.15);
     overflow-y: auto;
     transform: translateX(-100%);
-    transition: transform 0.35s ease;
+    transition: transform 0.35s ease, background 0.3s;
     z-index: 1000;
 }
 
@@ -42,6 +69,7 @@ html, body {
     transform: translateX(0);
 }
 
+/* ---------- TOGGLE BUTTON ---------- */
 #toggle-button {
     position: fixed;
     left: 16px;
@@ -49,7 +77,7 @@ html, body {
     z-index: 1100;
     width: 48px;
     height: 48px;
-    background: #0066ff;
+    background: var(--accent);
     color: white;
     border: none;
     border-radius: 12px;
@@ -67,38 +95,57 @@ html, body {
     background: #0052cc;
 }
 
+/* DARK MODE BUTTON */
+#dark-mode-toggle {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    transition: background 0.2s;
+}
+
+#dark-mode-toggle:hover {
+    background: #0052cc;
+}
+
 /* ---------- INPUT ---------- */
 #country-input {
     width: 100%;
     font-size: 17px;
     padding: 12px 14px;
     border-radius: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
     outline: none;
-    margin-bottom: 16px;
-    background: white;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 20px;
+    background: var(--input-bg);
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
 }
 
 #country-input:focus {
-    border-color: #0066ff;
-    box-shadow: 0 0 6px rgba(0,102,255,0.4);
+    border-color: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
 }
 
 #score {
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 20px;
-    color: #333;
 }
 
 /* ---------- HEADERS ---------- */
 h3 {
     margin: 12px 0 6px;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    color: #333;
     letter-spacing: 0.5px;
 }
 
@@ -112,19 +159,26 @@ ul {
 }
 
 ul li {
-    background: #0066ff;
     display: inline-block;
-    color: white;
+    background: var(--tag-bg);
+    color: var(--tag-text);
     padding: 6px 10px;
     border-radius: 6px;
     margin: 4px 4px 0 0;
     font-size: 14px;
     white-space: nowrap;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* ---------- GUESS ANIMATION ---------- */
+@keyframes guessFlash {
+    0% { fill-opacity: 1; fill: gold; }
+    40% { fill: gold; }
+    100% { fill: #28a745; fill-opacity: 0.85; }
 }
 
 /* ---------- RESPONSIVE ---------- */
 @media (min-width: 900px) {
-    /* Sidebar always open on desktop */
     #sidebar {
         transform: translateX(0);
     }
@@ -135,7 +189,6 @@ ul li {
         display: none;
     }
 }
-
 </style>
 </head>
 <body>
@@ -143,6 +196,8 @@ ul li {
 <button id="toggle-button">☰</button>
 
 <div id="sidebar">
+    <button id="dark-mode-toggle">🌙 Dark Mode</button>
+
     <input id="country-input" type="text" placeholder="Type a country..." autocomplete="off">
     <div id="score">0/0</div>
 
@@ -168,6 +223,7 @@ let aliasLookup = {};
 let guessedCountries = [];
 let totalCountries = 0;
 
+/* --- ALIASES (same as before) --- */
 const aliases = {
     "united states of america":["usa","u.s.a","us","u.s","america"],
     "united kingdom":["uk","u.k","britain","england"],
@@ -185,6 +241,7 @@ const aliases = {
     "laos":["lao people's democratic republic"]
 };
 
+/* --- CONTINENTS --- */
 const countryContinents = {
     "africa":["algeria","nigeria","egypt","tanzania","south africa"], 
     "asia":["china","india","japan","south korea","north korea","iran","syria"],
@@ -194,7 +251,7 @@ const countryContinents = {
     "oceania":["australia","new zealand"]
 };
 
-/* --- LOAD MAP SHAPES --- */
+/* --- LOAD MAP GEOJSON --- */
 fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
 .then(res => res.json())
 .then(data => {
@@ -223,11 +280,25 @@ input.addEventListener("keyup", () => {
 
     if (countryLookup[officialGuess] && !guessedCountries.includes(officialGuess)){
         const layer = countryLookup[officialGuess];
-        layer.setStyle({fillColor:"#28a745", fillOpacity:0.85});
+
+        /* --- FLASH / GLOW ANIMATION ON GUESS --- */
+        const originalStyle = { fillColor: "#28a745", fillOpacity: 0.85 };
+
+        layer.setStyle({ fillColor: "gold", fillOpacity: 1 });
+
+        let geo = layer.getElement();
+        if (geo) {
+            geo.style.animation = "guessFlash 1s ease-out";
+            setTimeout(() => {
+                geo.style.animation = "";
+                layer.setStyle(originalStyle);
+            }, 1000);
+        }
 
         guessedCountries.push(officialGuess);
         addCountryToContinent(officialGuess);
         updateScore();
+
         input.value = "";
     }
 });
@@ -253,12 +324,35 @@ function updateScore(){
     document.getElementById("score").textContent = `${guessedCountries.length}/${totalCountries}`;
 }
 
-/* --- SIDEBAR TOGGLE (mobile/tablet only) --- */
+/* --- SIDEBAR TOGGLE FOR MOBILE --- */
 const toggleButton = document.getElementById("toggle-button");
 const sidebar = document.getElementById("sidebar");
 
 toggleButton.addEventListener("click", () => {
     sidebar.classList.toggle("open");
+});
+
+/* --- DARK MODE TOGGLE --- */
+const darkToggle = document.getElementById("dark-mode-toggle");
+
+function applyDarkMode(enabled) {
+    if (enabled) {
+        document.body.classList.add("dark");
+        darkToggle.textContent = "☀️ Light Mode";
+        localStorage.setItem("darkMode", "on");
+    } else {
+        document.body.classList.remove("dark");
+        darkToggle.textContent = "🌙 Dark Mode";
+        localStorage.setItem("darkMode", "off");
+    }
+}
+
+/* Load saved preference */
+applyDarkMode(localStorage.getItem("darkMode") === "on");
+
+darkToggle.addEventListener("click", () => {
+    const newState = !document.body.classList.contains("dark");
+    applyDarkMode(newState);
 });
 </script>
 
