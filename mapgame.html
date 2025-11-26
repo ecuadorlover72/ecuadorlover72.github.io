@@ -7,79 +7,135 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-html, body { margin: 0; height: 100%; font-family: Arial, sans-serif; }
-#map { height: 100%; margin-left: 0; transition: margin-left 0.3s; }
+/* ---------- GLOBAL ---------- */
+html, body {
+    margin: 0;
+    height: 100%;
+    font-family: "Inter", Arial, sans-serif;
+    background: #f0f2f5;
+    overflow: hidden;
+}
 
+#map {
+    height: 100%;
+    transition: margin-left 0.3s ease;
+}
+
+/* ---------- SIDEBAR ---------- */
 #sidebar {
     position: fixed;
-    left: -320px;
+    left: 0;
     top: 0;
-    width: 320px;
+    width: 340px;
     height: 100%;
-    background: rgba(255,255,255,0.95);
-    padding: 16px;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(16px);
+    padding: 20px 20px 40px;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.15);
     overflow-y: auto;
-    transition: left 0.3s;
+    transform: translateX(-100%);
+    transition: transform 0.35s ease;
     z-index: 1000;
 }
 
-#sidebar.open { left: 0; }
+#sidebar.open {
+    transform: translateX(0);
+}
 
 #toggle-button {
     position: fixed;
-    left: 10px;
-    top: 10px;
+    left: 16px;
+    top: 16px;
     z-index: 1100;
-    width: 40px;
-    height: 40px;
-    background: #007bff;
+    width: 48px;
+    height: 48px;
+    background: #0066ff;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 12px;
     cursor: pointer;
+    font-size: 22px;
     font-weight: bold;
-    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
 }
 
+#toggle-button:hover {
+    background: #0052cc;
+}
+
+/* ---------- INPUT ---------- */
 #country-input {
     width: 100%;
-    font-size: 16px;
-    padding: 10px 12px;
-    border-radius: 6px;
-    border: 1px solid #aaa;
+    font-size: 17px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
     outline: none;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    background: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 #country-input:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 6px rgba(0,123,255,0.5);
+    border-color: #0066ff;
+    box-shadow: 0 0 6px rgba(0,102,255,0.4);
 }
 
-h3 { margin: 8px 0 4px; font-size: 16px; }
+#score {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #333;
+}
 
+/* ---------- HEADERS ---------- */
+h3 {
+    margin: 12px 0 6px;
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #333;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- LIST ---------- */
 ul {
     list-style: none;
-    padding-left: 10px;
-    margin-bottom: 12px;
-    max-height: 100px;
+    padding-left: 0;
+    margin-bottom: 20px;
+    max-height: 120px;
     overflow-y: auto;
 }
 
 ul li {
-    background: #007bff;
+    background: #0066ff;
+    display: inline-block;
     color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin: 2px 0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin: 4px 4px 0 0;
     font-size: 14px;
+    white-space: nowrap;
 }
 
-#score {
-    font-weight: bold;
-    margin-bottom: 12px;
+/* ---------- RESPONSIVE ---------- */
+@media (min-width: 900px) {
+    /* Sidebar always open on desktop */
+    #sidebar {
+        transform: translateX(0);
+    }
+    #map {
+        margin-left: 340px;
+    }
+    #toggle-button {
+        display: none;
+    }
 }
+
 </style>
 </head>
 <body>
@@ -101,9 +157,10 @@ ul li {
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-const map = L.map("map").setView([20,0],2);
 
+<script>
+/* --- MAP INIT --- */
+const map = L.map("map").setView([20,0],2);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:5 }).addTo(map);
 
 let countryLookup = {};
@@ -111,7 +168,6 @@ let aliasLookup = {};
 let guessedCountries = [];
 let totalCountries = 0;
 
-// Simple aliases
 const aliases = {
     "united states of america":["usa","u.s.a","us","u.s","america"],
     "united kingdom":["uk","u.k","britain","england"],
@@ -129,7 +185,6 @@ const aliases = {
     "laos":["lao people's democratic republic"]
 };
 
-// Continent mapping (simplified)
 const countryContinents = {
     "africa":["algeria","nigeria","egypt","tanzania","south africa"], 
     "asia":["china","india","japan","south korea","north korea","iran","syria"],
@@ -139,27 +194,27 @@ const countryContinents = {
     "oceania":["australia","new zealand"]
 };
 
-// Load countries
+/* --- LOAD MAP SHAPES --- */
 fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
-    .then(res => res.json())
-    .then(data => {
-        totalCountries = data.features.length;
-        updateScore();
+.then(res => res.json())
+.then(data => {
+    totalCountries = data.features.length;
+    updateScore();
 
-        L.geoJSON(data, {
-            style:{color:"#444",weight:1,fillColor:"#cccccc",fillOpacity:0.5},
-            onEachFeature: (feature, layer) => {
-                const official = feature.properties.name.toLowerCase();
-                countryLookup[official] = layer;
+    L.geoJSON(data, {
+        style:{color:"#444",weight:0.7,fillColor:"#e0e0e0",fillOpacity:0.5},
+        onEachFeature: (feature, layer) => {
+            const official = feature.properties.name.toLowerCase();
+            countryLookup[official] = layer;
 
-                // Add aliases
-                if (aliases[official]){
-                    aliases[official].forEach(a => { aliasLookup[a.toLowerCase()] = official; });
-                }
+            if (aliases[official]){
+                aliases[official].forEach(a => aliasLookup[a.toLowerCase()] = official);
             }
-        }).addTo(map);
-    });
+        }
+    }).addTo(map);
+});
 
+/* --- INPUT HANDLER --- */
 const input = document.getElementById("country-input");
 
 input.addEventListener("keyup", () => {
@@ -168,16 +223,16 @@ input.addEventListener("keyup", () => {
 
     if (countryLookup[officialGuess] && !guessedCountries.includes(officialGuess)){
         const layer = countryLookup[officialGuess];
-        layer.setStyle({fillColor:"green",fillOpacity:0.85});
-        guessedCountries.push(officialGuess);
+        layer.setStyle({fillColor:"#28a745", fillOpacity:0.85});
 
+        guessedCountries.push(officialGuess);
         addCountryToContinent(officialGuess);
         updateScore();
-
         input.value = "";
     }
 });
 
+/* --- SUPPORT FUNCTIONS --- */
 function addCountryToContinent(country){
     for(let cont in countryContinents){
         if(countryContinents[cont].includes(country)){
@@ -191,24 +246,21 @@ function addCountryToContinent(country){
 }
 
 function capitalize(str){
-    return str.split(" ").map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
+    return str.split(" ").map(w=>w[0].toUpperCase()+w.slice(1)).join(" ");
 }
 
 function updateScore(){
     document.getElementById("score").textContent = `${guessedCountries.length}/${totalCountries}`;
 }
 
-// Sidebar toggle
+/* --- SIDEBAR TOGGLE (mobile/tablet only) --- */
 const toggleButton = document.getElementById("toggle-button");
 const sidebar = document.getElementById("sidebar");
+
 toggleButton.addEventListener("click", () => {
     sidebar.classList.toggle("open");
-    if(sidebar.classList.contains("open")){
-        document.getElementById("map").style.marginLeft = "320px";
-    } else {
-        document.getElementById("map").style.marginLeft = "0";
-    }
 });
 </script>
+
 </body>
 </html>
