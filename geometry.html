@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GD Complete Prototype</title>
+    <title>GD Advanced Prototype</title>
     <style>
         body {
             display: flex;
@@ -33,7 +33,7 @@
         }
         #editor-controls {
             margin-top: 10px;
-            display: none; /* Hidden by default in Play Mode */
+            display: none;
             gap: 5px;
         }
         #game-over-screen {
@@ -71,6 +71,9 @@
             <option value="block">Block</option>
             <option value="portal_ufo">UFO Portal</option>
             <option value="portal_ball">Ball Portal</option>
+            <option value="portal_plane">Plane Portal</option>
+            <option value="portal_gravity_up">Gravity Up Portal</option>
+            <option value="portal_gravity_down">Gravity Down Portal</option>
         </select>
         <button id="delete-btn">Delete Mode</button>
     </div>
@@ -91,7 +94,8 @@
         let isDeleteMode = false;
 
         const player = {
-            x: 50,
+            // Player's actual X position in the world (fixed for the screen, moves with camera logic)
+            x: 50, 
             y: groundY - 30,
             width: 30,
             height: 30,
@@ -99,14 +103,16 @@
             gravity: 0.5,
             jumpForce: -10,
             canJump: true,
-            mode: 'cube',
-            gravityDirection: 1,
-            rotation: 0 // For animation
+            mode: 'cube', // cube, ufo, ball, plane
+            gravityDirection: 1, // 1 for normal, -1 for inverted
+            rotation: 0 
         };
+        // The player's drawing position on the canvas (constant for horizontal)
+        const playerScreenX = 50; 
 
         let obstacles = [];
         let score = 0;
-        let cameraX = 0;
+        let cameraX = 0; // World position offset
 
         // --- Editor Mode Functions ---
         modeToggleButton.addEventListener('click', () => {
@@ -114,14 +120,15 @@
             if (isEditorMode) {
                 modeToggleButton.textContent = 'Switch to Play Mode';
                 editorControls.style.display = 'flex';
-                // Stop game loop for editor view
                 isGameOver = true; 
                 gameOverScreen.style.display = 'none';
-                cameraX = 0; // Reset camera for editor view
+                // Reset camera back to start when entering editor
+                cameraX = 0;
+                player.x = 50;
             } else {
                 modeToggleButton.textContent = 'Switch to Editor Mode';
                 editorControls.style.display = 'none';
-                resetGame(); // Start game in play mode
+                resetGame(); 
             }
         });
 
@@ -138,36 +145,36 @@
             if (!isEditorMode) return;
 
             const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left + cameraX; // Adjust for camera offset
+            // Mouse X relative to the world position, accounting for editor camera
+            const mouseX = e.clientX - rect.left + cameraX; 
             const mouseY = e.clientY - rect.top;
 
             if (isDeleteMode) {
-                // Delete object if clicked
                 obstacles = obstacles.filter(obs => 
                     !(mouseX > obs.x && mouseX < obs.x + obs.width &&
                       mouseY > obs.y && mouseY < obs.y + obs.height)
                 );
             } else {
-                // Place new object
-                const yPos = selectedObjectType.includes('portal') ? groundY - 60 : groundY - 30;
+                const isPortal = selectedObjectType.includes('portal');
+                // Center object on click X
                 obstacles.push({
-                    x: mouseX - 15, // Center object on click
-                    y: yPos,
+                    x: mouseX - 15,
+                    y: isPortal ? groundY - 60 : groundY - 30,
                     width: 30,
-                    height: selectedObjectType.includes('portal') ? 60 : 30,
+                    height: isPortal ? 60 : 30,
                     type: selectedObjectType,
-                    color: selectedObjectType === 'spike' ? 'white' : (selectedObjectType === 'portal_ufo' ? 'blue' : 'orange')
+                    color: selectedObjectType === 'spike' ? 'white' : (
+                        selectedObjectType.includes('gravity') ? 'yellow' : 
+                        (selectedObjectType === 'portal_ufo' ? 'blue' : 
+                        (selectedObjectType === 'portal_ball' ? 'orange' : 'teal'))) // Plane is teal
                 });
             }
-            // Sort obstacles by X position so they process correctly when the game starts
             obstacles.sort((a, b) => a.x - b.x);
         });
         
         document.getElementById('save-level').addEventListener('click', () => {
-            // Save level data to JSON in console
             const levelData = JSON.stringify(obstacles);
-            console.log("Level data saved to console:");
-            console.log(levelData);
+            console.log("Level data saved to console:", levelData);
             alert("Level data saved to console (F12) as JSON. Copy it to load later.");
         });
 
@@ -183,18 +190,20 @@
             }
         });
 
-
-        // --- Game Functions (Updated with animation and modes) ---
+        // --- Game Functions ---
 
         function drawPlayer() {
             ctx.save();
-            ctx.translate(player.x + player.width / 2 - cameraX, player.y + player.height / 2);
+            // Translate to the player's screen position (playerScreenX)
+            ctx.translate(playerScreenX + player.width / 2, player.y + player.height / 2);
+            
             // Cube rotation animation
-            if (player.mode === 'cube') {
-                player.rotation += player.velocity * 0.05; // Rotate based on speed
-                ctx.rotate(player.rotation);
-            } else {
-                ctx.rotate(0); // No rotation for ball/ufo
+            if (player.mode === 'cube' || player.mode === 'ball') {
+                 player.rotation += player.velocity * 0.05 * player.gravityDirection; 
+                 ctx.rotate(player.rotation);
+            } else if (player.mode === 'plane' || player.mode === 'ufo') {
+                // Plane/UFO rotates based on velocity
+                ctx.rotate(player.velocity * 0.05); 
             }
             
             ctx.fillStyle = 'red';
@@ -202,8 +211,8 @@
                 ctx.beginPath();
                 ctx.arc(0, 0, player.width / 2, 0, Math.PI * 2);
                 ctx.fill();
-            } else if (player.mode === 'ufo') {
-                 ctx.fillRect(-player.width/2, -player.height/4, player.width, player.height/2); // Simple saucer
+            } else if (player.mode === 'ufo' || player.mode === 'plane') {
+                 ctx.fillRect(-player.width/2, -player.height/4, player.width, player.height/2); // Simple saucer/plane
             } else {
                 ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
             }
@@ -213,6 +222,8 @@
         function updatePlayer() {
             player.velocity += player.gravity * player.gravityDirection;
             player.y += player.velocity;
+            // Player world X position moves with camera
+            player.x += gameSpeed; 
 
             // Ground/Ceiling collision
             const floor = groundY - player.height;
@@ -239,7 +250,8 @@
             if (player.mode === 'cube' && player.canJump) {
                 player.velocity = player.jumpForce * player.gravityDirection;
                 player.canJump = false;
-            } else if (player.mode === 'ufo') {
+            } else if (player.mode === 'ufo' || player.mode === 'plane') {
+                // Plane/UFO flaps/moves vertically
                 player.velocity = player.jumpForce * player.gravityDirection * 0.7;
             } else if (player.mode === 'ball') {
                 // Ball inverts gravity instantly
@@ -249,21 +261,15 @@
 
         function updateObstacles() {
             for (let i = obstacles.length - 1; i >= 0; i--) {
-                // Obstacles move relative to camera now, handled by collision logic offset
-
-                // Check for portal collision (different from spike collision)
+                // Check for portal collision 
                 if (obstacles[i].type.includes('portal')) {
                     if (isColliding(player, obstacles[i])) {
-                        if (obstacles[i].type === 'portal_ufo') {
-                            player.mode = 'ufo';
-                        } else if (obstacles[i].type === 'portal_ball') {
-                            player.mode = 'ball';
-                            // Gravity direction reset when entering ball portal
-                            player.gravityDirection = 1; 
-                        }
-                        // Original GD levels carefully place portals where difficulty is maintained.
-                        // In this demo, the *next* obstacles in the level data must be designed for the new mode.
-                        // Portals are one-time use for this demo's purpose
+                        if (obstacles[i].type === 'portal_ufo') player.mode = 'ufo';
+                        else if (obstacles[i].type === 'portal_ball') player.mode = 'ball';
+                        else if (obstacles[i].type === 'portal_plane') player.mode = 'plane';
+                        else if (obstacles[i].type === 'portal_gravity_up') player.gravityDirection = -1;
+                        else if (obstacles[i].type === 'portal_gravity_down') player.gravityDirection = 1;
+                        
                         obstacles.splice(i, 1);
                         continue; 
                     }
@@ -284,25 +290,22 @@
             }
         }
 
-        function drawObstacles() {
-            obstacles.forEach(obs => {
-                ctx.fillStyle = obs.color;
-                // Draw relative to the camera position
-                ctx.fillRect(obs.x - cameraX, obs.y, obs.width, obs.height);
-            });
-        }
-
-        // AABB Collision detection (adjusts for camera offset when checking)
+        // AABB Collision detection
         function isColliding(rect1, rect2) {
-            const playerRenderX = rect1.x - cameraX;
-            const obstacleRenderX = rect2.x - cameraX;
-
-            return playerRenderX < obstacleRenderX + rect2.width &&
-                   playerRenderX + rect1.width > obstacleRenderX &&
+            // Use player.x (world pos) for collision calculations
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
                    rect1.y < rect2.y + rect2.height &&
                    rect1.y + rect1.height > rect2.y;
         }
 
+        function drawObstacles() {
+            obstacles.forEach(obs => {
+                ctx.fillStyle = obs.color;
+                // Draw relative to the camera position (world pos - camera offset)
+                ctx.fillRect(obs.x - cameraX, obs.y, obs.width, obs.height);
+            });
+        }
 
         function gameOver() {
             isGameOver = true;
@@ -317,11 +320,11 @@
             player.mode = 'cube';
             player.gravityDirection = 1;
             player.rotation = 0;
-            cameraX = 0; // Start level from beginning
+            cameraX = 0; 
+            player.x = 50; // Reset player world position
             score = 0;
-            // Note: In a real game, you would reload the *original* level data here,
-            // not keep clearing generated obstacles. This demo reloads generated levels.
-            obstacles = obstacles.filter(obs => obs.x > player.x); // Keep relevant future obstacles if we were auto generating
+            // In a real game, you would reload the *original* level data here.
+            // For this demo, all manually placed obstacles remain and game restarts from the beginning of map.
         }
 
         document.addEventListener('keydown', function(event) {
@@ -330,15 +333,13 @@
             }
         });
 
-        // Use the saved level data instead of interval spawner in play mode
-        // setInterval(createObstacle, 1000 + Math.random() * 1000); 
-
+        // Ensure the game loop runs continuously
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw ground (draw relative to camera)
+            // Draw ground
             ctx.fillStyle = '#00FF00';
-            ctx.fillRect(0 - (cameraX % canvas.width), groundY, canvas.width * 2, 50); // Repeating ground visual hack
+            ctx.fillRect(0, groundY, canvas.width, 50);
 
             if (!isGameOver && !isEditorMode) {
                 updatePlayer();
