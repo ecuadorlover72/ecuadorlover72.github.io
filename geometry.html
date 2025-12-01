@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GD Advanced Prototype v3</title>
+    <title>GD Advanced Prototype v4</title>
     <style>
         body {
             display: flex;
@@ -19,8 +19,8 @@
             position: relative;
         }
         canvas {
-            background-color: #000;
             border: 2px solid white;
+            background-color: black; /* Default background */
         }
         #ui-bar {
             margin-top: 10px;
@@ -67,13 +67,17 @@
 
     <div id="editor-controls">
         <select id="object-select">
-            <option value="spike">Spike</option>
-            <option value="block">Block</option>
+            <option value="spike">Spike (Kill)</option>
+            <option value="block">Block (Platform)</option>
+            <option value="spike_small">Small Spike (Kill)</option>
+            <option value="platform_high">High Platform</option>
             <option value="portal_ufo">UFO Portal</option>
             <option value="portal_ball">Ball Portal</option>
             <option value="portal_plane">Plane Portal</option>
             <option value="portal_gravity_up">Gravity Up Portal</option>
             <option value="portal_gravity_down">Gravity Down Portal</option>
+            <option value="bg_portal_blue">BG Portal Blue</option>
+            <option value="bg_portal_green">BG Portal Green</option>
         </select>
         <button id="delete-btn">Delete Mode</button>
     </div>
@@ -92,6 +96,7 @@
         let isEditorMode = false;
         let selectedObjectType = 'spike';
         let isDeleteMode = false;
+        let currentBackground = 'black';
 
         const player = {
             x: 50, 
@@ -144,26 +149,42 @@
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left + cameraX; 
             const mouseY = e.clientY - rect.top;
+            
+            // Determine object dimensions based on type for placement and collision
+            let objWidth = 30;
+            let objHeight = 30;
+            if (selectedObjectType.includes('portal')) objHeight = 60;
+            if (selectedObjectType === 'spike_small') objHeight = 15;
+            if (selectedObjectType === 'platform_high') objHeight = 60;
+
 
             if (isDeleteMode) {
-                obstacles = obstacles.filter(obs => 
-                    !(mouseX > obs.x && mouseX < obs.x + obs.width &&
-                      mouseY > obs.y && mouseY < obs.y + obs.height)
-                );
-            } else {
-                const isPortal = selectedObjectType.includes('portal');
-                const objHeight = isPortal ? 60 : 30;
+                obstacles = obstacles.filter(obs => {
+                    // Recalculate dimensions for existing objects for deletion check
+                    let obsW = 30;
+                    let obsH = 30;
+                    if (obs.type.includes('portal')) obsH = 60;
+                    if (obs.type === 'spike_small') obsH = 15;
+                    if (obs.type === 'platform_high') obsH = 60;
 
+                    return !(mouseX > obs.x && mouseX < obs.x + obsW &&
+                             mouseY > obs.y && mouseY < obs.y + obsH);
+                });
+            } else {
+                // Place at mouse Y position
                 obstacles.push({
-                    x: mouseX - 15, // Center X
-                    y: mouseY - objHeight / 2, // Place at mouse Y position
-                    width: 30,
+                    x: mouseX - objWidth / 2, // Center X
+                    y: mouseY - objHeight / 2, // Center Y
+                    width: objWidth,
                     height: objHeight,
                     type: selectedObjectType,
-                    color: selectedObjectType === 'spike' ? 'white' : (
+                    // Colors help visualize in editor
+                    color: selectedObjectType === 'spike' || selectedObjectType === 'spike_small' ? 'white' : (
                         selectedObjectType.includes('gravity') ? 'yellow' : 
                         (selectedObjectType === 'portal_ufo' ? 'blue' : 
-                        (selectedObjectType === 'portal_ball' ? 'orange' : 'teal')))
+                        (selectedObjectType === 'portal_ball' ? 'orange' : 
+                        (selectedObjectType === 'portal_plane' ? 'teal' : 
+                        (selectedObjectType.includes('bg_portal') ? 'purple' : 'gray')))))
                 });
             }
             obstacles.sort((a, b) => a.x - b.x);
@@ -205,8 +226,16 @@
                 ctx.beginPath();
                 ctx.arc(0, 0, player.width / 2, 0, Math.PI * 2);
                 ctx.fill();
-            } else if (player.mode === 'ufo' || player.mode === 'plane') {
-                 ctx.fillRect(-player.width/2, -player.height/4, player.width, player.height/2);
+            } else if (player.mode === 'ufo') {
+                 ctx.fillRect(-player.width/2, -player.height/4, player.width, player.height/2); 
+            } else if (player.mode === 'plane') {
+                 // Simple triangle/plane shape
+                 ctx.beginPath();
+                 ctx.moveTo(-player.width/2, -player.height/2);
+                 ctx.lineTo(player.width/2, 0);
+                 ctx.lineTo(-player.width/2, player.height/2);
+                 ctx.closePath();
+                 ctx.fill();
             } else {
                 ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
             }
@@ -225,14 +254,12 @@
                 player.y = floor;
                 player.velocity = 0;
                 player.canJump = true;
-                // Snap rotation to nearest 90 degrees on landing
                 if (player.mode === 'cube') {
                     player.rotation = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
                 }
             } else if (player.y <= ceiling) {
                 player.y = ceiling;
                 player.velocity = 0;
-                // Snap rotation to nearest 90 degrees when hitting ceiling (inverted jump)
                 if (player.mode === 'cube') {
                     player.rotation = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
                 }
@@ -250,8 +277,11 @@
             if (player.mode === 'cube' && player.canJump) {
                 player.velocity = player.jumpForce * player.gravityDirection;
                 player.canJump = false;
-            } else if (player.mode === 'ufo' || player.mode === 'plane') {
+            } else if (player.mode === 'ufo') {
                 player.velocity = player.jumpForce * player.gravityDirection * 0.7;
+            } else if (player.mode === 'plane') {
+                // Plane reverses vertical velocity much more than just a flap
+                player.velocity = player.jumpForce * player.gravityDirection * 1.5;
             } else if (player.mode === 'ball') {
                 player.gravityDirection *= -1;
             }
@@ -259,26 +289,34 @@
 
         function updateObstacles() {
             for (let i = obstacles.length - 1; i >= 0; i--) {
-                if (obstacles[i].type.includes('portal')) {
-                    if (isColliding(player, obstacles[i])) {
-                        if (obstacles[i].type === 'portal_ufo') player.mode = 'ufo';
-                        else if (obstacles[i].type === 'portal_ball') player.mode = 'ball';
-                        else if (obstacles[i].type === 'portal_plane') player.mode = 'plane';
-                        else if (obstacles[i].type === 'portal_gravity_up') player.gravityDirection = -1;
-                        else if (obstacles[i].type === 'portal_gravity_down') player.gravityDirection = 1;
+                const obs = obstacles[i];
+                if (obs.type.includes('portal')) {
+                    if (isColliding(player, obs)) {
+                        if (obs.type === 'portal_ufo') player.mode = 'ufo';
+                        else if (obs.type === 'portal_ball') player.mode = 'ball';
+                        else if (obs.type === 'portal_plane') player.mode = 'plane';
+                        else if (obs.type === 'portal_gravity_up') player.gravityDirection = -1;
+                        else if (obs.type === 'portal_gravity_down') player.gravityDirection = 1;
+                        else if (obs.type === 'bg_portal_blue') currentBackground = 'blue';
+                        else if (obs.type === 'bg_portal_green') currentBackground = 'green';
                         
-                        obstacles.splice(i, 1);
-                        continue; 
+                        // Only remove mode/gravity/bg portals after use
+                        if (!obs.type.includes('bg_portal')) {
+                           obstacles.splice(i, 1);
+                           continue;
+                        }
                     }
                 }
                 
-                if (obstacles[i].type === 'spike' || obstacles[i].type === 'block') {
-                    if (isColliding(player, obstacles[i])) {
+                // Check for deadly collision
+                if (obs.type.includes('spike') || obs.type.includes('block') || obs.type.includes('platform')) {
+                    if (isColliding(player, obs)) {
                         gameOver();
                     }
                 }
 
-                if (obstacles[i].x + obstacles[i].width < cameraX) {
+                // Remove off-screen obstacles behind player view
+                if (obs.x + obs.width < cameraX) {
                     obstacles.splice(i, 1);
                     score++;
                 }
@@ -315,6 +353,7 @@
             cameraX = 0; 
             player.x = 50; 
             score = 0;
+            currentBackground = 'black';
         }
 
         document.addEventListener('keydown', function(event) {
@@ -325,8 +364,9 @@
 
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.style.backgroundColor = currentBackground; // Update background color
 
-            // Draw ground (draw relative to camera)
+            // Draw ground
             ctx.fillStyle = '#00FF00';
             ctx.fillRect(0, groundY, canvas.width, 50);
 
