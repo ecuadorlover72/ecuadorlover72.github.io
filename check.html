@@ -23,27 +23,19 @@
 // ---------------- CORS Proxy ----------------
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
-async function fetchJson(url, opts){
-  const res = await fetch(CORS_PROXY + encodeURIComponent(url), opts);
+async function fetchJson(url){
+  const res = await fetch(CORS_PROXY + encodeURIComponent(url));
   if(!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 // ---------------- Roblox API Functions ----------------
+// Use GET endpoint instead of POST
 async function lookupUser(name){
-  const url = 'https://users.roproxy.com/v1/usernames/users';
-  const payload = { usernames: [name], excludeBannedUsers: false };
-  const data = await fetchJson(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  if(data?.data?.length) return data.data[0];
+  const url = `https://users.roproxy.com/v1/users/${name}`;
+  const data = await fetchJson(url);
+  if(data?.id) return data;
   throw new Error('User not found.');
-}
-
-async function getUserProfile(id){
-  return await fetchJson(`https://users.roproxy.com/v1/users/${id}`);
 }
 
 async function getUserFriends(id){
@@ -72,10 +64,8 @@ async function renderProfile(username){
   rbxResults.innerHTML = `<div class="card">Loading profile for <b>${username}</b>...</div>`;
 
   try{
-    const user = await lookupUser(username);
-    const id = user.id;
-    const profile = await getUserProfile(id);
-
+    const profile = await lookupUser(username);
+    const id = profile.id;
     const avatarUrl = `https://www.roblox.com/headshot-thumbnail/image?userId=${id}&width=150&height=150&format=png`;
 
     const friendsList = (await getUserFriends(id)).map(f => f.name);
