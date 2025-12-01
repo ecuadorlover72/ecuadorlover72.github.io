@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GD Advanced Prototype</title>
+    <title>GD Advanced Prototype v3</title>
     <style>
         body {
             display: flex;
@@ -94,7 +94,6 @@
         let isDeleteMode = false;
 
         const player = {
-            // Player's actual X position in the world (fixed for the screen, moves with camera logic)
             x: 50, 
             y: groundY - 30,
             width: 30,
@@ -103,16 +102,15 @@
             gravity: 0.5,
             jumpForce: -10,
             canJump: true,
-            mode: 'cube', // cube, ufo, ball, plane
-            gravityDirection: 1, // 1 for normal, -1 for inverted
+            mode: 'cube',
+            gravityDirection: 1,
             rotation: 0 
         };
-        // The player's drawing position on the canvas (constant for horizontal)
         const playerScreenX = 50; 
 
         let obstacles = [];
         let score = 0;
-        let cameraX = 0; // World position offset
+        let cameraX = 0;
 
         // --- Editor Mode Functions ---
         modeToggleButton.addEventListener('click', () => {
@@ -122,7 +120,6 @@
                 editorControls.style.display = 'flex';
                 isGameOver = true; 
                 gameOverScreen.style.display = 'none';
-                // Reset camera back to start when entering editor
                 cameraX = 0;
                 player.x = 50;
             } else {
@@ -145,7 +142,6 @@
             if (!isEditorMode) return;
 
             const rect = canvas.getBoundingClientRect();
-            // Mouse X relative to the world position, accounting for editor camera
             const mouseX = e.clientX - rect.left + cameraX; 
             const mouseY = e.clientY - rect.top;
 
@@ -156,17 +152,18 @@
                 );
             } else {
                 const isPortal = selectedObjectType.includes('portal');
-                // Center object on click X
+                const objHeight = isPortal ? 60 : 30;
+
                 obstacles.push({
-                    x: mouseX - 15,
-                    y: isPortal ? groundY - 60 : groundY - 30,
+                    x: mouseX - 15, // Center X
+                    y: mouseY - objHeight / 2, // Place at mouse Y position
                     width: 30,
-                    height: isPortal ? 60 : 30,
+                    height: objHeight,
                     type: selectedObjectType,
                     color: selectedObjectType === 'spike' ? 'white' : (
                         selectedObjectType.includes('gravity') ? 'yellow' : 
                         (selectedObjectType === 'portal_ufo' ? 'blue' : 
-                        (selectedObjectType === 'portal_ball' ? 'orange' : 'teal'))) // Plane is teal
+                        (selectedObjectType === 'portal_ball' ? 'orange' : 'teal')))
                 });
             }
             obstacles.sort((a, b) => a.x - b.x);
@@ -194,15 +191,12 @@
 
         function drawPlayer() {
             ctx.save();
-            // Translate to the player's screen position (playerScreenX)
             ctx.translate(playerScreenX + player.width / 2, player.y + player.height / 2);
             
-            // Cube rotation animation
             if (player.mode === 'cube' || player.mode === 'ball') {
                  player.rotation += player.velocity * 0.05 * player.gravityDirection; 
                  ctx.rotate(player.rotation);
             } else if (player.mode === 'plane' || player.mode === 'ufo') {
-                // Plane/UFO rotates based on velocity
                 ctx.rotate(player.velocity * 0.05); 
             }
             
@@ -212,7 +206,7 @@
                 ctx.arc(0, 0, player.width / 2, 0, Math.PI * 2);
                 ctx.fill();
             } else if (player.mode === 'ufo' || player.mode === 'plane') {
-                 ctx.fillRect(-player.width/2, -player.height/4, player.width, player.height/2); // Simple saucer/plane
+                 ctx.fillRect(-player.width/2, -player.height/4, player.width, player.height/2);
             } else {
                 ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
             }
@@ -222,7 +216,6 @@
         function updatePlayer() {
             player.velocity += player.gravity * player.gravityDirection;
             player.y += player.velocity;
-            // Player world X position moves with camera
             player.x += gameSpeed; 
 
             // Ground/Ceiling collision
@@ -232,12 +225,19 @@
                 player.y = floor;
                 player.velocity = 0;
                 player.canJump = true;
+                // Snap rotation to nearest 90 degrees on landing
+                if (player.mode === 'cube') {
+                    player.rotation = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
+                }
             } else if (player.y <= ceiling) {
                 player.y = ceiling;
                 player.velocity = 0;
+                // Snap rotation to nearest 90 degrees when hitting ceiling (inverted jump)
+                if (player.mode === 'cube') {
+                    player.rotation = Math.round(player.rotation / (Math.PI / 2)) * (Math.PI / 2);
+                }
             }
             
-            // Move the camera forward automatically
             cameraX += gameSpeed;
         }
 
@@ -251,17 +251,14 @@
                 player.velocity = player.jumpForce * player.gravityDirection;
                 player.canJump = false;
             } else if (player.mode === 'ufo' || player.mode === 'plane') {
-                // Plane/UFO flaps/moves vertically
                 player.velocity = player.jumpForce * player.gravityDirection * 0.7;
             } else if (player.mode === 'ball') {
-                // Ball inverts gravity instantly
                 player.gravityDirection *= -1;
             }
         }
 
         function updateObstacles() {
             for (let i = obstacles.length - 1; i >= 0; i--) {
-                // Check for portal collision 
                 if (obstacles[i].type.includes('portal')) {
                     if (isColliding(player, obstacles[i])) {
                         if (obstacles[i].type === 'portal_ufo') player.mode = 'ufo';
@@ -275,14 +272,12 @@
                     }
                 }
                 
-                // Check for spike/block collision
                 if (obstacles[i].type === 'spike' || obstacles[i].type === 'block') {
                     if (isColliding(player, obstacles[i])) {
                         gameOver();
                     }
                 }
 
-                // Remove off-screen obstacles behind player view
                 if (obstacles[i].x + obstacles[i].width < cameraX) {
                     obstacles.splice(i, 1);
                     score++;
@@ -290,9 +285,7 @@
             }
         }
 
-        // AABB Collision detection
         function isColliding(rect1, rect2) {
-            // Use player.x (world pos) for collision calculations
             return rect1.x < rect2.x + rect2.width &&
                    rect1.x + rect1.width > rect2.x &&
                    rect1.y < rect2.y + rect2.height &&
@@ -302,7 +295,6 @@
         function drawObstacles() {
             obstacles.forEach(obs => {
                 ctx.fillStyle = obs.color;
-                // Draw relative to the camera position (world pos - camera offset)
                 ctx.fillRect(obs.x - cameraX, obs.y, obs.width, obs.height);
             });
         }
@@ -321,10 +313,8 @@
             player.gravityDirection = 1;
             player.rotation = 0;
             cameraX = 0; 
-            player.x = 50; // Reset player world position
+            player.x = 50; 
             score = 0;
-            // In a real game, you would reload the *original* level data here.
-            // For this demo, all manually placed obstacles remain and game restarts from the beginning of map.
         }
 
         document.addEventListener('keydown', function(event) {
@@ -333,11 +323,10 @@
             }
         });
 
-        // Ensure the game loop runs continuously
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw ground
+            // Draw ground (draw relative to camera)
             ctx.fillStyle = '#00FF00';
             ctx.fillRect(0, groundY, canvas.width, 50);
 
