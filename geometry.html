@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GD Mega Update</title>
+    <title>GD QoL Update</title>
     <style>
         body {
             display: flex;
@@ -25,6 +25,7 @@
             border: 2px solid #555;
             background-color: black;
             display: block;
+            cursor: crosshair; /* Helps in editor mode */
         }
         #ui-bar, #editor-controls {
             margin-top: 15px;
@@ -47,7 +48,8 @@
         button:hover, select:hover { background-color: #5f5f5f; }
         button#mode-toggle { background-color: #007bff; }
         button#mode-toggle:hover { background-color: #0056b3; }
-        #game-over-screen {
+        #delete-btn.active { background-color: #e74c3c; } /* Highlight delete button when active */
+        #game-over-screen, #pause-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -61,7 +63,7 @@
             color: #ff4d4d;
             font-size: 24px;
         }
-        #game-over-screen h1 {
+        #game-over-screen h1, #pause-screen h1 {
             font-size: 48px;
             text-shadow: 0 0 10px #ff4d4d;
         }
@@ -73,6 +75,10 @@
         <div id="game-over-screen">
             <h1>Level Failed</h1>
             <p>Press Space to restart</p>
+        </div>
+        <div id="pause-screen">
+            <h1>Paused</h1>
+            <p>Press P to resume</p>
         </div>
     </div>
 
@@ -112,13 +118,16 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const gameOverScreen = document.getElementById('game-over-screen');
+        const pauseScreen = document.getElementById('pause-screen');
         const modeToggleButton = document.getElementById('mode-toggle');
         const editorControls = document.getElementById('editor-controls');
         const objectSelect = document.getElementById('object-select');
         const bgSelectEditor = document.getElementById('bg-select-editor');
+        const deleteButton = document.getElementById('delete-btn');
         const groundY = canvas.height - 50;
 
         let isGameOver = false;
+        let isPaused = false;
         let isEditorMode = false;
         let selectedObjectType = 'spike';
         let isDeleteMode = false;
@@ -126,22 +135,21 @@
         let groundColor = '#006400';
         let gameSpeed = 5;
         let baseGameSpeed = 5;
+        const GRID_SIZE = 30; // QoL: Snap to grid size
 
-        // Sound Effects Setup (Web Audio API)
+        // Sound Effects Setup
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
-
         function playSound(frequency, duration, type = 'sine') {
+            // Simplified sound function from previous version
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
-
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-
             gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
             oscillator.type = type;
             oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-
             oscillator.start(audioCtx.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
             oscillator.stop(audioCtx.currentTime + duration);
@@ -152,10 +160,12 @@
             jumpForce: -10, canJump: true, mode: 'cube', gravityDirection: 1, rotation: 0 
         };
         const playerScreenX = 50; 
+        let editorCameraSpeed = 8; // QoL: Editor camera movement speed
 
         let obstacles = [];
         let score = 0;
         let cameraX = 0;
+        let keys = {}; // QoL: Track pressed keys (for editor movement)
 
         // --- Editor Mode Functions ---
         modeToggleButton.addEventListener('click', () => {
@@ -165,64 +175,74 @@
                 editorControls.style.display = 'flex';
                 isGameOver = true; 
                 gameOverScreen.style.display = 'none';
+                pauseScreen.style.display = 'none';
                 cameraX = 0;
                 player.x = 50;
+                // QoL: Resume audio context on user interaction
+                if (audioCtx.state === 'suspended') audioCtx.resume(); 
             } else {
                 modeToggleButton.textContent = 'Switch to Editor Mode';
                 editorControls.style.display = 'none';
-                resetGame(); 
+                resetGame(); // QoL: Automatically starts game when switching to play mode
             }
         });
 
         objectSelect.addEventListener('change', (e) => {
             selectedObjectType = e.target.value;
             isDeleteMode = false;
+            deleteButton.classList.remove('active');
         });
 
-        document.getElementById('delete-btn').addEventListener('click', () => {
-            isDeleteMode = true;
+        deleteButton.addEventListener('click', () => {
+            isDeleteMode = !isDeleteMode;
+            deleteButton.classList.toggle('active', isDeleteMode);
         });
 
         bgSelectEditor.addEventListener('change', (e) => {
             currentBackground = e.target.value;
         });
 
+        canvas.addEventListener('mousemove', (e) => {
+             if (!isEditorMode) return;
+             const rect = canvas.getBoundingClientRect();
+             const mouseX = e.clientX - rect.left;
+             const mouseY = e.clientY - rect.top;
+             // QoL: Snap mouse position to grid
+             mouseGridX = Math.floor((mouseX + cameraX) / GRID_SIZE) * GRID_SIZE;
+             mouseGridY = Math.floor(mouseY / GRID_SIZE) * GRID_SIZE;
+        });
+        let mouseGridX = 0;
+        let mouseGridY = 0;
+
+
         canvas.addEventListener('click', (e) => {
             if (!isEditorMode) return;
 
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left + cameraX; 
-            const mouseY = e.clientY - rect.top;
+            // Use snapped grid position for placement
+            const placementX = mouseGridX;
+            const placementY = mouseGridY;
             
             let objWidth = 30;
             let objHeight = 30;
-            // Determine object dimensions based on type for placement and collision
-            if (selectedObjectType.includes('portal') || selectedObjectType.includes('platform')) objHeight = 60;
+            if (selectedObjectType.includes('portal') || selectedObjectType.includes('platform') || selectedObjectType.includes('jump_pad')) objHeight = 60;
             if (selectedObjectType === 'spike_small') objHeight = 15;
             if (selectedObjectType === 'spike_block') objHeight = 30;
 
-
             if (isDeleteMode) {
                 obstacles = obstacles.filter(obs => {
-                    let obsH = 30;
-                    if (obs.type.includes('portal') || obs.type.includes('platform')) obsH = 60;
-                    if (obs.type === 'spike_small') obsH = 15;
-
-                    return !(mouseX > obs.x && mouseX < obs.x + obs.width &&
-                             mouseY > obs.y && mouseY < obs.y + obsH);
+                    return !(placementX < obs.x + obs.width && placementX + GRID_SIZE > obs.x &&
+                             placementY < obs.y + obs.height && placementY + GRID_SIZE > obs.y);
                 });
             } else {
                 obstacles.push({
-                    x: mouseX - objWidth / 2,
-                    y: mouseY - objHeight / 2,
-                    width: objWidth,
+                    x: placementX,
+                    y: placementY,
+                    width: objWidth, // using default width for all for simplicity
                     height: objHeight,
                     type: selectedObjectType,
-                    // Editor colors
-                    color: selectedObjectType.includes('spike') ? '#e74c3c' : 
-                           (selectedObjectType.includes('gravity') ? '#3498db' : 
-                           (selectedObjectType.includes('speed') ? '#9b59b6' : 
-                           (selectedObjectType.includes('bg_portal') ? '#f1c40f' : '#7f8c8d'))) 
+                    color: selectedObjectType.includes('spike') || selectedObjectType.includes('spike_block') ? '#e74c3c' : 
+                           (selectedObjectType.includes('gravity') || selectedObjectType.includes('speed') || selectedObjectType.includes('jump_pad') ? '#3498db' : 
+                           (selectedObjectType.includes('bg_portal') ? '#f1c40f' : '#7f8c8d')) 
                 });
             }
             obstacles.sort((a, b) => a.x - b.x);
@@ -287,7 +307,6 @@
             player.y += player.velocity;
             player.x += gameSpeed; 
 
-            // Ground/Ceiling collision
             const floor = groundY - player.height;
             const ceiling = 0;
             if (player.y >= floor) {
@@ -307,13 +326,25 @@
             
             cameraX += gameSpeed;
         }
+        
+        function updateEditorCamera() {
+            if (keys['KeyA']) cameraX -= editorCameraSpeed;
+            if (keys['KeyD']) cameraX += editorCameraSpeed;
+        }
 
         function jump() {
             if (isGameOver && !isEditorMode) {
                 resetGame();
                 return;
             }
-            playSound(500, 0.1, 'square'); // Play jump sound
+            // QoL: Ensure jump works after pausing
+            if (isPaused) {
+                togglePause();
+                return;
+            }
+            if (isEditorMode) return;
+
+            playSound(500, 0.1, 'square');
 
             if (player.mode === 'cube' && player.canJump) {
                 player.velocity = player.jumpForce * player.gravityDirection;
@@ -326,11 +357,21 @@
                 player.gravityDirection *= -1;
             }
         }
+        
+        function togglePause() {
+            if (isEditorMode || isGameOver) return;
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseScreen.style.display = 'flex';
+            } else {
+                pauseScreen.style.display = 'none';
+            }
+        }
+
 
         function updateObstacles() {
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obs = obstacles[i];
-                // Portal/Interaction Logic
                 if (obs.type.includes('portal') || obs.type.includes('bg_portal') || obs.type.includes('jump_pad')) {
                     if (isColliding(player, obs)) {
                         if (obs.type === 'portal_ufo') player.mode = 'ufo';
@@ -346,11 +387,10 @@
                         else if (obs.type === 'bg_portal_red') currentBackground = 'red';
                         else if (obs.type === 'bg_portal_cyan') currentBackground = 'cyan';
                         else if (obs.type === 'jump_pad') {
-                             player.velocity = player.jumpForce * 1.5 * player.gravityDirection; // Stronger jump
+                             player.velocity = player.jumpForce * 1.5 * player.gravityDirection;
                              playSound(800, 0.1, 'sawtooth');
                         }
                         
-                        // Remove mode/gravity/speed portals after use
                         if (obs.type.includes('portal') && !obs.type.includes('bg_portal')) {
                            obstacles.splice(i, 1);
                            continue;
@@ -358,8 +398,7 @@
                     }
                 }
                 
-                // Check for deadly collision
-                if (obs.type.includes('spike') || obs.type === 'block' || obs.type === 'spike_block' || obs.type.includes('platform')) {
+                if (obs.type.includes('spike') || obs.type.includes('block') || obs.type.includes('platform')) {
                     if (isColliding(player, obs)) {
                         gameOver();
                     }
@@ -382,13 +421,11 @@
         function drawObstacles() {
             obstacles.forEach(obs => {
                 ctx.fillStyle = obs.color;
-                // Add simple visual distinction for spike blocks
-                if (obs.type === 'spike_block') {
+                 if (obs.type === 'spike_block') {
                     ctx.fillRect(obs.x - cameraX, obs.y, obs.width, obs.height);
-                    ctx.fillStyle = '#a0342a'; // Inner color
+                    ctx.fillStyle = '#a0342a';
                     ctx.fillRect(obs.x - cameraX + 5, obs.y + 5, obs.width - 10, obs.height - 10);
                 } else if (obs.type === 'jump_pad') {
-                    // Draw a triangle shape for jump pad
                     ctx.beginPath();
                     ctx.moveTo(obs.x - cameraX, obs.y + obs.height);
                     ctx.lineTo(obs.x - cameraX + obs.width / 2, obs.y);
@@ -400,16 +437,37 @@
                 }
             });
         }
+        
+        function drawEditorHelpers() {
+            if (!isEditorMode) return;
+            // Draw grid cursor visual
+            ctx.strokeStyle = isDeleteMode ? '#e74c3c' : '#2ecc71';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(mouseGridX - cameraX, mouseGridY, GRID_SIZE, GRID_SIZE);
+
+            // Draw mouse world X/Y indicator (QoL)
+            ctx.fillStyle = '#e0e0e0';
+            ctx.fillText(`X:${mouseGridX} Y:${mouseGridY}`, 10, canvas.height - 10);
+            ctx.fillText(`Delete Mode: ${isDeleteMode ? 'ON' : 'OFF'}`, 120, canvas.height - 10);
+        }
 
         function gameOver() {
+            if (isGameOver) return;
             isGameOver = true;
             gameOverScreen.style.display = 'flex';
-            playSound(100, 0.5, 'triangle'); // Death sound
+            playSound(100, 0.5, 'triangle');
+            // QoL: Player respawn flash visual
+            canvas.style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+            setTimeout(() => {
+                 canvas.style.backgroundColor = currentBackground;
+            }, 300);
         }
 
         function resetGame() {
             isGameOver = false;
+            isPaused = false;
             gameOverScreen.style.display = 'none';
+            pauseScreen.style.display = 'none';
             player.y = groundY - player.height;
             player.velocity = 0;
             player.mode = 'cube';
@@ -418,14 +476,18 @@
             cameraX = 0; 
             player.x = 50; 
             score = 0;
-            gameSpeed = baseGameSpeed; // Reset speed
-            // In a real game, you would reload the *original* level data here.
+            gameSpeed = baseGameSpeed;
+            // Note: Does not reload obstacles for demo purposes, keeps current map.
         }
 
-        document.addEventListener('keydown', function(event) {
-            if (event.code === 'Space') {
-                jump();
-            }
+        // QoL: Handle key inputs efficiently
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'Space') jump();
+            if (e.code === 'KeyP' && !isEditorMode) togglePause();
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
         });
 
         function gameLoop() {
@@ -436,13 +498,22 @@
             ctx.fillStyle = groundColor;
             ctx.fillRect(0, groundY, canvas.width, 50);
 
-            if (!isGameOver && !isEditorMode) {
+            if (isEditorMode) {
+                updateEditorCamera();
+                drawObstacles();
+                drawEditorHelpers();
+            }
+            else if (!isGameOver && !isPaused) {
                 updatePlayer();
                 updateObstacles();
+                drawObstacles();
+                drawPlayer();
+            } else if (isGameOver || isPaused) {
+                 // Draw the static scene when paused or game over
+                 drawObstacles();
+                 drawPlayer();
             }
 
-            drawObstacles();
-            drawPlayer();
 
             ctx.fillStyle = '#e0e0e0';
             ctx.font = '16px sans-serif';
