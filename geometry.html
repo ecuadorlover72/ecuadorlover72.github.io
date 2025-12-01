@@ -2,39 +2,59 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GD Advanced Prototype v4</title>
+    <title>GD Advanced Prototype v5 (Modern UI)</title>
     <style>
+        /* General modern theme: Dark background, light text, clean lines */
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #333;
+            background-color: #1a1a1a;
             margin: 0;
-            color: white;
-            font-family: sans-serif;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             flex-direction: column;
         }
         #game-container {
             position: relative;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
         }
         canvas {
-            border: 2px solid white;
-            background-color: black; /* Default background */
+            border: 2px solid #555;
+            background-color: black;
+            display: block;
         }
-        #ui-bar {
-            margin-top: 10px;
+        #ui-bar, #editor-controls {
+            margin-top: 15px;
             display: flex;
             gap: 10px;
+            background-color: #2c2c2c;
+            padding: 10px;
+            border-radius: 5px;
         }
         button, select {
-            padding: 10px;
+            padding: 10px 15px;
             cursor: pointer;
+            background-color: #4a4a4a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
         }
-        #editor-controls {
-            margin-top: 10px;
-            display: none;
-            gap: 5px;
+        button:hover, select:hover {
+            background-color: #5f5f5f;
+        }
+        button:active {
+            background-color: #3a3a3a;
+        }
+        button#mode-toggle {
+            background-color: #007bff;
+        }
+        button#mode-toggle:hover {
+            background-color: #0056b3;
         }
         #game-over-screen {
             position: absolute;
@@ -42,11 +62,17 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             display: none;
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            color: #ff4d4d;
+            font-size: 24px;
+        }
+        #game-over-screen h1 {
+            font-size: 48px;
+            text-shadow: 0 0 10px #ff4d4d;
         }
     </style>
 </head>
@@ -54,15 +80,15 @@
     <div id="game-container">
         <canvas id="gameCanvas" width="800" height="400"></canvas>
         <div id="game-over-screen">
-            <h1>Game Over</h1>
+            <h1>Level Failed</h1>
             <p>Press Space to restart</p>
         </div>
     </div>
 
     <div id="ui-bar">
         <button id="mode-toggle">Switch to Editor Mode</button>
-        <button id="save-level">Save Level (JSON to Console)</button>
-        <button id="load-level">Load Level (From Console)</button>
+        <button id="save-level">Save Level</button>
+        <button id="load-level">Load Level</button>
     </div>
 
     <div id="editor-controls">
@@ -96,7 +122,8 @@
         let isEditorMode = false;
         let selectedObjectType = 'spike';
         let isDeleteMode = false;
-        let currentBackground = 'black';
+        let currentBackground = '#0a0a0a'; // Dark background for modern look
+        let groundColor = '#006400'; // Darker ground color
 
         const player = {
             x: 50, 
@@ -117,7 +144,7 @@
         let score = 0;
         let cameraX = 0;
 
-        // --- Editor Mode Functions ---
+        // --- Editor Mode Functions (UI updated in CSS) ---
         modeToggleButton.addEventListener('click', () => {
             isEditorMode = !isEditorMode;
             if (isEditorMode) {
@@ -150,17 +177,14 @@
             const mouseX = e.clientX - rect.left + cameraX; 
             const mouseY = e.clientY - rect.top;
             
-            // Determine object dimensions based on type for placement and collision
             let objWidth = 30;
             let objHeight = 30;
             if (selectedObjectType.includes('portal')) objHeight = 60;
             if (selectedObjectType === 'spike_small') objHeight = 15;
             if (selectedObjectType === 'platform_high') objHeight = 60;
 
-
             if (isDeleteMode) {
                 obstacles = obstacles.filter(obs => {
-                    // Recalculate dimensions for existing objects for deletion check
                     let obsW = 30;
                     let obsH = 30;
                     if (obs.type.includes('portal')) obsH = 60;
@@ -171,20 +195,16 @@
                              mouseY > obs.y && mouseY < obs.y + obsH);
                 });
             } else {
-                // Place at mouse Y position
                 obstacles.push({
-                    x: mouseX - objWidth / 2, // Center X
-                    y: mouseY - objHeight / 2, // Center Y
+                    x: mouseX - objWidth / 2,
+                    y: mouseY - objHeight / 2,
                     width: objWidth,
                     height: objHeight,
                     type: selectedObjectType,
-                    // Colors help visualize in editor
-                    color: selectedObjectType === 'spike' || selectedObjectType === 'spike_small' ? 'white' : (
-                        selectedObjectType.includes('gravity') ? 'yellow' : 
-                        (selectedObjectType === 'portal_ufo' ? 'blue' : 
-                        (selectedObjectType === 'portal_ball' ? 'orange' : 
-                        (selectedObjectType === 'portal_plane' ? 'teal' : 
-                        (selectedObjectType.includes('bg_portal') ? 'purple' : 'gray')))))
+                    color: selectedObjectType === 'spike' || selectedObjectType === 'spike_small' ? '#e74c3c' : // Reddish spike
+                           (selectedObjectType.includes('gravity') ? '#3498db' : // Blueish for gravity
+                           (selectedObjectType.includes('bg_portal_blue') ? '#34495e' : 
+                           (selectedObjectType.includes('bg_portal_green') ? '#27ae60' : '#7f8c8d'))) // Gray/Teal for others
                 });
             }
             obstacles.sort((a, b) => a.x - b.x);
@@ -221,18 +241,16 @@
                 ctx.rotate(player.velocity * 0.05); 
             }
             
-            ctx.fillStyle = 'red';
+            ctx.fillStyle = '#ff4d4d'; // Red player color
             if (player.mode === 'ball') {
                 ctx.beginPath();
                 ctx.arc(0, 0, player.width / 2, 0, Math.PI * 2);
                 ctx.fill();
-            } else if (player.mode === 'ufo') {
-                 ctx.fillRect(-player.width/2, -player.height/4, player.width, player.height/2); 
-            } else if (player.mode === 'plane') {
-                 // Simple triangle/plane shape
+            } else if (player.mode === 'ufo' || player.mode === 'plane') {
+                 // Drawing the plane slightly better for distinct look
                  ctx.beginPath();
                  ctx.moveTo(-player.width/2, -player.height/2);
-                 ctx.lineTo(player.width/2, 0);
+                 ctx.lineTo(player.width/2 + 5, 0);
                  ctx.lineTo(-player.width/2, player.height/2);
                  ctx.closePath();
                  ctx.fill();
@@ -247,7 +265,6 @@
             player.y += player.velocity;
             player.x += gameSpeed; 
 
-            // Ground/Ceiling collision
             const floor = groundY - player.height;
             const ceiling = 0;
             if (player.y >= floor) {
@@ -280,7 +297,6 @@
             } else if (player.mode === 'ufo') {
                 player.velocity = player.jumpForce * player.gravityDirection * 0.7;
             } else if (player.mode === 'plane') {
-                // Plane reverses vertical velocity much more than just a flap
                 player.velocity = player.jumpForce * player.gravityDirection * 1.5;
             } else if (player.mode === 'ball') {
                 player.gravityDirection *= -1;
@@ -297,10 +313,9 @@
                         else if (obs.type === 'portal_plane') player.mode = 'plane';
                         else if (obs.type === 'portal_gravity_up') player.gravityDirection = -1;
                         else if (obs.type === 'portal_gravity_down') player.gravityDirection = 1;
-                        else if (obs.type === 'bg_portal_blue') currentBackground = 'blue';
-                        else if (obs.type === 'bg_portal_green') currentBackground = 'green';
+                        else if (obs.type === 'bg_portal_blue') currentBackground = '#34495e';
+                        else if (obs.type === 'bg_portal_green') currentBackground = '#27ae60';
                         
-                        // Only remove mode/gravity/bg portals after use
                         if (!obs.type.includes('bg_portal')) {
                            obstacles.splice(i, 1);
                            continue;
@@ -308,14 +323,12 @@
                     }
                 }
                 
-                // Check for deadly collision
                 if (obs.type.includes('spike') || obs.type.includes('block') || obs.type.includes('platform')) {
                     if (isColliding(player, obs)) {
                         gameOver();
                     }
                 }
 
-                // Remove off-screen obstacles behind player view
                 if (obs.x + obs.width < cameraX) {
                     obstacles.splice(i, 1);
                     score++;
@@ -353,7 +366,7 @@
             cameraX = 0; 
             player.x = 50; 
             score = 0;
-            currentBackground = 'black';
+            currentBackground = '#0a0a0a';
         }
 
         document.addEventListener('keydown', function(event) {
@@ -364,10 +377,10 @@
 
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            canvas.style.backgroundColor = currentBackground; // Update background color
+            canvas.style.backgroundColor = currentBackground;
 
             // Draw ground
-            ctx.fillStyle = '#00FF00';
+            ctx.fillStyle = groundColor;
             ctx.fillRect(0, groundY, canvas.width, 50);
 
             if (!isGameOver && !isEditorMode) {
@@ -378,7 +391,7 @@
             drawObstacles();
             drawPlayer();
 
-            ctx.fillStyle = 'white';
+            ctx.fillStyle = '#e0e0e0';
             ctx.font = '16px sans-serif';
             ctx.fillText('Mode: ' + (isEditorMode ? 'EDITOR' : player.mode.toUpperCase()), 10, 20);
             ctx.fillText('Score: ' + score, canvas.width - 80, 20);
