@@ -1,32 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Geometry Dash + Editor</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>GD Protoype</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #333;
+            margin: 0;
+        }
+        canvas {
+            background-color: #000;
+            border: 2px solid white;
+        }
+    </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="ui">
-        <h1 id="message"></h1>
-        <button id="restartBtn" onclick="restartGame()">Restart</button>
-        <button id="editorBtn" onclick="toggleEditor()">Toggle Editor</button>
-        <button id="saveBtn" onclick="saveLevel()">Save Level</button>
-        <input type="file" id="loadInput" style="display:none" onchange="loadLevel(event)">
-        <button onclick="document.getElementById('loadInput').click()">Load Level</button>
-    </div>
-    <div id="editorPanel" style="display:none; position:fixed; top:10px; right:10px; background:#111; padding:10px; border-radius:8px;">
-        <h3>Editor</h3>
-        <button onclick="setEditorMode('obstacle')">Add Obstacle</button>
-        <button onclick="setEditorMode('portal')">Add Portal</button>
-        <select id="portalType">
-            <option value="cube">Cube</option>
-            <option value="ship">Ship</option>
-            <option value="ball">Ball</option>
-            <option value="ufo">UFO</option>
-        </select>
-    </div>
-<script src="game.js"></script>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const groundHeight = 50;
+
+        const player = {
+            x: 50,
+            y: canvas.height - groundHeight - 30, // Start just above ground
+            width: 30,
+            height: 30,
+            color: 'red',
+            gravity: 0.5,
+            velocity: 0,
+            jumpForce: -10,
+            canJump: true
+        };
+
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function updatePlayer() {
+            // Apply gravity
+            player.velocity += player.gravity;
+            player.y += player.velocity;
+
+            // Check ground collision
+            if (player.y > canvas.height - groundHeight - player.height) {
+                player.y = canvas.height - groundHeight - player.height;
+                player.velocity = 0;
+                player.canJump = true;
+            }
+        }
+
+        function jump() {
+            if (player.canJump) {
+                player.velocity = player.jumpForce;
+                player.canJump = false;
+            }
+        }
+
+        // Handle user input (space bar)
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space') {
+                jump();
+            }
+        });
+
+        // Game loop
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw ground
+            ctx.fillStyle = '#00FF00';
+            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+
+            updatePlayer();
+            drawPlayer();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
 </body>
 </html>
