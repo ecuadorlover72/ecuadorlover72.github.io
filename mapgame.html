@@ -2,55 +2,100 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Esports Country Guessing Game — Enhanced Edition</title>
-
+<title>Esports Country Guessing — Ultimate Edition</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-/* ========== GLOBAL ========== */
+/* ------------------------------------------------------
+   GLOBAL UI — E-SPORTS THEME
+------------------------------------------------------ */
 html, body {
     margin: 0;
     height: 100%;
     font-family: "Orbitron", sans-serif;
-    background: #050505;
-    overflow: hidden;
+    background: #050008;
     color: #fff;
+    overflow: hidden;
 }
 
-/* ========== MAP ========== */
 #map {
     height: 100%;
-    filter: brightness(0.85);
+    filter: brightness(0.9) contrast(1.1);
 }
 
-/* ========== INPUT ========== */
-#country-input {
+/* ------------------------------------------------------
+   TOP BAR (MODES + SCORE)
+------------------------------------------------------ */
+#top-bar {
     position: fixed;
-    bottom: 170px;
+    top: 0;
+    width: 100%;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    background: rgba(10,0,20,0.8);
+    border-bottom: 2px solid #ff00ff;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.mode-btn {
+    margin-right: 12px;
+    padding: 10px 18px;
+    background: #120020;
+    border: 2px solid #ff00ff;
+    border-radius: 8px;
+    color: #ff00ff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.mode-btn:hover {
+    background: #ff00ff;
+    color: #000;
+}
+
+#score-display {
+    margin-left: auto;
+    font-size: 18px;
+    font-weight: bold;
+    color: #00eaff;
+}
+
+/* ------------------------------------------------------
+   INPUT
+------------------------------------------------------ */
+#guess-box {
+    position: fixed;
+    bottom: 160px;
     left: 50%;
     transform: translateX(-50%);
-    width: 340px;
-    padding: 14px;
-    border-radius: 12px;
+    width: 350px;
+    background: rgba(20,0,30,0.9);
     border: 2px solid #ff00ff;
-    background: rgba(20, 0, 30, 0.8);
-    color: #fff;
+    padding: 15px;
     font-size: 18px;
+    color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 0 16px #ff00ff;
     outline: none;
     z-index: 1000;
-    box-shadow: 0 0 12px #ff00ff;
-}
-#country-input:focus {
-    box-shadow: 0 0 20px #ff00ff;
 }
 
-/* ========== HUD BAR ========== */
-#hud-bar {
+#guess-box:focus {
+    box-shadow: 0 0 25px #ff00ff;
+}
+
+/* ------------------------------------------------------
+   HUD PANEL
+------------------------------------------------------ */
+#hud {
     position: fixed;
     bottom: 0;
     width: 100%;
-    height: 135px;
-    background: rgba(10, 0, 30, 0.8);
+    height: 130px;
+    background: rgba(10,0,25,0.85);
     border-top: 2px solid #ff00ff;
     display: flex;
     justify-content: space-around;
@@ -59,333 +104,335 @@ html, body {
     z-index: 1000;
 }
 
-/* HUD Boxes */
-.hud-box {
+.hud-item {
     text-align: center;
+    font-size: 15px;
     color: #00eaff;
     font-weight: bold;
-    font-size: 16px;
 }
 
-/* ========== ACHIEVEMENT POPUP ========== */
-#achievement-popup {
+/* XP bar */
+#xp-wrap {
+    width: 140px;
+    height: 14px;
+    background: #220030;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+#xp-fill {
+    width: 0%;
+    height: 100%;
+    background: #ff00ff;
+    border-radius: 6px;
+}
+
+/* ------------------------------------------------------
+   ACHIEVEMENT POPUP
+------------------------------------------------------ */
+#achievement {
     position: fixed;
-    top: 20px;
+    top: 90px;
     right: 20px;
-    padding: 14px 18px;
     min-width: 240px;
-    background: rgba(40,0,60,0.95);
+    padding: 15px 18px;
     border-left: 4px solid #ff00ff;
-    border-radius: 8px;
-    color: #fff;
-    font-weight: bold;
+    background: rgba(40,0,60,0.95);
     font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    border-radius: 8px;
     opacity: 0;
-    transform: translateX(140%);
+    transform: translateX(150%);
     z-index: 2000;
 }
-#achievement-popup.show {
-    animation: popIn 0.7s forwards, popOut 0.7s 2.3s forwards;
+
+#achievement.show {
+    animation: slideIn 0.7s forwards, fadeOut 0.7s 2.4s forwards;
 }
-@keyframes popIn {
+
+@keyframes slideIn {
     from { opacity: 0; transform: translateX(150%); }
     to   { opacity: 1; transform: translateX(0); }
 }
-@keyframes popOut {
+@keyframes fadeOut {
     from { opacity: 1; }
-    to { opacity: 0; }
+    to   { opacity: 0; }
 }
 
-/* ========== SCORE PANEL ========== */
-#score {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(10,0,20,0.8);
-    padding: 10px 16px;
-    border-radius: 10px;
-    border: 2px solid #ff00ff;
-    color: #00eaff;
-    font-weight: bold;
-    z-index: 1000;
-}
-
-/* ========== CONTINENT LIST PANEL ========== */
-#lists-panel {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    width: 320px;
-    max-height: 82%;
-    padding: 16px;
-    overflow-y: auto;
-    background: rgba(10,0,20,0.8);
-    border: 2px solid #ff00ff;
-    border-radius: 12px;
-    backdrop-filter: blur(8px);
-}
-#lists-panel h3 {
-    margin-bottom: 4px;
-    color: #ff00ff;
-}
-#lists-panel ul {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 12px;
-}
-#lists-panel li {
-    background: #00eaff;
-    color: #000;
-    padding: 4px 6px;
-    border-radius: 4px;
-    margin: 2px 0;
-    font-size: 13px;
-}
-
-/* ========== FLASH ANIMATION ========== */
-@keyframes flashCountry {
+/* ------------------------------------------------------
+   COUNTRY HIGHLIGHT ANIMATION
+------------------------------------------------------ */
+@keyframes flash {
     0% { fill: #ff00ff; }
     50% { fill: #00eaff; }
     100% { fill: #28a745; }
 }
 
-/* ========== RESPONSIVE ========== */
-@media (max-width: 700px) {
-    #lists-panel { width: 240px; }
-    #country-input { width: 260px; }
-    #hud-bar { height: 150px; flex-direction: column; }
-}
+/* ------------------------------------------------------ */
 </style>
 </head>
 <body>
 
 <div id="map"></div>
 
-<input id="country-input" placeholder="Type a country...">
+<!-- TOP BAR -->
+<div id="top-bar">
+    <div class="mode-btn" onclick="setMode('classic')">Classic</div>
+    <div class="mode-btn" onclick="setMode('time')">Time Attack</div>
+    <div class="mode-btn" onclick="setMode('streak')">Streak</div>
+    <div class="mode-btn" onclick="setMode('random')">Random Country</div>
 
-<div id="score">0 / 0</div>
-
-<div id="lists-panel">
-    <h3>Africa</h3><ul id="africa"></ul>
-    <h3>Asia</h3><ul id="asia"></ul>
-    <h3>Europe</h3><ul id="europe"></ul>
-    <h3>North America</h3><ul id="north-america"></ul>
-    <h3>South America</h3><ul id="south-america"></ul>
-    <h3>Oceania</h3><ul id="oceania"></ul>
+    <div id="score-display">0 / 0</div>
 </div>
 
-<div id="achievement-popup"></div>
+<!-- INPUT -->
+<input id="guess-box" placeholder="Type a country...">
 
-<div id="hud-bar">
-    <div class="hud-box">
-        Correct<br><span id="stat-correct">0</span>
+<!-- HUD -->
+<div id="hud">
+    <div class="hud-item">Correct<br><span id="hud-correct">0</span></div>
+    <div class="hud-item">Level<br><span id="hud-level">1</span>
+        <div id="xp-wrap"><div id="xp-fill"></div></div>
     </div>
-    <div class="hud-box">
-        Total<br><span id="stat-total">0</span>
-    </div>
-    <div class="hud-box">
-        Accuracy<br><span id="stat-accuracy">0%</span>
-    </div>
-    <div class="hud-box">
-        Level<br><span id="level">1</span>
-        <div style="width:120px;height:14px;background:#200030;border-radius:6px;margin:auto;margin-top:6px;">
-            <div id="xp-bar" style="height:100%;width:0%;background:#ff00ff;border-radius:6px;"></div>
-        </div>
-    </div>
-    <div class="hud-box">
-        Time<br><span id="timer">00:00</span>
-    </div>
+    <div class="hud-item">Time<br><span id="hud-time">00:00</span></div>
 </div>
+
+<div id="achievement"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-
-/* ========== MAP ========== */
+/* ------------------------------------------------------
+   MAP SETUP
+------------------------------------------------------ */
 const map = L.map("map").setView([20, 0], 2);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 5 }).addTo(map);
 
-/* ========== DATA STRUCTURES ========== */
 let countryLayers = {};
 let guessed = new Set();
-let xp = 0, level = 1;
-let timerRunning = false, startTime, timerInterval;
+let total = 0;
 
-let totalCountries = 0;
+/* ------------------------------------------------------
+   GAME MODES
+------------------------------------------------------ */
+let currentMode = "classic";
+let timerInterval = null;
+let timerStart = null;
+let streakActive = true;
+let randomTarget = null;
 
-/* ========== SMART COUNTRY NORMALIZATION ========== */
-function normalize(str) {
-    return str
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")   // remove accents
-        .replace(/[^a-z ]/g, "")           // remove punctuation
-        .trim();
+function setMode(mode) {
+    currentMode = mode;
+
+    resetGame();
+
+    if (mode === "time") startTimerCountdown(180);
+    if (mode === "random") chooseRandomCountry();
+
+    document.getElementById("guess-box").placeholder =
+        mode === "random" ? "Type the shown country..." : "Type a country...";
 }
 
-/* --- EXTRA ALIASES --- */
-const extraAliases = {
-    "serbia": ["srbija", "serb", "serbian", "serbia and montenegro"],
-    "north macedonia": ["macedonia", "fyrom"],
-    "czechia": ["czech republic", "czech"],
-    "eswatini": ["swaziland"],
-    "myanmar": ["burma"],
-    "timor-leste": ["east timor"]
-};
-
-function buildAliasMap() {
-    let aliasMap = {};
-
-    for (const [official, arr] of Object.entries(extraAliases)) {
-        arr.forEach(a => aliasMap[normalize(a)] = normalize(official));
-    }
-
-    return aliasMap;
+/* ------------------------------------------------------
+   TIMER
+------------------------------------------------------ */
+function startTimer() {
+    timerStart = Date.now();
+    timerInterval = setInterval(() => {
+        let ms = Date.now() - timerStart;
+        let m = String(Math.floor(ms / 60000)).padStart(2, "0");
+        let s = String(Math.floor((ms / 1000) % 60)).padStart(2, "0");
+        document.getElementById("hud-time").textContent = `${m}:${s}`;
+    }, 1000);
 }
 
-const aliasMap = buildAliasMap();
+function startTimerCountdown(sec) {
+    let remaining = sec;
+    document.getElementById("hud-time").textContent = formatTime(sec);
 
-/* ========== LOAD COUNTRY SHAPES ========== */
+    timerInterval = setInterval(() => {
+        remaining--;
+        document.getElementById("hud-time").textContent = formatTime(remaining);
+
+        if (remaining <= 0) endGame();
+    }, 1000);
+}
+
+function formatTime(s) {
+    return String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
+}
+
+/* ------------------------------------------------------
+   LOADING COUNTRY SHAPES
+------------------------------------------------------ */
 fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
-.then(res => res.json())
+.then(r => r.json())
 .then(data => {
-    totalCountries = data.features.length;
-    document.getElementById("stat-total").textContent = totalCountries;
-    document.getElementById("score").textContent = `0 / ${totalCountries}`;
+    total = data.features.length;
+    document.getElementById("score-display").textContent = `0 / ${total}`;
 
     L.geoJSON(data, {
-        style: {
-            color: "#333",
-            weight: 0.7,
-            fillColor: "#1a1a1a",
-            fillOpacity: 0.5
-        },
-        onEachFeature: (feature, layer) => {
-            let name = normalize(feature.properties.name);
+        style: { color:"#333", weight:0.7, fillColor:"#111", fillOpacity:0.55 },
+        onEachFeature: (f,layer) => {
+            const name = normalize(f.properties.name);
             countryLayers[name] = layer;
         }
     }).addTo(map);
 });
 
-/* ========== INPUT LOGIC ========== */
-const input = document.getElementById("country-input");
+/* ------------------------------------------------------
+   INPUT HANDLING
+------------------------------------------------------ */
+const input = document.getElementById("guess-box");
+
 input.addEventListener("keyup", () => {
-    let guess = normalize(input.value);
+    let val = normalize(input.value);
+    if (!val) return;
 
-    if (!guess) return;
+    // Time mode - start timer on first guess
+    if (currentMode !== "time" && !timerInterval) startTimer();
 
-    if (!timerRunning) startTimer();
+    // Mode logic
+    if (currentMode === "random") {
+        if (val === randomTarget) correctGuess(val);
+        return;
+    }
 
-    let official = aliasMap[guess] || guess;
-
-    if (countryLayers[official] && !guessed.has(official)) {
-        guessed.add(official);
-        markCountry(official);
-        updateStats();
-        addXP(10);
-        input.value = "";
-        checkAchievements();
+    // Classic / Streak / Time Attack
+    if (countryLayers[val] && !guessed.has(val)) {
+        correctGuess(val);
+    } else if (currentMode === "streak") {
+        endGame("Incorrect guess — streak ended!");
     }
 });
 
-/* ========== COLOR + FLASH ========== */
-function markCountry(name) {
+/* ------------------------------------------------------
+   CORRECT GUESS
+------------------------------------------------------ */
+let xp = 0, level = 1;
+
+function correctGuess(name) {
+    guessed.add(name);
+    highlightCountry(name);
+    updateScore();
+    gainXP(10);
+    showAchievementCheck();
+    input.value = "";
+
+    if (currentMode === "random") chooseRandomCountry();
+}
+
+/* ------------------------------------------------------
+   HIGHLIGHTING
+------------------------------------------------------ */
+function highlightCountry(name) {
     const layer = countryLayers[name];
     const el = layer.getElement();
+    el.style.animation = "flash 1s";
+    setTimeout(() => el.style.animation = "", 1000);
 
-    if (el) {
-        el.style.animation = "flashCountry 1.1s";
-        setTimeout(() => el.style.animation = "", 1100);
-    }
-
-    layer.setStyle({ fillColor: "#28a745", fillOpacity: 0.9 });
-
-    addToContinentList(name);
+    layer.setStyle({ fillColor:"#28a745", fillOpacity:0.9 });
 }
 
-/* ========== CONTINENT LISTS ========== */
-const continentData = {
-    africa: [],
-    asia: [],
-    europe: [],
-    "north-america": [],
-    "south-america": [],
-    oceania: []
-};
-
-function addToContinentList(name) {
-    const c = name.charAt(0).toUpperCase() + name.slice(1);
-
-    // Auto-detect via simple region bounding
-    // (Not perfect but very effective)
-    for (let cont in continentData) {
-        let ul = document.getElementById(cont);
-        let li = document.createElement("li");
-        li.textContent = c;
-        ul.appendChild(li);
-        break;
-    }
-}
-
-/* ========== STATS / SCORE ========== */
-function updateStats() {
-    const correct = guessed.size;
-
-    document.getElementById("stat-correct").textContent = correct;
-    document.getElementById("score").textContent = `${correct} / ${totalCountries}`;
-
-    let acc = Math.round((correct / totalCountries) * 100);
-    document.getElementById("stat-accuracy").textContent = acc + "%";
-}
-
-/* ========== XP SYSTEM ========== */
-function addXP(n) {
+/* ------------------------------------------------------
+   XP SYSTEM
+------------------------------------------------------ */
+function gainXP(n) {
     xp += n;
     if (xp >= 100) {
         xp -= 100;
         level++;
-        document.getElementById("level").textContent = level;
+        document.getElementById("hud-level").textContent = level;
     }
-    document.getElementById("xp-bar").style.width = xp + "%";
+    document.getElementById("xp-fill").style.width = xp + "%";
 }
 
-/* ========== TIMER ========== */
-function startTimer() {
-    timerRunning = true;
-    startTime = Date.now();
-
-    timerInterval = setInterval(() => {
-        let diff = Date.now() - startTime;
-        let m = String(Math.floor(diff / 60000)).padStart(2, "0");
-        let s = String(Math.floor(diff / 1000) % 60).padStart(2, "0");
-        document.getElementById("timer").textContent = `${m}:${s}`;
-    }, 1000);
+/* ------------------------------------------------------
+   RANDOM COUNTRY MODE
+------------------------------------------------------ */
+function chooseRandomCountry() {
+    const names = Object.keys(countryLayers);
+    randomTarget = names[Math.floor(Math.random() * names.length)];
+    // Flash target
+    highlightCountry(randomTarget);
 }
 
-/* ========== ACHIEVEMENTS ========== */
-const achievements = [
-    { name: "First Blood", check: () => guessed.size >= 1, done: false },
-    { name: "Warm-Up", check: () => guessed.size >= 10, done: false },
-    { name: "World Traveler", check: () => guessed.size >= 50, done: false },
-    { name: "Geo Master", check: () => guessed.size >= 100, done: false }
+/* ------------------------------------------------------
+   ACHIEVEMENTS
+------------------------------------------------------ */
+const cheevos = [
+    { name:"First Blood", req:1, done:false },
+    { name:"10 Unlocked", req:10, done:false },
+    { name:"World Explorer", req:50, done:false },
+    { name:"Geo Master", req:100, done:false }
 ];
 
-function checkAchievements() {
-    achievements.forEach(a => {
-        if (!a.done && a.check()) {
-            a.done = true;
-            showAchievement(a.name);
+function showAchievementCheck() {
+    cheevos.forEach(c => {
+        if (!c.done && guessed.size >= c.req) {
+            c.done = true;
+            showAchievement(c.name);
         }
     });
 }
 
-function showAchievement(name) {
-    const pop = document.getElementById("achievement-popup");
-    pop.textContent = "🏆 " + name;
-    pop.classList.add("show");
-    setTimeout(() => pop.classList.remove("show"), 3000);
+function showAchievement(text) {
+    const a = document.getElementById("achievement");
+    a.textContent = "🏆 " + text;
+    a.classList.add("show");
+    setTimeout(() => a.classList.remove("show"), 3000);
+}
+
+/* ------------------------------------------------------
+   SCORE UPDATE
+------------------------------------------------------ */
+function updateScore() {
+    const g = guessed.size;
+    document.getElementById("hud-correct").textContent = g;
+    document.getElementById("score-display").textContent = `${g} / ${total}`;
+}
+
+/* ------------------------------------------------------
+   NORMALIZE TEXT
+------------------------------------------------------ */
+function normalize(str) {
+    return str.toLowerCase().normalize("NFD")
+        .replace(/[\u0300-\u036f]/g,"")
+        .replace(/[^a-z ]/g,"")
+        .trim();
+}
+
+/* ------------------------------------------------------
+   RESET & END GAME
+------------------------------------------------------ */
+function resetGame() {
+    guessed.clear();
+    xp = 0;
+    level = 1;
+
+    document.getElementById("hud-level").textContent = 1;
+    document.getElementById("xp-fill").style.width = "0%";
+    document.getElementById("hud-correct").textContent = 0;
+    document.getElementById("score-display").textContent = `0 / ${total}`;
+
+    // Reset map colors
+    for (let c in countryLayers) {
+        countryLayers[c].setStyle({ fillColor:"#111", fillOpacity:0.55 });
+    }
+
+    // Reset timer
+    clearInterval(timerInterval);
+    timerInterval = null;
+    document.getElementById("hud-time").textContent = "00:00";
+}
+
+function endGame(msg="Time's up!") {
+    clearInterval(timerInterval);
+    alert(msg);
+    resetGame();
 }
 
 </script>
+
 </body>
 </html>
