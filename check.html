@@ -20,18 +20,16 @@
 <div id="rbxResults"></div>
 
 <script>
-// ---------------- Utility ----------------
-async function fetchJson(url, opts){ 
-  const res = await fetch(url, opts);
+// ---------------- CORS Proxy ----------------
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+async function fetchJson(url, opts){
+  const res = await fetch(CORS_PROXY + encodeURIComponent(url), opts);
   if(!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json(); 
+  return res.json();
 }
 
-function setLoading(flag){
-  // Optional: add loading UI
-}
-
-// ---------------- User Lookup ----------------
+// ---------------- Roblox API Functions ----------------
 async function lookupUser(name){
   const url = 'https://users.roproxy.com/v1/usernames/users';
   const payload = { usernames: [name], excludeBannedUsers: false };
@@ -72,7 +70,6 @@ document.getElementById('rbxFetch').onclick = () => renderProfile(rbxInput.value
 async function renderProfile(username){
   if(!username) return;
   rbxResults.innerHTML = `<div class="card">Loading profile for <b>${username}</b>...</div>`;
-  setLoading(true);
 
   try{
     const user = await lookupUser(username);
@@ -109,8 +106,6 @@ async function renderProfile(username){
   } catch(err) {
     rbxResults.innerHTML = `<div class="card"><h3>Error</h3><p>${err.message}</p></div>`;
   }
-
-  setLoading(false);
 }
 </script>
 
