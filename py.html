@@ -76,7 +76,7 @@
       </div>
     </aside>
 
-    <footer>Designed for GitHub Pages — save this file as <code>index.html</code> and push to your repo's gh-pages branch.</footer>
+    <footer></footer>
   </div>
 
   <script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4.14/src-min-noconflict/ace.js"></script>
@@ -113,7 +113,8 @@
     async function loadPyodideAndPackages(){
       statusEl.textContent = 'Loading Pyodide...';
       pyodide = await loadPyodide({indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'});
-      pyodide.runPython(`import builtins, js\nbuiltins.input = lambda prompt='': js.window.prompt(prompt)`);
+      pyodide.runPython(`import builtins, js
+builtins.input = lambda prompt='': js.window.prompt(prompt)`);
       statusEl.textContent = 'Ready';
     }
     loadPyodideAndPackages().catch(e=>{statusEl.textContent='Failed'; outputEl.textContent = e});
@@ -126,7 +127,19 @@
       const code = editor.getValue();
       running = true; runBtn.disabled = true; stopBtn.disabled = false; statusEl.textContent = 'Running';
       try{
-        const runner = `import sys\nfrom js import console\nclass _Writer:\n    def __init__(self):\n        pass\n    def write(self,s):\n        if s!=None:\n            console.log(s)\n    def flush(self):\n        pass\nsys.stdout = _Writer()\nsys.stderr = _Writer()\n`;
+        const runner = `import sys
+from js import console
+class _Writer:
+    def __init__(self):
+        pass
+    def write(self,s):
+        if s!=None:
+            console.log(s)
+    def flush(self):
+        pass
+sys.stdout = _Writer()
+sys.stderr = _Writer()
+`;
         const oldLog = console.log;
         console.log = function(){ for(let i=0;i<arguments.length;i++){ streams.write(String(arguments[i])) } }
         await pyodide.runPythonAsync(runner + '\n' + code);
@@ -146,7 +159,15 @@
     formatBtn.addEventListener('click', async ()=>{
       const text = editor.getValue();
       try{
-        const formatted = await pyodide.runPythonAsync(`import ast, sys, json\ncode = '''${text.replace(/'''/g, "\\'\\'\\'") }'''\ntry:\n    tree = ast.parse(code)\n    import astor\n    out = astor.to_source(tree)\nexcept Exception:\n    out = code\nout`);
+        const formatted = await pyodide.runPythonAsync(`import ast, sys, json
+code = '''${text.replace(/'''/g, "\\'\\'\\'") }'''
+try:
+    tree = ast.parse(code)
+    import astor
+    out = astor.to_source(tree
+except Exception:
+    out = code
+out`);
         if (formatted) editor.setValue(formatted, -1);
       }catch(e){ console.warn('Formatting failed', e); }
     });
