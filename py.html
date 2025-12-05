@@ -62,12 +62,18 @@
     </div>
 
     <aside class="panel side">
-      <div class="toolbar">
+      <div>
+        <h3 style="margin:0 0 8px 0">Console output</h3>
+        <div id="output" class="output" style="height:40vh;"></div>
+      </div>
+
+      <div class="toolbar" style="margin-top:12px;">
         <label class="small">Text size:</label>
         <input id="fontSize" type="range" min="10" max="24" value="14" />
         <button id="notesBtn" class="primary">Notes</button>
       </div>
-      <div id="notesPanel" class="output" style="height:60vh; display:none;">
+
+      <div id="notesPanel" class="output" style="height:30vh; display:none;">
         <!-- Notes appear here -->
       </div>
     </aside>
@@ -230,7 +236,7 @@ print(f'Hello, {name}')
     const notesBtn = document.getElementById('notesBtn');
     const notesPanel = document.getElementById('notesPanel');
     notesBtn.addEventListener('click', ()=>{
-      notesPanel.style.display = notesPanel.style.display === 'none' ? 'block' : 'none';
+      notesPanel.style.display = notesPanel.style.display === 'none' ? = notesPanel.style.display === 'none' ? 'block' : 'none';
     });
 
   </script>
