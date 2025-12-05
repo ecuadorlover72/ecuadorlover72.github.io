@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Python Runner — GitHub Page</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <style>
+    :root{--bg:#0f1720;--card:#0b1220;--muted:#94a3b8;--accent:#0ea5a3;--danger:#ef4444}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial}
+    body{background:linear-gradient(180deg,#071029 0%, #071827 60%);color:#dbe7f0}
+    .app{display:grid;grid-template-columns:1fr 420px;gap:20px;padding:28px;min-height:100vh}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:12px;padding:14px;box-shadow:0 6px 20px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    header h1{font-size:18px;margin:0;color:#e6f3f6}
+    header p{margin:0;color:var(--muted);font-size:13px}
+    #editor{height:76vh;border-radius:8px;overflow:hidden}
+
+    .side{display:flex;flex-direction:column;gap:12px}
+    .controls{display:flex;gap:8px}
+    button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e6f3f6;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
+    button.primary{background:linear-gradient(90deg,var(--accent),#06b6d4);color:#072024;border:none}
+    button.warn{border-color:rgba(239,68,68,0.14);}
+    .output{height:48vh;overflow:auto;padding:12px;border-radius:8px;background:#050812;border:1px solid rgba(255,255,255,0.02);font-family:monospace;font-size:13px}
+    .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .info{font-size:12px;color:var(--muted)}
+    .status{font-size:12px;color:var(--muted);margin-left:auto}
+    .small{font-size:12px;color:var(--muted)}
+
+    /* autocomplete suggestion box for minimal assist (JS-powered) */
+    .suggestions{position:absolute;background:#061226;border-radius:6px;border:1px solid rgba(255,255,255,0.04);padding:6px;box-shadow:0 6px 18px rgba(2,6,23,0.6);z-index:20}
+    .suggestions div{padding:6px 8px;cursor:pointer;border-radius:6px}
+    .suggestions div:hover{background:rgba(255,255,255,0.02)}
+
+    footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;margin-top:10px}
+    @media(max-width:980px){.app{grid-template-columns:1fr;}.side{order:2}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="panel">
+      <header>
+        <div>
+          <h1>Python Runner</h1>
+          <p>A serious, minimal UI for editing, running and downloading Python on GitHub Pages</p>
+        </div>
+        <div class="status">Runtime: <span id="py-status">Loading…</span></div>
+      </header>
+
+      <div class="toolbar">
+        <div class="controls">
+          <button id="runBtn" class="primary">Run</button>
+          <button id="stopBtn">Stop</button>
+          <button id="downloadBtn">Download .py</button>
+          <button id="formatBtn">Format (auto)</button>
+        </div>
+        <div style="margin-left:auto" class="info">Editor: <strong>Ace</strong> · Runtime: <strong>Pyodide</strong></div>
+      </div>
+
+      <div id="editor"></div>
+    </div>
+
+    <aside class="panel side">
+      <div>
+        <h3 style="margin:0 0 8px 0">Console output</h3>
+        <div id="output" class="output"></div>
+      </div>
+
+      <div>
+        <h3 style="margin:12px 0 8px 0">Quick reference</h3>
+        <div class="small">Supports <code>input()</code> (uses a browser prompt), <code>print()</code>, and most pure-Python libraries available in Pyodide. Network access is not available on GitHub Pages.</div>
+      </div>
+
+      <div>
+        <h3 style="margin:12px 0 8px 0">Autocomplete</h3>
+        <div class="small">Start typing Python keywords, builtins or common functions like <code>print</code>, <code>range</code>, <code>for</code>, etc. Suggestions appear automatically.</div>
+      </div>
+
+    </aside>
+
+    <footer>Designed for GitHub Pages — save this file as <code>index.html</code> and push to your repo's gh-pages branch.</footer>
+  </div>
+
+  <!-- Load Ace Editor -->
+  <script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4.14/src-min-noconflict/ace.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4.14/src-min-noconflict/ext-language_tools.js"></script>
+  <!-- Load Pyodide -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+
+  <script>
+    // --- Basic UI wiring ---
+    const runBtn = document.getElementById('runBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const formatBtn = document.getElementById('formatBtn');
+    const outputEl = document.getElementById('output');
+    const statusEl = document.getElementById('py-status');
+
+    // Initialize Ace
+    const editor = ace.edit('editor', {mode: 'ace/mode/python',theme:'ace/theme/monokai'});
+    editor.setOptions({fontSize:14,wrap:true,enableBasicAutocompletion:true,enableSnippets:true,enableLiveAutocompletion:true,behavioursEnabled:true});
+    editor.session.setUseWorker(false);
+
+    // A minimal custom completer to suggest python builtins and keywords
+    const PY_KEYWORDS = [
+      'print','input','for','while','if','elif','else','def','class','import','from','as','with','try','except','finally','return','yield','lambda','pass','break','continue','True','False','None','range','len','open','list','dict','set','tuple','int','float','str','bool'
+    ];
+    const pyCompleter = {
+      getCompletions: function(editor, session, pos, prefix, callback) {
+        if (prefix.length === 0) { callback(null, []); return }
+        const list = PY_KEYWORDS.filter(k => k.startsWith(prefix)).map(k => ({caption:k, value:k, meta:'python'}));
+        callback(null, list);
+      }
+    };
+    ace.require('ace/ext/language_tools').addCompleter(pyCompleter);
+
+    // Auto-close pairs are handled by behavioursEnabled and ace's built-in behaviour
+
+    // Example starter code
+    const starter = `# Welcome — type Python here and press Run
+# input() is supported. Example:
+name = input('Enter your name: ')
+print(f'Hello, {name}')
+`;
+    editor.setValue(starter, -1);
+
+    // Pyodide runtime
+    let pyodide = null;
+    let running = false;
+
+    async function loadPyodideAndPackages(){
+      statusEl.textContent = 'Loading Pyodide...';
+      pyodide = await loadPyodide({indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'});
+      // Provide a safe input mapping using the browser prompt (synchronous and simple)
+      pyodide.runPython(`import builtins, js\nbuiltins.input = lambda prompt='': js.window.prompt(prompt)`);
+      statusEl.textContent = 'Ready';
+    }
+    loadPyodideAndPackages().catch(e=>{statusEl.textContent='Failed'; outputEl.textContent = e});
+
+    // Capture prints by redirecting sys.stdout / stderr
+    function createOutputStreams(){
+      const write = (s)=>{ outputEl.textContent += s; outputEl.scrollTop = outputEl.scrollHeight };
+      const clear = ()=>{ outputEl.textContent = '' };
+      return {write, clear};
+    }
+
+    runBtn.addEventListener('click', async ()=>{
+      if (!pyodide) return; outputEl.textContent = '';
+      const streams = createOutputStreams();
+      const code = editor.getValue();
+      running = true;
+      runBtn.disabled = true; stopBtn.disabled = false; statusEl.textContent = 'Running';
+
+      try{
+        // Redirect stdout/stderr in the python side
+        const runner = `import sys\nfrom js import console\nclass _Writer:\n    def __init__(self):\n        pass\n    def write(self,s):\n        if s!=None:\n            console.log(s)\n    def flush(self):\n        pass\nsys.stdout = _Writer()\nsys.stderr = _Writer()\n`;
+        // Hook console.log to write to the output panel
+        const oldLog = console.log;
+        console.log = function(){ for(let i=0;i<arguments.length;i++){ streams.write(String(arguments[i])) } }
+
+        // Run the user's code asynchronously to allow prompt to work
+        await pyodide.runPythonAsync(runner + '\n' + code);
+
+        console.log = oldLog;
+      }catch(err){
+        streams.write('\n' + String(err) + '\n');
+      }finally{
+        running = false; runBtn.disabled = false; stopBtn.disabled = true; statusEl.textContent = 'Ready';
+      }
+    });
+
+    stopBtn.addEventListener('click', ()=>{
+      // Pyodide doesn't expose a clean stop; we advise refreshing the page to interrupt long loops.
+      if (!running) return; outputEl.textContent += '\n*** Interrupt requested — refresh page to forcibly stop long-running code ***\n';
+    });
+
+    // Download .py file
+    downloadBtn.addEventListener('click', ()=>{
+      const blob = new Blob([editor.getValue()], {type:'text/x-python;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'script.py'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    // Simple formatting: run black if available in pyodide (not installed by default) — fallback to basic indentation fix
+    formatBtn.addEventListener('click', async ()=>{
+      const text = editor.getValue();
+      // Try to use python's built-in `ast` to reformat minimally
+      try{
+        const formatted = await pyodide.runPythonAsync(`import ast, sys, json\ncode = '''${text.replace(/'''/g, "\\'\\'\\'") }'''\ntry:\n    tree = ast.parse(code)\n    import astor\n    out = astor.to_source(tree)\nexcept Exception:\n    out = code\nout`);
+        if (formatted) editor.setValue(formatted, -1);
+      }catch(e){
+        // fallback: do nothing
+        console.warn('Formatting failed', e);
+      }
+    });
+
+    // Small UX: show simple inline suggestion popup based on completer
+    let suggBox = null;
+    function showSuggestions(items, boxX, boxY){
+      hideSuggestions();
+      if (!items.length) return;
+      suggBox = document.createElement('div'); suggBox.className='suggestions';
+      suggBox.style.left = boxX + 'px'; suggBox.style.top = boxY + 'px';
+      items.slice(0,8).forEach(it=>{
+        const d = document.createElement('div'); d.textContent = it.caption; d.onclick = ()=>{ editor.insert(it.value); hideSuggestions(); editor.focus(); };
+        suggBox.appendChild(d);
+      });
+      document.body.appendChild(suggBox);
+    }
+    function hideSuggestions(){ if (suggBox){ suggBox.remove(); suggBox=null }}
+
+    editor.on('change', function(){
+      const pos = editor.getCursorPosition();
+      const token = editor.session.getTokenAt(pos.row, pos.column);
+      const prefix = editor.session.getTextRange({start:{row:pos.row,column:Math.max(0,pos.column-20)},end:pos});
+      const m = prefix.match(/[a-zA-Z_][a-zA-Z_0-9]*$/);
+      const p = m? m[0] : '';
+      if (p.length>=1){
+        const candidates = PY_KEYWORDS.filter(k=>k.startsWith(p)).map(k=>({caption:k,value:k}));
+        const coords = editor.renderer.textToScreenCoordinates(pos.row,pos.column);
+        showSuggestions(candidates, coords.pageX+2, coords.pageY+4);
+      } else {
+        hideSuggestions();
+      }
+    });
+
+    document.addEventListener('click', (e)=>{ if (suggBox && !suggBox.contains(e.target)) hideSuggestions(); });
+
+  </script>
+</body>
+</html>
