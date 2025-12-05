@@ -73,9 +73,7 @@
         <button id="notesBtn" class="primary">Notes</button>
       </div>
 
-      <div id="notesPanel" class="output" style="height:30vh; display:none;">
-        <!-- Notes appear here -->
-      </div>
+      <div id="notesPanel" class="output" style="height:30vh; display:none;"></div>
     </aside>
 
     <footer>Designed for GitHub Pages — save this file as <code>index.html</code> and push to your repo's gh-pages branch.</footer>
@@ -236,7 +234,8 @@ print(f'Hello, {name}')
     const notesBtn = document.getElementById('notesBtn');
     const notesPanel = document.getElementById('notesPanel');
     notesBtn.addEventListener('click', ()=>{
-      notesPanel.style.display = notesPanel.style.display === 'none' ? = notesPanel.style.display === 'none' ? 'block' : 'none';
+      notesPanel.style.display = notesPanel.style.display === 'none' ? 'block' : 'none';
+    }); = notesPanel.style.display === 'none' ? 'block' : 'none';
     });
 
   </script>
