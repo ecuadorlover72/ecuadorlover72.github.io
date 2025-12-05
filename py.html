@@ -15,15 +15,16 @@
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
     header h1{font-size:18px;margin:0;color:#e6f3f6}
     header p{margin:0;color:var(--muted);font-size:13px}
-    #editor{height:60vh;border-radius:8px;overflow:hidden}
+    #editor{height:55vh;border-radius:8px;overflow:hidden}
 
     .side{display:flex;flex-direction:column;gap:12px}
     .controls{display:flex;gap:8px;flex-wrap:wrap}
     button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e6f3f6;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
     button.primary{background:linear-gradient(90deg,var(--accent),#06b6d4);color:#072024;border:none}
     button.warn{border-color:rgba(239,68,68,0.14);}
-    .output{height:40vh;overflow:auto;padding:12px;border-radius:8px;background:#050812;border:1px solid rgba(255,255,255,0.02);font-family:monospace;font-size:13px;resize:vertical}
+    .output{height:35vh;overflow:auto;padding:12px;border-radius:8px;background:#050812;border:1px solid rgba(255,255,255,0.02);font-family:monospace;font-size:13px;resize:vertical}
     #notesPanel{color:white; width:100%; min-height:150px;}
+    #historyPanel{color:white; width:100%; min-height:100px; overflow:auto; background:#061226; padding:6px; border-radius:8px; display:none;}
     .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
     .info{font-size:12px;color:var(--muted)}
     .status{font-size:12px;color:var(--muted);margin-left:auto}
@@ -43,7 +44,7 @@
       <header>
         <div>
           <h1>Python Runner</h1>
-          <p>A serious, minimal UI for editing, running and downloading Python on Ecuador Pages</p>
+          <p>A serious, minimal UI for editing, running and downloading Python on GitHub Pages</p>
         </div>
         <div class="status">Runtime: <span id="py-status">Loading…</span></div>
       </header>
@@ -57,6 +58,8 @@
           <button id="importPyBtn">Import Py Package</button>
           <button id="importFileBtn">Import .py File</button>
           <button id="notesBtn" class="primary">Notes</button>
+          <button id="searchBtn">Search/Replace</button>
+          <button id="historyBtn">History</button>
           <input type="file" id="fileInput" accept=".py" style="display:none">
         </div>
         <div style="margin-left:auto" class="info">Editor: <strong>Ace</strong> · Runtime: <strong>Pyodide</strong></div>
@@ -73,6 +76,10 @@
       <div>
         <h3 style="margin:8px 0 8px 0">Notes</h3>
         <textarea id="notesPanel" class="output" style="display:none"></textarea>
+      </div>
+      <div>
+        <h3 style="margin:8px 0 8px 0">History</h3>
+        <div id="historyPanel"></div>
       </div>
     </aside>
 
@@ -91,10 +98,13 @@
     const importPyBtn = document.getElementById('importPyBtn');
     const importFileBtn = document.getElementById('importFileBtn');
     const notesBtn = document.getElementById('notesBtn');
+    const searchBtn = document.getElementById('searchBtn');
+    const historyBtn = document.getElementById('historyBtn');
     const fileInput = document.getElementById('fileInput');
     const outputEl = document.getElementById('output');
     const statusEl = document.getElementById('py-status');
     const notesPanel = document.getElementById('notesPanel');
+    const historyPanel = document.getElementById('historyPanel');
 
     const editor = ace.edit('editor', {mode: 'ace/mode/python',theme:'ace/theme/monokai'});
     editor.setOptions({fontSize:14,wrap:true,enableBasicAutocompletion:true,enableSnippets:true,enableLiveAutocompletion:true,behavioursEnabled:true});
@@ -109,17 +119,28 @@
 
     let pyodide = null;
     let running = false;
+    let history = [];
 
     async function loadPyodideAndPackages(){
       statusEl.textContent = 'Loading Pyodide...';
       pyodide = await loadPyodide({indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'});
-      pyodide.runPython(`import builtins, js
-builtins.input = lambda prompt='': js.window.prompt(prompt)`);
+      pyodide.runPython(`import builtins, js\nbuiltins.input = lambda prompt='': js.window.prompt(prompt)`);
       statusEl.textContent = 'Ready';
     }
     loadPyodideAndPackages().catch(e=>{statusEl.textContent='Failed'; outputEl.textContent = e});
 
     function createOutputStreams(){ const write = (s)=>{ outputEl.textContent += s; outputEl.scrollTop = outputEl.scrollHeight }; const clear = ()=>{ outputEl.textContent = '' }; return {write, clear}; }
+
+    function updateHistory(code){
+      const timestamp = new Date().toLocaleTimeString();
+      history.push({time: timestamp, code: code});
+      const entry = document.createElement('div');
+      entry.textContent = `[${timestamp}] ${code.substring(0,30)}${code.length>30?'...':''}`;
+      entry.style.cursor='pointer';
+      entry.style.marginBottom='4px';
+      entry.onclick = ()=>{ editor.setValue(code, -1); notesPanel.style.display='none'; }
+      historyPanel.prepend(entry);
+    }
 
     runBtn.addEventListener('click', async ()=>{
       if (!pyodide) return; outputEl.textContent = '';
@@ -127,23 +148,12 @@ builtins.input = lambda prompt='': js.window.prompt(prompt)`);
       const code = editor.getValue();
       running = true; runBtn.disabled = true; stopBtn.disabled = false; statusEl.textContent = 'Running';
       try{
-        const runner = `import sys
-from js import console
-class _Writer:
-    def __init__(self):
-        pass
-    def write(self,s):
-        if s!=None:
-            console.log(s)
-    def flush(self):
-        pass
-sys.stdout = _Writer()
-sys.stderr = _Writer()
-`;
+        const runner = `import sys\nfrom js import console\nclass _Writer:\n    def __init__(self):\n        pass\n    def write(self,s):\n        if s!=None:\n            console.log(s)\n    def flush(self):\n        pass\nsys.stdout = _Writer()\nsys.stderr = _Writer()\n`;
         const oldLog = console.log;
         console.log = function(){ for(let i=0;i<arguments.length;i++){ streams.write(String(arguments[i])) } }
         await pyodide.runPythonAsync(runner + '\n' + code);
         console.log = oldLog;
+        updateHistory(code);
       }catch(err){ streams.write('\n' + String(err) + '\n'); }
       finally{ running = false; runBtn.disabled = false; stopBtn.disabled = true; statusEl.textContent = 'Ready'; }
     });
@@ -159,15 +169,7 @@ sys.stderr = _Writer()
     formatBtn.addEventListener('click', async ()=>{
       const text = editor.getValue();
       try{
-        const formatted = await pyodide.runPythonAsync(`import ast, sys, json
-code = '''${text.replace(/'''/g, "\\'\\'\\'") }'''
-try:
-    tree = ast.parse(code)
-    import astor
-    out = astor.to_source(tree
-except Exception:
-    out = code
-out`);
+        const formatted = await pyodide.runPythonAsync(`import ast, sys, json\ncode = '''${text.replace(/'''/g, "\\'\\'\\'") }'''\ntry:\n    tree = ast.parse(code)\n    import astor\n    out = astor.to_source(tree)\nexcept Exception:\n    out = code\nout`);
         if (formatted) editor.setValue(formatted, -1);
       }catch(e){ console.warn('Formatting failed', e); }
     });
@@ -181,7 +183,6 @@ out`);
     });
 
     importFileBtn.addEventListener('click', ()=>{ fileInput.click(); });
-
     fileInput.addEventListener('change', async (e)=>{
       const file = e.target.files[0];
       if(file){
@@ -192,6 +193,16 @@ out`);
     });
 
     notesBtn.addEventListener('click', ()=>{ notesPanel.style.display = notesPanel.style.display==='none'?'block':'none'; });
+    historyBtn.addEventListener('click', ()=>{ historyPanel.style.display = historyPanel.style.display==='none'?'block':'none'; });
+    searchBtn.addEventListener('click', ()=>{
+      const term = prompt('Enter search term:');
+      if(!term) return;
+      const replacement = prompt('Replace with (leave empty for no replace):');
+      const session = editor.getSession();
+      if(replacement!==null){
+        session.replace(new RegExp(term,'g'), replacement);
+      }
+    });
 
     let suggBox = null;
     function showSuggestions(items, boxX, boxY){ hideSuggestions(); if (!items.length) return; suggBox = document.createElement('div'); suggBox.className='suggestions'; suggBox.style.left = boxX + 'px'; suggBox.style.top = boxY + 'px'; items.slice(0,8).forEach(it=>{ const d = document.createElement('div'); d.textContent = it.caption; d.onclick = ()=>{ editor.insert(it.value); hideSuggestions(); editor.focus(); }; suggBox.appendChild(d); }); document.body.appendChild(suggBox); }
