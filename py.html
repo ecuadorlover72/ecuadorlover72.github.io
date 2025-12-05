@@ -10,7 +10,7 @@
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial}
     body{background:linear-gradient(180deg,#071029 0%, #071827 60%);color:#dbe7f0}
-    .app{display:grid;grid-template-columns:1fr 420px;gap:20px;padding:28px;min-height:100vh}
+    .app{display:grid;grid-template-columns:1fr 500px;gap:20px;padding:28px;min-height:100vh}
     .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:12px;padding:14px;box-shadow:0 6px 20px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
     header h1{font-size:18px;margin:0;color:#e6f3f6}
@@ -23,6 +23,7 @@
     button.primary{background:linear-gradient(90deg,var(--accent),#06b6d4);color:#072024;border:none}
     button.warn{border-color:rgba(239,68,68,0.14);}
     .output{height:40vh;overflow:auto;padding:12px;border-radius:8px;background:#050812;border:1px solid rgba(255,255,255,0.02);font-family:monospace;font-size:13px;resize:vertical}
+    #notesPanel{color:white; width:100%; min-height:150px;}
     .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
     .info{font-size:12px;color:var(--muted)}
     .status{font-size:12px;color:var(--muted);margin-left:auto}
@@ -54,8 +55,9 @@
           <button id="downloadBtn">Download .py</button>
           <button id="formatBtn">Format (auto)</button>
           <button id="importPyBtn">Import Py Package</button>
-          <button id="importModuleBtn">Import Module</button>
+          <button id="importFileBtn">Import .py File</button>
           <button id="notesBtn" class="primary">Notes</button>
+          <input type="file" id="fileInput" accept=".py" style="display:none">
         </div>
         <div style="margin-left:auto" class="info">Editor: <strong>Ace</strong> · Runtime: <strong>Pyodide</strong></div>
       </div>
@@ -87,8 +89,9 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const formatBtn = document.getElementById('formatBtn');
     const importPyBtn = document.getElementById('importPyBtn');
-    const importModuleBtn = document.getElementById('importModuleBtn');
+    const importFileBtn = document.getElementById('importFileBtn');
     const notesBtn = document.getElementById('notesBtn');
+    const fileInput = document.getElementById('fileInput');
     const outputEl = document.getElementById('output');
     const statusEl = document.getElementById('py-status');
     const notesPanel = document.getElementById('notesPanel');
@@ -97,22 +100,11 @@
     editor.setOptions({fontSize:14,wrap:true,enableBasicAutocompletion:true,enableSnippets:true,enableLiveAutocompletion:true,behavioursEnabled:true});
     editor.session.setUseWorker(false);
 
-    const PY_KEYWORDS = [
-      'print','input','for','while','if','elif','else','def','class','import','from','as','with','try','except','finally','return','yield','lambda','pass','break','continue','True','False','None','range','len','open','list','dict','set','tuple','int','float','str','bool'
-    ];
-    const pyCompleter = {
-      getCompletions: function(editor, session, pos, prefix, callback) {
-        if (prefix.length === 0) { callback(null, []); return }
-        const list = PY_KEYWORDS.filter(k => k.startsWith(prefix)).map(k => ({caption:k, value:k, meta:'python'}));
-        callback(null, list);
-      }
-    };
+    const PY_KEYWORDS = ['print','input','for','while','if','elif','else','def','class','import','from','as','with','try','except','finally','return','yield','lambda','pass','break','continue','True','False','None','range','len','open','list','dict','set','tuple','int','float','str','bool'];
+    const pyCompleter = {getCompletions: function(editor, session, pos, prefix, callback) { if (prefix.length === 0) { callback(null, []); return } const list = PY_KEYWORDS.filter(k => k.startsWith(prefix)).map(k => ({caption:k, value:k, meta:'python'})); callback(null, list); }};
     ace.require('ace/ext/language_tools').addCompleter(pyCompleter);
 
-    const starter = `# Welcome — type Python here and press Run
-name = input('Enter your name: ')
-print(f'Hello, {name}')
-`;
+    const starter = `# Welcome — type Python here and press Run\nname = input('Enter your name: ')\nprint(f'Hello, {name}')\n`;
     editor.setValue(starter, -1);
 
     let pyodide = null;
@@ -126,18 +118,13 @@ print(f'Hello, {name}')
     }
     loadPyodideAndPackages().catch(e=>{statusEl.textContent='Failed'; outputEl.textContent = e});
 
-    function createOutputStreams(){
-      const write = (s)=>{ outputEl.textContent += s; outputEl.scrollTop = outputEl.scrollHeight };
-      const clear = ()=>{ outputEl.textContent = '' };
-      return {write, clear};
-    }
+    function createOutputStreams(){ const write = (s)=>{ outputEl.textContent += s; outputEl.scrollTop = outputEl.scrollHeight }; const clear = ()=>{ outputEl.textContent = '' }; return {write, clear}; }
 
     runBtn.addEventListener('click', async ()=>{
       if (!pyodide) return; outputEl.textContent = '';
       const streams = createOutputStreams();
       const code = editor.getValue();
-      running = true;
-      runBtn.disabled = true; stopBtn.disabled = false; statusEl.textContent = 'Running';
+      running = true; runBtn.disabled = true; stopBtn.disabled = false; statusEl.textContent = 'Running';
       try{
         const runner = `import sys\nfrom js import console\nclass _Writer:\n    def __init__(self):\n        pass\n    def write(self,s):\n        if s!=None:\n            console.log(s)\n    def flush(self):\n        pass\nsys.stdout = _Writer()\nsys.stderr = _Writer()\n`;
         const oldLog = console.log;
@@ -145,9 +132,7 @@ print(f'Hello, {name}')
         await pyodide.runPythonAsync(runner + '\n' + code);
         console.log = oldLog;
       }catch(err){ streams.write('\n' + String(err) + '\n'); }
-      finally{
-        running = false; runBtn.disabled = false; stopBtn.disabled = true; statusEl.textContent = 'Ready';
-      }
+      finally{ running = false; runBtn.disabled = false; stopBtn.disabled = true; statusEl.textContent = 'Ready'; }
     });
 
     stopBtn.addEventListener('click', ()=>{ if (!running) return; outputEl.textContent += '\n*** Interrupt requested — refresh page to forcibly stop long-running code ***\n'; });
@@ -174,15 +159,14 @@ print(f'Hello, {name}')
       }
     });
 
-    importModuleBtn.addEventListener('click', async ()=>{
-      const mod = prompt('Enter the Python module to import:');
-      if(mod){
-        try{
-          await pyodide.runPythonAsync(`import ${mod}`);
-          outputEl.textContent += `\nModule ${mod} imported successfully\n`;
-        }catch(e){
-          outputEl.textContent += `\nFailed to import module ${mod}: ${e}\n`;
-        }
+    importFileBtn.addEventListener('click', ()=>{ fileInput.click(); });
+
+    fileInput.addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      if(file){
+        const content = await file.text();
+        editor.setValue(content, -1);
+        outputEl.textContent += `\nLoaded file ${file.name}\n`;
       }
     });
 
