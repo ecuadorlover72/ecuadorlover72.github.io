@@ -64,16 +64,19 @@
     <aside class="panel side">
       <div>
         <h3 style="margin:0 0 8px 0">Console output</h3>
-        <div id="output" class="output" style="height:40vh;"></div>
+        <div id="output" class="output"></div>
       </div>
 
-      <div class="toolbar" style="margin-top:12px;">
-        <label class="small">Text size:</label>
-        <input id="fontSize" type="range" min="10" max="24" value="14" />
-        <button id="notesBtn" class="primary">Notes</button>
+      <div>
+        <h3 style="margin:12px 0 8px 0">Quick reference</h3>
+        <div class="small">Supports <code>input()</code> (uses a browser prompt), <code>print()</code>, and most pure-Python libraries available in Pyodide. Network access is not available on GitHub Pages.</div>
       </div>
 
-      <div id="notesPanel" class="output" style="height:30vh; display:none;"></div>
+      <div>
+        <h3 style="margin:12px 0 8px 0">Autocomplete</h3>
+        <div class="small">Start typing Python keywords, builtins or common functions like <code>print</code>, <code>range</code>, <code>for</code>, etc. Suggestions appear automatically.</div>
+      </div>
+
     </aside>
 
     <footer>Designed for GitHub Pages — save this file as <code>index.html</code> and push to your repo's gh-pages branch.</footer>
@@ -224,19 +227,6 @@ print(f'Hello, {name}')
     });
 
     document.addEventListener('click', (e)=>{ if (suggBox && !suggBox.contains(e.target)) hideSuggestions(); });
-
-  // Notes and font-size handling
-    const fontSize = document.getElementById('fontSize');
-    fontSize.addEventListener('input', ()=>{
-      editor.setOptions({fontSize: parseInt(fontSize.value)});
-    });
-
-    const notesBtn = document.getElementById('notesBtn');
-    const notesPanel = document.getElementById('notesPanel');
-    notesBtn.addEventListener('click', ()=>{
-      notesPanel.style.display = notesPanel.style.display === 'none' ? 'block' : 'none';
-    }); = notesPanel.style.display === 'none' ? 'block' : 'none';
-    });
 
   </script>
 </body>
