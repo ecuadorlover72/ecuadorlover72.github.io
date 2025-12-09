@@ -31,10 +31,12 @@
     button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e6f3f6;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
     button.primary{background:linear-gradient(90deg,var(--accent),#06b6d4);color:#072024;border:none}
 
-    .output{height:35vh;overflow:auto;padding:12px;border-radius:8px;background:#050812;border:1px solid rgba(255,255,255,0.02);font-family:monospace;font-size:13px}
+    .output{height:20vh;overflow:auto;padding:12px;border-radius:8px;background:#050812;border:1px solid rgba(255,255,255,0.02);font-family:monospace;font-size:13px;white-space:pre-wrap}
 
     #notesPanel{width:100%;min-height:150px;display:none;background:#050812;color:white}
     #historyPanel{width:100%;min-height:100px;display:none;overflow:auto;background:#061226;padding:6px;border-radius:6px}
+
+    #turtleCanvas{display:block;margin-top:10px}
 
     .small{font-size:12px;color:var(--muted)}
   </style>
@@ -69,6 +71,7 @@
   <button id="importFileBtn">Import .py</button>
   <button id="notesBtn" class="primary">Notes</button>
   <button id="historyBtn">History</button>
+  <button id="clearOutputBtn">Clear Output</button>
   <input type="file" id="fileInput" accept=".py" style="display:none">
 </div>
 
@@ -80,6 +83,9 @@
 <aside class="panel">
   <h3>Console Output</h3>
   <div id="output" class="output"></div>
+
+  <h3>Turtle Canvas</h3>
+  <canvas id="turtleCanvas" width="400" height="300" style="background:#050812;border:1px solid rgba(255,255,255,0.02);border-radius:8px"></canvas>
 
   <h3>Notes</h3>
   <textarea id="notesPanel" class="output"></textarea>
@@ -123,13 +129,11 @@ let activeTab = 0;
 const tabBar = document.getElementById("tabBar");
 const newTabBtn = document.getElementById("newTabBtn");
 
-/* SAVE ACTIVE TAB CODE */
 function saveCurrentTab() {
   let t = tabs.find(x => x.id === activeTab);
   if (t) t.code = editor.getValue();
 }
 
-/* REFRESH TAB BAR */
 function refreshTabs() {
   [...tabBar.querySelectorAll(".tab")].forEach(t=>{
     if (t.id !== "newTabBtn") t.remove();
@@ -153,7 +157,6 @@ function refreshTabs() {
 
     el.ondblclick = ()=>renameTab(t.id);
 
-    /* DRAG */
     el.addEventListener("dragstart", e=>{
       e.dataTransfer.setData("text/plain", t.id);
       el.classList.add("dragging");
@@ -166,7 +169,6 @@ function refreshTabs() {
   enableReorder();
 }
 
-/* SWITCH TAB */
 function switchTab(id) {
   saveCurrentTab();
   activeTab = id;
@@ -174,7 +176,6 @@ function switchTab(id) {
   refreshTabs();
 }
 
-/* CLOSE TAB */
 function closeTab(id) {
   saveCurrentTab();
   tabs = tabs.filter(t => t.id !== id);
@@ -186,7 +187,6 @@ function closeTab(id) {
   refreshTabs();
 }
 
-/* RENAME TAB */
 function renameTab(id) {
   let t = tabs.find(x => x.id === id);
   let newName = prompt("Rename tab:", t.name);
@@ -196,10 +196,8 @@ function renameTab(id) {
   }
 }
 
-/* DRAG-REORDER */
 function enableReorder() {
   const elements = tabBar.querySelectorAll(".tab:not(#newTabBtn)");
-
   elements.forEach(el=>{
     el.addEventListener("dragover", e=>{
       e.preventDefault();
@@ -238,9 +236,8 @@ tabBar.addEventListener("click", e=>{
 refreshTabs();
 
 /* ==========================
-   PYODIDE + TURTLE
+   PYODIDE + TURTLE + OUTPUT
 =========================== */
-
 let pyodide = null;
 let running = false;
 const outputEl = document.getElementById("output");
@@ -252,21 +249,40 @@ async function loadPyodideAndPackages(){
     indexURL:"https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
   });
 
-  // Enable turtle by injecting display canvas
   await pyodide.loadPackage("micropip");
   await pyodide.runPythonAsync(`
 import js
 from pyodide.ffi import create_proxy
-`);
+  `);
+
+  await setupTurtle();
 
   statusEl.textContent = "Ready";
 }
 loadPyodideAndPackages();
 
-/* OUTPUT STREAM */
+async function setupTurtle() {
+  await pyodide.runPythonAsync(`
+import turtle
+from js import document
+
+canvas = document.getElementById("turtleCanvas")
+screen = turtle.TurtleScreen(canvas)
+t = turtle.RawTurtle(screen)
+screen.tracer(0)
+
+def run_turtle_code(code):
+    exec(code)
+    screen.update()
+  `);
+}
+
+/* OUTPUT STREAMS WITH COLOR */
 function createOutputStreams(){
   const write = s=>{
-    outputEl.textContent += s;
+    let color = "white"; 
+    if (s.toLowerCase().includes("error") || s.toLowerCase().includes("traceback")) color = "red";
+    outputEl.innerHTML += `<span style="color:${color}">${s}</span>\n`;
     outputEl.scrollTop = outputEl.scrollHeight;
   };
   return {write};
@@ -275,7 +291,7 @@ function createOutputStreams(){
 /* RUN CODE */
 document.getElementById("runBtn").onclick = async ()=>{
   saveCurrentTab();
-  outputEl.textContent = "";
+  outputEl.innerHTML = "";
   if (!pyodide) return;
 
   const code = editor.getValue();
@@ -298,7 +314,12 @@ sys.stderr = _W()
 `;
 
   try {
-    await pyodide.runPythonAsync(redirect + "\n" + code);
+    // Check if code contains turtle
+    if (code.includes("turtle")) {
+      await pyodide.runPythonAsync("run_turtle_code('''" + code.replace(/'/g,"\\'") + "''')");
+    } else {
+      await pyodide.runPythonAsync(redirect + "\n" + code);
+    }
   } catch(e) {
     streams.write("\n"+e+"\n");
   }
@@ -310,7 +331,7 @@ sys.stderr = _W()
 
 /* STOP BUTTON (non-force) */
 document.getElementById("stopBtn").onclick = ()=>{
-  outputEl.textContent += "\n*** Interrupt requested — refresh page to force stop ***\n";
+  outputEl.innerHTML += "\n*** Interrupt requested — refresh page to force stop ***\n";
 };
 
 /* DOWNLOAD */
@@ -345,9 +366,9 @@ document.getElementById("importPyBtn").onclick = async ()=>{
   if (pkg) {
     try {
       await pyodide.loadPackage(pkg);
-      outputEl.textContent += `\nImported: ${pkg}\n`;
+      outputEl.innerHTML += `\nImported: ${pkg}\n`;
     } catch {
-      outputEl.textContent += `\nFailed: ${pkg}\n`;
+      outputEl.innerHTML += `\nFailed: ${pkg}\n`;
     }
   }
 };
@@ -383,6 +404,11 @@ function addHistory(code){
   div.onclick = ()=> editor.setValue(code,-1);
   document.getElementById("historyPanel").prepend(div);
 }
+
+/* CLEAR OUTPUT */
+document.getElementById("clearOutputBtn").onclick = ()=>{
+  outputEl.innerHTML = "";
+};
 </script>
 
 </body>
