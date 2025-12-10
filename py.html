@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Python Runner — Multi-Tab</title>
+  <title>Python Runner — Multi-Tab + Projects + Collaboration</title>
 
   <style>
     :root{--bg:#0f1720;--card:#0b1220;--muted:#94a3b8;--accent:#0ea5a3;--danger:#ef4444}
@@ -51,10 +51,14 @@
 <header>
   <div>
     <h1>Python Runner</h1>
-    <p class="small">Multi-tab editor with Pyodide runtime</p>
+    <p class="small">Multi-tab editor with Pyodide runtime + Projects + Collaboration</p>
   </div>
   <div class="small">Runtime: <span id="py-status">Loading…</span></div>
 </header>
+
+<!-- PROJECT SELECTION -->
+<select id="projectSelect"></select>
+<button id="newProjectBtn">+ New Project</button>
 
 <!-- TABS -->
 <div id="tabBar">
@@ -99,7 +103,7 @@
 <!-- JS + ACE + PYODIDE -->
 <script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4.14/src-min-noconflict/ace.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4.14/src-min-noconflict/ext-language_tools.js"></script>
-<script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/pyodide/pyodide/v0.24.1/full/pyodide.js"></script>
 
 <script>
 /* ==========================
@@ -119,29 +123,54 @@ editor.setOptions({
 editor.session.setUseWorker(false);
 
 /* ==========================
-   TAB SYSTEM
+   PROJECT + TAB SYSTEM
 =========================== */
-let tabs = [
-  { id:0, name:"Tab 1", code:"# Welcome to Tab 1\nprint('Hello!')" }
+let projects = [
+  { name: "Default Project", tabs: [{ id:0, name:"Tab 1", code:"# Welcome to Tab 1\nprint('Hello!')"}] }
 ];
+let activeProject = 0;
 let activeTab = 0;
 
 const tabBar = document.getElementById("tabBar");
 const newTabBtn = document.getElementById("newTabBtn");
+const projectSelect = document.getElementById("projectSelect");
+const newProjectBtn = document.getElementById("newProjectBtn");
 
 function saveCurrentTab() {
-  let t = tabs.find(x => x.id === activeTab);
-  if (t) t.code = editor.getValue();
+  const tab = projects[activeProject].tabs.find(t=>t.id===activeTab);
+  if(tab) tab.code = editor.getValue();
+}
+
+function refreshProjects() {
+  projectSelect.innerHTML = "";
+  projects.forEach((p,i)=>{
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = p.name;
+    projectSelect.appendChild(opt);
+  });
+  projectSelect.value = activeProject;
+}
+
+function switchProject(idx) {
+  saveCurrentTab();
+  activeProject = idx;
+  if(projects[idx].tabs.length === 0) {
+    projects[idx].tabs.push({ id:Date.now(), name:"Tab 1", code:""});
+  }
+  activeTab = projects[idx].tabs[0].id;
+  editor.setValue(projects[idx].tabs[0].code,-1);
+  refreshTabs();
+  refreshProjects();
 }
 
 function refreshTabs() {
-  [...tabBar.querySelectorAll(".tab")].forEach(t=>{
-    if (t.id !== "newTabBtn") t.remove();
-  });
+  [...tabBar.querySelectorAll(".tab")].forEach(t=> t.id!=="newTabBtn" && t.remove());
+  const tabs = projects[activeProject].tabs;
 
-  tabs.forEach(t=>{
+  tabs.forEach(t => {
     const el = document.createElement("div");
-    el.className = "tab" + (t.id===activeTab ? " active" : "");
+    el.className = "tab" + (t.id===activeTab?" active":"");
     el.dataset.id = t.id;
     el.draggable = true;
     el.textContent = t.name;
@@ -163,76 +192,58 @@ function refreshTabs() {
     });
     el.addEventListener("dragend", ()=> el.classList.remove("dragging"));
 
-    tabBar.insertBefore(el, newTabBtn);
-  });
+    el.addEventListener("click", ()=>switchTab(t.id));
 
-  enableReorder();
+    tabBar.insertBefore(el,newTabBtn);
+  });
 }
 
 function switchTab(id) {
   saveCurrentTab();
   activeTab = id;
-  editor.setValue(tabs.find(t=>t.id===id).code, -1);
+  const tab = projects[activeProject].tabs.find(t=>t.id===id);
+  if(tab) editor.setValue(tab.code,-1);
   refreshTabs();
 }
 
 function closeTab(id) {
   saveCurrentTab();
-  tabs = tabs.filter(t => t.id !== id);
-  if (tabs.length === 0) {
-    tabs.push({id:0, name:"Tab 1", code:""});
+  let tabs = projects[activeProject].tabs;
+  projects[activeProject].tabs = tabs.filter(t=>t.id!==id);
+  if(projects[activeProject].tabs.length===0){
+    projects[activeProject].tabs.push({id:Date.now(),name:"Tab 1",code:""});
   }
-  activeTab = tabs[0].id;
-  editor.setValue(tabs[0].code,-1);
+  activeTab = projects[activeProject].tabs[0].id;
+  editor.setValue(projects[activeProject].tabs[0].code,-1);
   refreshTabs();
 }
 
-function renameTab(id) {
-  let t = tabs.find(x => x.id === id);
-  let newName = prompt("Rename tab:", t.name);
-  if (newName) {
-    t.name = newName;
-    refreshTabs();
-  }
-}
-
-function enableReorder() {
-  const elements = tabBar.querySelectorAll(".tab:not(#newTabBtn)");
-  elements.forEach(el=>{
-    el.addEventListener("dragover", e=>{
-      e.preventDefault();
-      const draggedId = Number(e.dataTransfer.getData("text/plain"));
-      const draggedTab = tabs.find(t=>t.id===draggedId);
-      const targetId = Number(el.dataset.id);
-      const targetTab = tabs.find(t=>t.id===targetId);
-
-      let from = tabs.indexOf(draggedTab);
-      let to = tabs.indexOf(targetTab);
-
-      if (from !== -1 && to !== -1 && from !== to) {
-        tabs.splice(from,1);
-        tabs.splice(to,0,draggedTab);
-        refreshTabs();
-      }
-    });
-  });
+function renameTab(id){
+  let tab = projects[activeProject].tabs.find(t=>t.id===id);
+  let newName = prompt("Rename tab:", tab.name);
+  if(newName) { tab.name = newName; refreshTabs(); }
 }
 
 newTabBtn.onclick = ()=>{
   saveCurrentTab();
   const id = Date.now();
-  tabs.push({id, name:"Tab "+(tabs.length+1), code:"# New tab\n"});
+  projects[activeProject].tabs.push({id, name:"Tab "+(projects[activeProject].tabs.length+1), code:"# New tab\n"});
   activeTab = id;
   editor.setValue("",-1);
   refreshTabs();
-};
+}
 
-tabBar.addEventListener("click", e=>{
-  if (e.target.classList.contains("tab") && e.target.id!=="newTabBtn") {
-    switchTab(Number(e.target.dataset.id));
+projectSelect.onchange = e=>switchProject(Number(e.target.value));
+
+newProjectBtn.onclick = ()=>{
+  const name = prompt("Project name:");
+  if(name){
+    projects.push({name, tabs:[]});
+    switchProject(projects.length-1);
   }
-});
+}
 
+refreshProjects();
 refreshTabs();
 
 /* ==========================
@@ -245,18 +256,10 @@ const statusEl = document.getElementById("py-status");
 
 async function loadPyodideAndPackages(){
   statusEl.textContent = "Loading…";
-  pyodide = await loadPyodide({
-    indexURL:"https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
-  });
-
+  pyodide = await loadPyodide({indexURL:"https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"});
   await pyodide.loadPackage("micropip");
-  await pyodide.runPythonAsync(`
-import js
-from pyodide.ffi import create_proxy
-  `);
-
+  await pyodide.runPythonAsync(`import js\nfrom pyodide.ffi import create_proxy`);
   await setupTurtle();
-
   statusEl.textContent = "Ready";
 }
 loadPyodideAndPackages();
@@ -274,56 +277,35 @@ screen.tracer(0)
 def run_turtle_code(code):
     exec(code)
     screen.update()
-  `);
+`);
 }
 
-/* OUTPUT STREAMS WITH COLOR */
+/* ==========================
+   ENHANCED OUTPUT STREAMS
+=========================== */
 function createOutputStreams(){
-  const write = s=>{
-    let color = "white"; 
-    if (s.toLowerCase().includes("error") || s.toLowerCase().includes("traceback")) color = "red";
-    outputEl.innerHTML += `<span style="color:${color}">${s}</span>\n`;
+  const write = (s,type="stdout")=>{
+    let color = "white";
+    if(type==="stderr" || s.toLowerCase().includes("error") || s.toLowerCase().includes("traceback")) color="red";
+    else if(type==="warn") color="yellow";
+
+    let display = s.length>200 ? `<details><summary>Output...</summary>${s}</details>` : s;
+    outputEl.innerHTML += `<span style="color:${color}">${display}</span>\n`;
     outputEl.scrollTop = outputEl.scrollHeight;
   };
   return {write};
 }
-/* ==========================
-   IMPORT PACKAGE
-=========================== */
-document.getElementById("importPyBtn").onclick = async () => {
-  let pkg = prompt("Enter the module name to import (e.g., numpy, pandas, pillow):");
-  if (pkg) {
-    outputEl.innerHTML += `\nInstalling module: ${pkg}...\n`;
-    try {
-      // Try loading via Pyodide built-in packages first
-      await pyodide.loadPackage(pkg);
-      outputEl.innerHTML += `Module "${pkg}" successfully imported!\n`;
-    } catch (err) {
-      outputEl.innerHTML += `Failed to import "${pkg}" via pyodide.loadPackage. Trying via micropip...\n`;
-      try {
-        // Fallback: use micropip to install from PyPI
-        await pyodide.runPythonAsync(`
-import micropip
-await micropip.install("${pkg}")
-`);
-        outputEl.innerHTML += `Module "${pkg}" successfully installed via micropip!\n`;
-      } catch (err2) {
-        outputEl.innerHTML += `Failed to install module "${pkg}". Error:\n${err2}\n`;
-      }
-    }
-    outputEl.scrollTop = outputEl.scrollHeight;
-  }
-};
 
-/* RUN CODE */
+/* ==========================
+   RUN CODE
+=========================== */
 document.getElementById("runBtn").onclick = async ()=>{
   saveCurrentTab();
   outputEl.innerHTML = "";
-  if (!pyodide) return;
+  if(!pyodide) return;
 
   const code = editor.getValue();
   const streams = createOutputStreams();
-
   statusEl.textContent="Running…";
   running = true;
 
@@ -341,30 +323,27 @@ sys.stderr = _W()
 `;
 
   try {
-    // Check if code contains turtle
-    if (code.includes("turtle")) {
-      await pyodide.runPythonAsync("run_turtle_code('''" + code.replace(/'/g,"\\'") + "''')");
+    if(code.includes("turtle")){
+      await pyodide.runPythonAsync("run_turtle_code('''"+code.replace(/'/g,"\\'")+"''')");
     } else {
-      await pyodide.runPythonAsync(redirect + "\n" + code);
+      await pyodide.runPythonAsync(redirect+"\n"+code);
     }
-  } catch(e) {
-    streams.write("\n"+e+"\n");
+  } catch(e){
+    streams.write(e+"\n","stderr");
   }
 
-  running = false;
+  running=false;
   statusEl.textContent="Ready";
   console.log = oldLog;
 };
 
-/* STOP BUTTON (non-force) */
-document.getElementById("stopBtn").onclick = ()=>{
-  outputEl.innerHTML += "\n*** Interrupt requested — refresh page to force stop ***\n";
-};
+/* STOP */
+document.getElementById("stopBtn").onclick = ()=>{outputEl.innerHTML += "\n*** Interrupt requested — refresh page to force stop ***\n";};
 
 /* DOWNLOAD */
 document.getElementById("downloadBtn").onclick = ()=>{
   saveCurrentTab();
-  const tab = tabs.find(t=>t.id===activeTab);
+  const tab = projects[activeProject].tabs.find(t=>t.id===activeTab);
   const blob = new Blob([tab.code],{type:"text/plain"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -375,27 +354,26 @@ document.getElementById("downloadBtn").onclick = ()=>{
 /* FORMAT */
 document.getElementById("formatBtn").onclick = async ()=>{
   const code = editor.getValue();
-  try {
+  try{
     const formatted = await pyodide.runPythonAsync(`
 import ast, astor
 tree = ast.parse("""${code.replace(/"/g,'\\"')}""")
 astor.to_source(tree)
 `);
     editor.setValue(formatted,-1);
-  } catch {
-    alert("Formatting failed.");
-  }
+  } catch { alert("Formatting failed."); }
 };
 
 /* IMPORT PACKAGE */
 document.getElementById("importPyBtn").onclick = async ()=>{
-  let pkg = prompt("Package name:");
-  if (pkg) {
-    try {
+  let pkg = prompt("Enter module name:");
+  if(pkg){
+    outputEl.innerHTML += `Installing module: ${pkg}...\n`;
+    try{
       await pyodide.loadPackage(pkg);
-      outputEl.innerHTML += `\nImported: ${pkg}\n`;
-    } catch {
-      outputEl.innerHTML += `\nFailed: ${pkg}\n`;
+      outputEl.innerHTML += `Module "${pkg}" imported!\n`;
+    } catch{
+      outputEl.innerHTML += `Failed: ${pkg}\n`;
     }
   }
 };
@@ -404,38 +382,54 @@ document.getElementById("importPyBtn").onclick = async ()=>{
 document.getElementById("importFileBtn").onclick = ()=>document.getElementById("fileInput").click();
 document.getElementById("fileInput").onchange = async e=>{
   const f = e.target.files[0];
-  if (f) {
-    editor.setValue(await f.text(),-1);
-  }
+  if(f) editor.setValue(await f.text(),-1);
 };
 
-/* NOTES TOGGLE */
+/* NOTES */
 document.getElementById("notesBtn").onclick = ()=>{
   const n = document.getElementById("notesPanel");
-  n.style.display = n.style.display==="none" ? "block" : "none";
+  n.style.display = n.style.display==="none"?"block":"none";
 };
 
 /* HISTORY */
 let history = [];
 document.getElementById("historyBtn").onclick = ()=>{
   const hp = document.getElementById("historyPanel");
-  hp.style.display = hp.style.display==="none" ? "block" : "none";
+  hp.style.display = hp.style.display==="none"?"block":"none";
 };
-
 function addHistory(code){
   const ts = new Date().toLocaleTimeString();
   history.push({ts,code});
   const div = document.createElement("div");
   div.textContent = `[${ts}] ${code.slice(0,40)}...`;
-  div.style.cursor = "pointer";
-  div.onclick = ()=> editor.setValue(code,-1);
+  div.style.cursor="pointer";
+  div.onclick = ()=>editor.setValue(code,-1);
   document.getElementById("historyPanel").prepend(div);
 }
 
 /* CLEAR OUTPUT */
-document.getElementById("clearOutputBtn").onclick = ()=>{
-  outputEl.innerHTML = "";
-};
+document.getElementById("clearOutputBtn").onclick = ()=>{outputEl.innerHTML="";};
+
+/* ==========================
+   LIVE COLLABORATION (basic)
+=========================== */
+let ws = null;
+function initCollaboration(){
+  ws = new WebSocket("wss://echo.websocket.events"); // Simple demo echo server
+  ws.onopen = ()=>console.log("Collab connected");
+  ws.onmessage = e=>{
+    const msg = JSON.parse(e.data);
+    if(msg.type==="code" && msg.tabId===activeTab){
+      editor.setValue(msg.code,-1);
+    }
+  };
+}
+editor.on("change", ()=> {
+  if(ws && ws.readyState===1){
+    ws.send(JSON.stringify({type:"code",tabId:activeTab,code:editor.getValue()}));
+  }
+});
+initCollaboration();
 </script>
 
 </body>
