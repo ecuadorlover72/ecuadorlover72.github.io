@@ -133,6 +133,18 @@ function saveCurrentTab() {
   let t = tabs.find(x => x.id === activeTab);
   if (t) t.code = editor.getValue();
 }
+<script>
+async function fetchImage(url){
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const reader = new FileReader();
+    return new Promise((resolve) => {
+        reader.onloadend = () => resolve(reader.result.split(',')[1]); // return base64
+        reader.readAsDataURL(blob);
+    });
+}
+window.fetchImage = fetchImage;
+</script>
 
 function refreshTabs() {
   [...tabBar.querySelectorAll(".tab")].forEach(t=>{
