@@ -254,31 +254,30 @@ let running = false;
 const outputEl = document.getElementById("output");
 const statusEl = document.getElementById("py-status");
 
-async function loadPyodideAndPackages(){
-  statusEl.textContent = "Loading…";
-  pyodide = await loadPyodide({indexURL:"https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"});
-  await pyodide.loadPackage("micropip");
-  await pyodide.runPythonAsync(`import js\nfrom pyodide.ffi import create_proxy`);
-  await setupTurtle();
-  statusEl.textContent = "Ready";
-}
-loadPyodideAndPackages();
-
-async function setupTurtle() {
-  await pyodide.runPythonAsync(`
+async function initPyodide() {
+  try {
+    statusEl.textContent = "Loading…";
+    pyodide = await loadPyodide({indexURL:"https://cdn.jsdelivr.net/gh/pyodide/pyodide/v0.24.1/full/"});
+    await pyodide.loadPackage("micropip");
+    await pyodide.runPythonAsync(`import js\nfrom pyodide.ffi import create_proxy`);
+    await pyodide.runPythonAsync(`
 import turtle
 from js import document
-
 canvas = document.getElementById("turtleCanvas")
 screen = turtle.TurtleScreen(canvas)
 t = turtle.RawTurtle(screen)
 screen.tracer(0)
-
 def run_turtle_code(code):
     exec(code)
     screen.update()
 `);
+    statusEl.textContent = "Ready";
+  } catch(err) {
+    console.error("Pyodide init failed", err);
+    statusEl.textContent = "Error loading Pyodide";
+  }
 }
+initPyodide();
 
 /* ==========================
    ENHANCED OUTPUT STREAMS
@@ -288,7 +287,6 @@ function createOutputStreams(){
     let color = "white";
     if(type==="stderr" || s.toLowerCase().includes("error") || s.toLowerCase().includes("traceback")) color="red";
     else if(type==="warn") color="yellow";
-
     let display = s.length>200 ? `<details><summary>Output...</summary>${s}</details>` : s;
     outputEl.innerHTML += `<span style="color:${color}">${display}</span>\n`;
     outputEl.scrollTop = outputEl.scrollHeight;
@@ -300,44 +298,34 @@ function createOutputStreams(){
    RUN CODE
 =========================== */
 document.getElementById("runBtn").onclick = async ()=>{
+  if(!pyodide){ alert("Pyodide not ready yet!"); return; }
   saveCurrentTab();
   outputEl.innerHTML = "";
-  if(!pyodide) return;
-
+  statusEl.textContent="Running…";
   const code = editor.getValue();
   const streams = createOutputStreams();
-  statusEl.textContent="Running…";
-  running = true;
-
-  const oldLog = console.log;
-  console.log = (...args)=>args.forEach(a=>streams.write(String(a)));
-
   const redirect = `
 import sys
 from js import console
 class _W:
-  def write(self,s): console.log(s)
-  def flush(self): pass
+    def write(self,s): console.log(s)
+    def flush(self): pass
 sys.stdout = _W()
 sys.stderr = _W()
 `;
-
-  try {
+  try{
     if(code.includes("turtle")){
-      await pyodide.runPythonAsync("run_turtle_code('''"+code.replace(/'/g,"\\'")+"''')");
+      await pyodide.runPythonAsync(`run_turtle_code('''${code.replace(/'/g,"\\'")}''')`);
     } else {
       await pyodide.runPythonAsync(redirect+"\n"+code);
     }
-  } catch(e){
-    streams.write(e+"\n","stderr");
+  } catch(err){
+    streams.write(err.toString(),"stderr");
   }
-
-  running=false;
   statusEl.textContent="Ready";
-  console.log = oldLog;
 };
 
-/* STOP */
+/* STOP BUTTON */
 document.getElementById("stopBtn").onclick = ()=>{outputEl.innerHTML += "\n*** Interrupt requested — refresh page to force stop ***\n";};
 
 /* DOWNLOAD */
@@ -347,7 +335,7 @@ document.getElementById("downloadBtn").onclick = ()=>{
   const blob = new Blob([tab.code],{type:"text/plain"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = tab.name + ".py";
+  a.download = tab.name+".py";
   a.click();
 };
 
@@ -368,12 +356,11 @@ astor.to_source(tree)
 document.getElementById("importPyBtn").onclick = async ()=>{
   let pkg = prompt("Enter module name:");
   if(pkg){
-    outputEl.innerHTML += `Installing module: ${pkg}...\n`;
     try{
       await pyodide.loadPackage(pkg);
-      outputEl.innerHTML += `Module "${pkg}" imported!\n`;
+      outputEl.innerHTML += `\nImported: ${pkg}\n`;
     } catch{
-      outputEl.innerHTML += `Failed: ${pkg}\n`;
+      outputEl.innerHTML += `\nFailed: ${pkg}\n`;
     }
   }
 };
@@ -413,23 +400,21 @@ document.getElementById("clearOutputBtn").onclick = ()=>{outputEl.innerHTML="";}
 /* ==========================
    LIVE COLLABORATION (basic)
 =========================== */
-let ws = null;
-function initCollaboration(){
-  ws = new WebSocket("wss://echo.websocket.events"); // Simple demo echo server
-  ws.onopen = ()=>console.log("Collab connected");
-  ws.onmessage = e=>{
+let ws = new WebSocket("wss://echo.websocket.events");
+ws.onopen = ()=>console.log("Collab connected");
+ws.onmessage = e=>{
+  try{
     const msg = JSON.parse(e.data);
     if(msg.type==="code" && msg.tabId===activeTab){
       editor.setValue(msg.code,-1);
     }
-  };
-}
-editor.on("change", ()=> {
-  if(ws && ws.readyState===1){
+  } catch{}
+};
+editor.on("change", ()=>{
+  if(ws.readyState===1){
     ws.send(JSON.stringify({type:"code",tabId:activeTab,code:editor.getValue()}));
   }
 });
-initCollaboration();
 </script>
 
 </body>
