@@ -287,6 +287,33 @@ function createOutputStreams(){
   };
   return {write};
 }
+/* ==========================
+   IMPORT PACKAGE
+=========================== */
+document.getElementById("importPyBtn").onclick = async () => {
+  let pkg = prompt("Enter the module name to import (e.g., numpy, pandas, pillow):");
+  if (pkg) {
+    outputEl.innerHTML += `\nInstalling module: ${pkg}...\n`;
+    try {
+      // Try loading via Pyodide built-in packages first
+      await pyodide.loadPackage(pkg);
+      outputEl.innerHTML += `Module "${pkg}" successfully imported!\n`;
+    } catch (err) {
+      outputEl.innerHTML += `Failed to import "${pkg}" via pyodide.loadPackage. Trying via micropip...\n`;
+      try {
+        // Fallback: use micropip to install from PyPI
+        await pyodide.runPythonAsync(`
+import micropip
+await micropip.install("${pkg}")
+`);
+        outputEl.innerHTML += `Module "${pkg}" successfully installed via micropip!\n`;
+      } catch (err2) {
+        outputEl.innerHTML += `Failed to install module "${pkg}". Error:\n${err2}\n`;
+      }
+    }
+    outputEl.scrollTop = outputEl.scrollHeight;
+  }
+};
 
 /* RUN CODE */
 document.getElementById("runBtn").onclick = async ()=>{
