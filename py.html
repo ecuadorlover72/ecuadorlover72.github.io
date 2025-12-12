@@ -3,43 +3,44 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Python Runner — Multi-Tab (with Explorer, input(), and Traceback Highlighting)</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.css">
+  <title>Python Runner — Multi-Tab</title>
+
   <style>
     :root{--bg:#0f1720;--card:#0b1220;--muted:#94a3b8;--accent:#0ea5a3;--danger:#ef4444}
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui}
     body{background:linear-gradient(180deg,#071029 0%, #071827 60%);color:#dbe7f0}
 
-    .app{display:grid;grid-template-columns:1fr 420px;gap:20px;padding:28px;min-height:100vh}
+    .app{display:grid;grid-template-columns:1fr 400px;gap:20px;padding:28px;min-height:100vh}
     .panel{background:rgba(255,255,255,0.02);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.03)}
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 
     #tabBar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;user-select:none}
-    .tab{padding:6px 10px;border-radius:6px;background:#0b1220;border:1px solid rgba(255,255,255,0.08);cursor:pointer;font-size:13px;display:flex;align-items:center}
+    .tab{
+      padding:6px 10px;border-radius:6px;
+      background:#0b1220;border:1px solid rgba(255,255,255,0.08);
+      cursor:pointer;font-size:13px;display:flex;align-items:center;
+    }
     .tab.active{background:var(--accent);color:#072024;font-weight:700}
     .tab .close{margin-left:6px;cursor:pointer;font-weight:bold}
+    .tab.dragging{opacity:0.4}
 
-    #editor{height:55vh;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.03)}
+    #editor{height:55vh;border-radius:8px;overflow:hidden}
 
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
     button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e6f3f6;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
     button.primary{background:linear-gradient(90deg,var(--accent),#06b6d4);color:#072024;border:none}
 
     .output{height:20vh;overflow:auto;padding:12px;border-radius:8px;background:#050812;border:1px solid rgba(255,255,255,0.02);font-family:monospace;font-size:13px;white-space:pre-wrap}
 
-    #fileExplorer{width:100%;min-height:120px}
+    #notesPanel{width:100%;min-height:150px;display:none;background:#050812;color:white}
+    #historyPanel{width:100%;min-height:100px;display:none;overflow:auto;background:#061226;padding:6px;border-radius:6px}
+
     #turtleCanvas{display:block;margin-top:10px}
 
     .small{font-size:12px;color:var(--muted)}
-
-    /* input overlay */
-    .input-overlay{position:fixed;left:0;top:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:9999}
-    .prompt-box{background:#071827;padding:16px;border-radius:8px;min-width:320px;color:#dbe7f0}
-    .prompt-box input{width:100%;padding:8px;margin-top:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:#0b1220;color:#dbe7f0}
-    .prompt-row{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
-
   </style>
+
 </head>
 <body>
 
@@ -50,7 +51,7 @@
 <header>
   <div>
     <h1>Python Runner</h1>
-    <p class="small">Multi-tab editor with Pyodide runtime — now with File Explorer, input() support, and traceback highlighting</p>
+    <p class="small">Multi-tab editor with Pyodide runtime</p>
   </div>
   <div class="small">Runtime: <span id="py-status">Loading…</span></div>
 </header>
@@ -76,8 +77,6 @@
 
 <div id="editor"></div>
 
-<!-- File Explorer inserted here by script -->
-
 </div>
 
 <!-- SIDE PANEL -->
@@ -89,24 +88,12 @@
   <canvas id="turtleCanvas" width="400" height="300" style="background:#050812;border:1px solid rgba(255,255,255,0.02);border-radius:8px"></canvas>
 
   <h3>Notes</h3>
-  <textarea id="notesPanel" class="output" style="display:none"></textarea>
+  <textarea id="notesPanel" class="output"></textarea>
 
   <h3>History</h3>
-  <div id="historyPanel" style="display:none"></div>
+  <div id="historyPanel"></div>
 </aside>
 
-</div>
-
-<!-- input overlay for input() polyfill -->
-<div id="inputOverlay" class="input-overlay">
-  <div class="prompt-box">
-    <div id="promptText">Input:</div>
-    <input id="promptInput" />
-    <div class="prompt-row">
-      <button id="promptCancel">Cancel</button>
-      <button id="promptOk" class="primary">OK</button>
-    </div>
-  </div>
 </div>
 
 <!-- JS + ACE + PYODIDE -->
@@ -132,13 +119,12 @@ editor.setOptions({
 editor.session.setUseWorker(false);
 
 /* ==========================
-   TABS (same as your original)
+   TAB SYSTEM
 =========================== */
 let tabs = [
   { id:0, name:"Tab 1", code:"# Welcome to Tab 1\nprint('Hello!')" }
 ];
 let activeTab = 0;
-const activeTabRef = { id: activeTab };
 
 const tabBar = document.getElementById("tabBar");
 const newTabBtn = document.getElementById("newTabBtn");
@@ -147,7 +133,7 @@ function saveCurrentTab() {
   let t = tabs.find(x => x.id === activeTab);
   if (t) t.code = editor.getValue();
 }
-  
+
 function refreshTabs() {
   [...tabBar.querySelectorAll(".tab")].forEach(t=>{
     if (t.id !== "newTabBtn") t.remove();
@@ -186,7 +172,6 @@ function refreshTabs() {
 function switchTab(id) {
   saveCurrentTab();
   activeTab = id;
-  activeTabRef.id = id;
   editor.setValue(tabs.find(t=>t.id===id).code, -1);
   refreshTabs();
 }
@@ -198,7 +183,6 @@ function closeTab(id) {
     tabs.push({id:0, name:"Tab 1", code:""});
   }
   activeTab = tabs[0].id;
-  activeTabRef.id = activeTab;
   editor.setValue(tabs[0].code,-1);
   refreshTabs();
 }
@@ -239,7 +223,6 @@ newTabBtn.onclick = ()=>{
   const id = Date.now();
   tabs.push({id, name:"Tab "+(tabs.length+1), code:"# New tab\n"});
   activeTab = id;
-  activeTabRef.id = id;
   editor.setValue("",-1);
   refreshTabs();
 };
@@ -270,7 +253,7 @@ async function loadPyodideAndPackages(){
   await pyodide.runPythonAsync(`
 import js
 from pyodide.ffi import create_proxy
-`);
+  `);
 
   await setupTurtle();
 
@@ -291,206 +274,27 @@ screen.tracer(0)
 def run_turtle_code(code):
     exec(code)
     screen.update()
-`);
+  `);
 }
 
 /* OUTPUT STREAMS WITH COLOR */
 function createOutputStreams(){
   const write = s=>{
     let color = "white"; 
-    if (String(s).toLowerCase().includes("error") || String(s).toLowerCase().includes("traceback")) color = "red";
-    outputEl.innerHTML += `<span style=\"color:${color}\">${String(s)}</span>\n`;
+    if (s.toLowerCase().includes("error") || s.toLowerCase().includes("traceback")) color = "red";
+    outputEl.innerHTML += `<span style="color:${color}">${s}</span>\n`;
     outputEl.scrollTop = outputEl.scrollHeight;
   };
   return {write};
 }
 
-/* ==========================
-   FILE EXPLORER (Pyodide FS)
-=========================== */
-async function ensureWorkspace(){
-  await pyodide.runPythonAsync(`import os\nos.makedirs('/workspace', exist_ok=True)`);
-}
-
-async function listWorkspace(){
-  await ensureWorkspace();
-  const res = await pyodide.runPythonAsync(`import os\n[fn for fn in os.listdir('/workspace') if fn.endswith('.py')]`);
-  return res.toJs ? res.toJs() : res;
-}
-
-async function readFile(filename){
-  const py = `open('/workspace/${filename}','r',encoding='utf-8').read()`;
-  return await pyodide.runPythonAsync(py);
-}
-
-async function writeFile(filename, content){
-  const safe = content.replace(/'''/g, "\\'\\'\\'");
-  const py = `with open('/workspace/${filename}','w',encoding='utf-8') as f:\n    f.write('''${safe}''')`;
-  return await pyodide.runPythonAsync(py);
-}
-
-async function deleteFile(filename){
-  const py = `import os\ntry:\n    os.remove('/workspace/${filename}')\nexcept FileNotFoundError:\n    pass`;
-  return await pyodide.runPythonAsync(py);
-}
-
-// Build explorer UI
-const explorer = document.createElement('div');
-explorer.id = 'fileExplorer';
-explorer.className = 'panel';
-explorer.style.marginTop = '12px';
-explorer.innerHTML = `
-  <div id="explHeader"><strong>File Explorer</strong></div>
-  <div style="margin-top:8px;"><button id="newFileBtn">New File</button> <button id="refreshFiles">Refresh</button></div>
-  <div id="fileList" style="margin-top:8px;"></div>
-`;
-
-const leftPanel = document.querySelector('.panel');
-leftPanel.parentNode.insertBefore(explorer, leftPanel.nextSibling);
-
-async function refreshFileList(){
-  const fileList = document.getElementById('fileList');
-  fileList.innerHTML = '';
-  let files = [];
-  try{ files = await listWorkspace(); }catch(e){ console.warn(e); }
-
-  if(!files || files.length===0){ fileList.innerHTML = '<div class="small">(no .py files in /workspace)</div>'; return; }
-
-  files.sort();
-  for(const fn of files){
-    const row = document.createElement('div');
-    row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='4px 0';
-    const name = document.createElement('div'); name.textContent = fn; name.style.cursor='pointer'; name.title='Click to open';
-    name.onclick = async ()=>{
-      const content = await readFile(fn);
-      const id = Date.now();
-      tabs.push({id, name:fn.replace('.py',''), code:content});
-      activeTab = id; activeTabRef.id = id;
-      refreshTabs();
-      editor.setValue(content,-1);
-    };
-
-    const controls = document.createElement('div');
-    controls.style.display='flex'; controls.style.gap='6px';
-
-    const openBtn = document.createElement('button'); openBtn.textContent='Open';
-    openBtn.onclick = name.onclick;
-    controls.appendChild(openBtn);
-
-    const saveBtn = document.createElement('button'); saveBtn.textContent='Save (from editor)';
-    saveBtn.onclick = async ()=>{
-      const content = editor.getValue();
-      await writeFile(fn, content);
-      alert('Saved to /workspace/'+fn);
-    };
-    controls.appendChild(saveBtn);
-
-    const delBtn = document.createElement('button'); delBtn.textContent='Delete';
-    delBtn.onclick = async ()=>{ if(confirm('Delete '+fn+'?')){ await deleteFile(fn); await refreshFileList(); } };
-    controls.appendChild(delBtn);
-
-    row.appendChild(name);
-    row.appendChild(controls);
-    fileList.appendChild(row);
-  }
-}
-
-document.getElementById('newFileBtn').onclick = async ()=>{
-  const name = prompt('New file name (end with .py):','script.py');
-  if(!name) return;
-  const exists = (await listWorkspace()).includes(name);
-  if(exists && !confirm(name+' already exists — overwrite?')) return;
-  await writeFile(name,'# New file: '+name+'\n');
-  await refreshFileList();
-};
-
-document.getElementById('refreshFiles').onclick = refreshFileList;
-
-// initial explorer load once pyodide ready
-(async ()=>{ while(!pyodide) await new Promise(r=>setTimeout(r,200)); await ensureWorkspace(); await refreshFileList(); })();
-
-/* ==========================
-   input() POLYFILL
-   Strategy: when we detect "input(" in the code,
-   we wrap the user's code into an async function and replace calls to input(...) with await __pyodide_input('...')
-   __py_input is a JS-exposed Promise that resolves when the user submits the overlay.
-=========================== */
-
-// expose a JS function the python can await: window.__pyodide_input(prompt)
-window.__pyodide_input = (promptText)=>{
-  return new Promise((resolve, reject)=>{
-    const overlay = document.getElementById('inputOverlay');
-    const promptEl = document.getElementById('promptText');
-    const inputEl = document.getElementById('promptInput');
-    const ok = document.getElementById('promptOk');
-    const cancel = document.getElementById('promptCancel');
-
-    promptEl.textContent = promptText || '';
-    inputEl.value = '';
-    overlay.style.display = 'flex';
-    inputEl.focus();
-
-    function cleanup(){ overlay.style.display='none'; ok.removeEventListener('click', onOk); cancel.removeEventListener('click', onCancel); }
-    function onOk(){ cleanup(); resolve(inputEl.value); }
-    function onCancel(){ cleanup(); resolve(''); }
-
-    ok.addEventListener('click', onOk);
-    cancel.addEventListener('click', onCancel);
-  });
-};
-
-/* ==========================
-   ERROR / TRACEBACK PARSING + ACE HIGHLIGHT
-=========================== */
-function clearAceAnnotations(){ editor.getSession().clearAnnotations(); }
-function setAceError(line, msg){
-  editor.getSession().setAnnotations([{row: line-1, column:0, text: msg, type:'error'}]);
-  editor.scrollToLine(line-1,true,true,function(){});
-}
-
-function parseTracebackAndAnnotate(tb){
-  // tb is a string; find last occurrence of "File \"<string>\", line N" or "File \"/workspace/...\", line N"
-  const re = /File \"(?:<string>|.*)\", line (\d+)(?:, in (.*))?/g;
-  let m; let last = null;
-  while((m = re.exec(tb)) !== null){ last = m; }
-  if(last){
-    const line = Number(last[1]);
-    const msg = tb.split('\n').slice(-1)[0];
-    setAceError(line, msg);
-  }
-}
-
-/* ==========================
-   IMPORT PACKAGE
-=========================== */
-document.getElementById("importPyBtn").onclick = async () => {
-  let pkg = prompt("Enter the module name to import (e.g., numpy, pandas, pillow):");
-  if (pkg) {
-    outputEl.innerHTML += `\nInstalling module: ${pkg}...\n`;
-    try {
-      await pyodide.loadPackage(pkg);
-      outputEl.innerHTML += `Module "${pkg}" successfully imported!\n`;
-    } catch (err) {
-      outputEl.innerHTML += `Failed to import "${pkg}" via pyodide.loadPackage. Trying via micropip...\n`;
-      try {
-        await pyodide.runPythonAsync(`import micropip\nawait micropip.install("${pkg}")`);
-        outputEl.innerHTML += `Module "${pkg}" successfully installed via micropip!\n`;
-      } catch (err2) {
-        outputEl.innerHTML += `Failed to install module "${pkg}". Error:\n${err2}\n`;
-      }
-    }
-    outputEl.scrollTop = outputEl.scrollHeight;
-  }
-};
-
 /* RUN CODE */
 document.getElementById("runBtn").onclick = async ()=>{
   saveCurrentTab();
   outputEl.innerHTML = "";
-  clearAceAnnotations();
   if (!pyodide) return;
 
-  const rawCode = editor.getValue();
+  const code = editor.getValue();
   const streams = createOutputStreams();
 
   statusEl.textContent="Running…";
@@ -499,34 +303,25 @@ document.getElementById("runBtn").onclick = async ()=>{
   const oldLog = console.log;
   console.log = (...args)=>args.forEach(a=>streams.write(String(a)));
 
-  const redirect = `\nimport sys\nfrom js import console as _console\nclass _W:\n  def write(self,s): _console.log(s)\n  def flush(self): pass\nsys.stdout = _W()\nsys.stderr = _W()\n`;
+  const redirect = `
+import sys
+from js import console
+class _W:
+  def write(self,s): console.log(s)
+  def flush(self): pass
+sys.stdout = _W()
+sys.stderr = _W()
+`;
 
-  // If code uses turtle, call the specific runner
   try {
-    if (rawCode.includes("turtle")) {
-      await pyodide.runPythonAsync("run_turtle_code('''" + rawCode.replace(/'/g,"\\'") + "''')");
+    // Check if code contains turtle
+    if (code.includes("turtle")) {
+      await pyodide.runPythonAsync("run_turtle_code('''" + code.replace(/'/g,"\\'") + "''')");
     } else {
-      // handle input() polyfill: if code contains input(, wrap as async and replace input(...) with await __pyodide_input(
-      let code = rawCode;
-      const usesInput = /\binput\s*\(/.test(code);
-      if(usesInput){
-        // naive replacement: replace input( with await __pyodide_input(
-        // wrap entire code in async def __user_main():\n    <indented code>\nimport asyncio\nasyncio.run(__user_main())
-        const indented = code.split('\n').map(l=> '    '+l).join('\n');
-        const wrapped = `import asyncio\nfrom js import __pyodide_input\nasync def __user_main():\n${indented}\nasyncio.run(__user_main())`;
-        // replace occurrences of input( with await __pyodide_input(
-        const wrapped2 = wrapped.replace(/\binput\s*\(/g, 'await __pyodide_input(');
-        code = redirect + '\n' + wrapped2;
-        await pyodide.runPythonAsync(code);
-      }else{
-        await pyodide.runPythonAsync(redirect + "\n" + code);
-      }
+      await pyodide.runPythonAsync(redirect + "\n" + code);
     }
   } catch(e) {
-    // pyodide error objects may have message / toString with traceback
-    const tb = (e && e.message) ? e.message : String(e);
-    streams.write('\n'+tb+'\n');
-    parseTracebackAndAnnotate(tb);
+    streams.write("\n"+e+"\n");
   }
 
   running = false;
@@ -550,14 +345,31 @@ document.getElementById("downloadBtn").onclick = ()=>{
   a.click();
 };
 
-/* FORMAT (best-effort using astor if available) */
+/* FORMAT */
 document.getElementById("formatBtn").onclick = async ()=>{
   const code = editor.getValue();
   try {
-    const formatted = await pyodide.runPythonAsync(`import ast, astor\ntree = ast.parse(\"\"\"${code.replace(/"/g,'\\\\"')}\"\"\")\nastor.to_source(tree)`);
+    const formatted = await pyodide.runPythonAsync(`
+import ast, astor
+tree = ast.parse("""${code.replace(/"/g,'\\"')}""")
+astor.to_source(tree)
+`);
     editor.setValue(formatted,-1);
-  } catch (err){
+  } catch {
     alert("Formatting failed.");
+  }
+};
+
+/* IMPORT PACKAGE */
+document.getElementById("importPyBtn").onclick = async ()=>{
+  let pkg = prompt("Package name:");
+  if (pkg) {
+    try {
+      await pyodide.loadPackage(pkg);
+      outputEl.innerHTML += `\nImported: ${pkg}\n`;
+    } catch {
+      outputEl.innerHTML += `\nFailed: ${pkg}\n`;
+    }
   }
 };
 
@@ -594,8 +406,10 @@ function addHistory(code){
 }
 
 /* CLEAR OUTPUT */
-document.getElementById("clearOutputBtn").onclick = ()=>{ outputEl.innerHTML = ""; clearAceAnnotations(); };
-
+document.getElementById("clearOutputBtn").onclick = ()=>{
+  outputEl.innerHTML = "";
+};
 </script>
+
 </body>
 </html>
