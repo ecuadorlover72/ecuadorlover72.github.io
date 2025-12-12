@@ -1,53 +1,159 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Python Runner — Multi-Tab</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Python Runner — Multi-Tab</title>
 
-  <style>
-    :root{--bg:#0f1720;--card:#0b1220;--muted:#94a3b8;--accent:#0ea5a3;--danger:#ef4444}
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui}
-    body{background:linear-gradient(180deg,#071029 0%, #071827 60%);color:#dbe7f0}
+<style>
+:root {
+  --bg:#0f1720;
+  --card:#0b1220;
+  --muted:#94a3b8;
+  --accent:#0ea5a3;
+  --danger:#ef4444;
+}
 
-    .app{display:grid;grid-template-columns:1fr 400px;gap:20px;padding:28px;min-height:100vh}
-    .panel{background:rgba(255,255,255,0.02);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.03)}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+* { box-sizing:border-box }
 
-    #tabBar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;user-select:none}
-    .tab{
-      padding:6px 10px;border-radius:6px;
-      background:#0b1220;border:1px solid rgba(255,255,255,0.08);
-      cursor:pointer;font-size:13px;display:flex;align-items:center;
-    }
-    .tab.active{background:var(--accent);color:#072024;font-weight:700}
-    .tab .close{margin-left:6px;cursor:pointer;font-weight:bold}
-    .tab.dragging{opacity:0.4}
+html, body {
+  height:100%;
+  margin:0;
+  font-family:Inter,ui-sans-serif,system-ui;
+}
 
-    #editor{height:55vh;border-radius:8px;overflow:hidden}
+body {
+  background:linear-gradient(180deg,#071029 0%, #071827 60%);
+  color:#dbe7f0;
+}
 
-    .controls{display:flex;gap:8px;flex-wrap:wrap}
-    button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#e6f3f6;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
-    button.primary{background:linear-gradient(90deg,var(--accent),#06b6d4);color:#072024;border:none}
+.app {
+  display:grid;
+  grid-template-columns:1fr 400px;
+  gap:20px;
+  padding:28px;
+  min-height:100vh;
+}
 
-    .output{height:20vh;overflow:auto;padding:12px;border-radius:8px;background:#050812;border:1px solid rgba(255,255,255,0.02);font-family:monospace;font-size:13px;white-space:pre-wrap}
+.panel {
+  background:rgba(255,255,255,0.02);
+  border-radius:12px;
+  padding:14px;
+  border:1px solid rgba(255,255,255,0.03);
+}
 
-    #notesPanel{width:100%;min-height:150px;display:none;background:#050812;color:white}
-    #historyPanel{width:100%;min-height:100px;display:none;overflow:auto;background:#061226;padding:6px;border-radius:6px}
+header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+}
 
-    #turtleCanvas{display:block;margin-top:10px}
+#tabBar {
+  display:flex;
+  gap:6px;
+  margin-bottom:10px;
+  flex-wrap:wrap;
+  user-select:none;
+}
 
-    .small{font-size:12px;color:var(--muted)}
-  </style>
+.tab {
+  padding:6px 10px;
+  border-radius:6px;
+  background:#0b1220;
+  border:1px solid rgba(255,255,255,0.08);
+  cursor:pointer;
+  font-size:13px;
+  display:flex;
+  align-items:center;
+}
+
+.tab.active {
+  background:var(--accent);
+  color:#072024;
+  font-weight:700;
+}
+
+.tab .close {
+  margin-left:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.tab.dragging {
+  opacity:0.4;
+}
+
+#editor {
+  height:55vh;
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.controls {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+button {
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.06);
+  color:#e6f3f6;
+  padding:8px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:600;
+}
+
+button.primary {
+  background:linear-gradient(90deg,var(--accent),#06b6d4);
+  color:#072024;
+  border:none;
+}
+
+.output {
+  height:35vh;
+  overflow:auto;
+  padding:12px;
+  border-radius:8px;
+  background:#050812;
+  border:1px solid rgba(255,255,255,0.02);
+  font-family:monospace;
+  font-size:13px;
+}
+
+#notesPanel {
+  width:100%;
+  min-height:150px;
+  display:none;
+  background:#050812;
+  color:white;
+}
+
+#historyPanel {
+  width:100%;
+  min-height:100px;
+  display:none;
+  overflow:auto;
+  background:#061226;
+  padding:6px;
+  border-radius:6px;
+}
+
+.small {
+  font-size:12px;
+  color:var(--muted);
+}
+</style>
 
 </head>
 <body>
 
 <div class="app">
 
+<!-- MAIN PANEL -->
 <div class="panel">
-
 <header>
   <div>
     <h1>Python Runner</h1>
@@ -71,27 +177,22 @@
   <button id="importFileBtn">Import .py</button>
   <button id="notesBtn" class="primary">Notes</button>
   <button id="historyBtn">History</button>
-  <button id="clearOutputBtn">Clear Output</button>
   <input type="file" id="fileInput" accept=".py" style="display:none">
 </div>
 
 <div id="editor"></div>
-
 </div>
 
 <!-- SIDE PANEL -->
 <aside class="panel">
-  <h3>Console Output</h3>
-  <div id="output" class="output"></div>
+<h3>Console Output</h3>
+<div id="output" class="output"></div>
 
-  <h3>Turtle Canvas</h3>
-  <canvas id="turtleCanvas" width="400" height="300" style="background:#050812;border:1px solid rgba(255,255,255,0.02);border-radius:8px"></canvas>
+<h3>Notes</h3>
+<textarea id="notesPanel" class="output"></textarea>
 
-  <h3>Notes</h3>
-  <textarea id="notesPanel" class="output"></textarea>
-
-  <h3>History</h3>
-  <div id="historyPanel"></div>
+<h3>History</h3>
+<div id="historyPanel"></div>
 </aside>
 
 </div>
@@ -102,13 +203,12 @@
 <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
 
 <script>
-/* ==========================
-   ACE EDITOR INIT
-=========================== */
+/* ========================== ACE EDITOR INIT =========================== */
 const editor = ace.edit("editor", {
   mode: "ace/mode/python",
   theme: "ace/theme/monokai"
 });
+
 editor.setOptions({
   fontSize: 14,
   wrap: true,
@@ -116,37 +216,26 @@ editor.setOptions({
   enableSnippets: true,
   enableLiveAutocompletion: true
 });
+
 editor.session.setUseWorker(false);
 
-/* ==========================
-   TAB SYSTEM
-=========================== */
+/* ========================== TAB SYSTEM =========================== */
+
 let tabs = [
   { id:0, name:"Tab 1", code:"# Welcome to Tab 1\nprint('Hello!')" }
 ];
-let activeTab = 0;
 
+let activeTab = 0;
 const tabBar = document.getElementById("tabBar");
 const newTabBtn = document.getElementById("newTabBtn");
 
+/* SAVE ACTIVE TAB CODE */
 function saveCurrentTab() {
   let t = tabs.find(x => x.id === activeTab);
   if (t) t.code = editor.getValue();
 }
-<script>
-async function fetchImage(url){
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const reader = new FileReader();
-    return new Promise((resolve) => {
-        reader.onloadend = () => resolve(reader.result.split(',')[1]); // return base64
-        reader.readAsDataURL(blob);
-    });
-}
-window.fetchImage = fetchImage;
-</script>
 
-  
+/* REFRESH TAB BAR */
 function refreshTabs() {
   [...tabBar.querySelectorAll(".tab")].forEach(t=>{
     if (t.id !== "newTabBtn") t.remove();
@@ -166,15 +255,19 @@ function refreshTabs() {
       e.stopPropagation();
       closeTab(t.id);
     };
-    el.appendChild(close);
 
+    el.appendChild(close);
     el.ondblclick = ()=>renameTab(t.id);
 
+    /* DRAG */
     el.addEventListener("dragstart", e=>{
       e.dataTransfer.setData("text/plain", t.id);
       el.classList.add("dragging");
     });
-    el.addEventListener("dragend", ()=> el.classList.remove("dragging"));
+
+    el.addEventListener("dragend", ()=>{
+      el.classList.remove("dragging");
+    });
 
     tabBar.insertBefore(el, newTabBtn);
   });
@@ -182,6 +275,7 @@ function refreshTabs() {
   enableReorder();
 }
 
+/* SWITCH TAB */
 function switchTab(id) {
   saveCurrentTab();
   activeTab = id;
@@ -189,6 +283,7 @@ function switchTab(id) {
   refreshTabs();
 }
 
+/* CLOSE TAB */
 function closeTab(id) {
   saveCurrentTab();
   tabs = tabs.filter(t => t.id !== id);
@@ -200,6 +295,7 @@ function closeTab(id) {
   refreshTabs();
 }
 
+/* RENAME TAB */
 function renameTab(id) {
   let t = tabs.find(x => x.id === id);
   let newName = prompt("Rename tab:", t.name);
@@ -209,13 +305,17 @@ function renameTab(id) {
   }
 }
 
+/* DRAG-REORDER */
 function enableReorder() {
   const elements = tabBar.querySelectorAll(".tab:not(#newTabBtn)");
+
   elements.forEach(el=>{
     el.addEventListener("dragover", e=>{
       e.preventDefault();
+
       const draggedId = Number(e.dataTransfer.getData("text/plain"));
       const draggedTab = tabs.find(t=>t.id===draggedId);
+
       const targetId = Number(el.dataset.id);
       const targetTab = tabs.find(t=>t.id===targetId);
 
@@ -248,16 +348,17 @@ tabBar.addEventListener("click", e=>{
 
 refreshTabs();
 
-/* ==========================
-   PYODIDE + TURTLE + OUTPUT
-=========================== */
+/* ========================== PYODIDE + TURTLE =========================== */
+
 let pyodide = null;
 let running = false;
+
 const outputEl = document.getElementById("output");
 const statusEl = document.getElementById("py-status");
 
 async function loadPyodideAndPackages(){
   statusEl.textContent = "Loading…";
+
   pyodide = await loadPyodide({
     indexURL:"https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
   });
@@ -268,68 +369,25 @@ import js
 from pyodide.ffi import create_proxy
   `);
 
-  await setupTurtle();
-
   statusEl.textContent = "Ready";
 }
+
 loadPyodideAndPackages();
 
-async function setupTurtle() {
-  await pyodide.runPythonAsync(`
-import turtle
-from js import document
-
-canvas = document.getElementById("turtleCanvas")
-screen = turtle.TurtleScreen(canvas)
-t = turtle.RawTurtle(screen)
-screen.tracer(0)
-
-def run_turtle_code(code):
-    exec(code)
-    screen.update()
-  `);
-}
-
-/* OUTPUT STREAMS WITH COLOR */
+/* OUTPUT STREAM */
 function createOutputStreams(){
   const write = s=>{
-    let color = "white"; 
-    if (s.toLowerCase().includes("error") || s.toLowerCase().includes("traceback")) color = "red";
-    outputEl.innerHTML += `<span style="color:${color}">${s}</span>\n`;
+    outputEl.textContent += s;
     outputEl.scrollTop = outputEl.scrollHeight;
   };
   return {write};
 }
-/* ==========================
-   IMPORT PACKAGE
-=========================== */
-document.getElementById("importPyBtn").onclick = async () => {
-  let pkg = prompt("Enter the module name to import (e.g., numpy, pandas, pillow):");
-  if (pkg) {
-    outputEl.innerHTML += `\nInstalling module: ${pkg}...\n`;
-    try {
-      await pyodide.loadPackage(pkg);
-      outputEl.innerHTML += `Module "${pkg}" successfully imported!\n`;
-    } catch (err) {
-      outputEl.innerHTML += `Failed to import "${pkg}" via pyodide.loadPackage. Trying via micropip...\n`;
-      try {
-        await pyodide.runPythonAsync(`
-import micropip
-await micropip.install("${pkg}")
-`);
-        outputEl.innerHTML += `Module "${pkg}" successfully installed via micropip!\n`;
-      } catch (err2) {
-        outputEl.innerHTML += `Failed to install module "${pkg}". Error:\n${err2}\n`;
-      }
-    }
-    outputEl.scrollTop = outputEl.scrollHeight;
-  }
-};
 
 /* RUN CODE */
 document.getElementById("runBtn").onclick = async ()=>{
   saveCurrentTab();
-  outputEl.innerHTML = "";
+  outputEl.textContent = "";
+
   if (!pyodide) return;
 
   const code = editor.getValue();
@@ -344,22 +402,19 @@ document.getElementById("runBtn").onclick = async ()=>{
   const redirect = `
 import sys
 from js import console
+
 class _W:
   def write(self,s): console.log(s)
   def flush(self): pass
+
 sys.stdout = _W()
 sys.stderr = _W()
-`;
+  `;
 
   try {
-    // Check if code contains turtle
-    if (code.includes("turtle")) {
-      await pyodide.runPythonAsync("run_turtle_code('''" + code.replace(/'/g,"\\'") + "''')");
-    } else {
-      await pyodide.runPythonAsync(redirect + "\n" + code);
-    }
+    await pyodide.runPythonAsync(redirect + "\n" + code);
   } catch(e) {
-    streams.write("\n"+e+"\n");
+    streams.write("\\n"+e+"\\n");
   }
 
   running = false;
@@ -367,9 +422,9 @@ sys.stderr = _W()
   console.log = oldLog;
 };
 
-/* STOP BUTTON (non-force) */
+/* STOP BUTTON */
 document.getElementById("stopBtn").onclick = ()=>{
-  outputEl.innerHTML += "\n*** Interrupt requested — refresh page to force stop ***\n";
+  outputEl.textContent += "\n*** Interrupt requested — refresh page to force stop ***\n";
 };
 
 /* DOWNLOAD */
@@ -391,7 +446,7 @@ document.getElementById("formatBtn").onclick = async ()=>{
 import ast, astor
 tree = ast.parse("""${code.replace(/"/g,'\\"')}""")
 astor.to_source(tree)
-`);
+    `);
     editor.setValue(formatted,-1);
   } catch {
     alert("Formatting failed.");
@@ -404,15 +459,16 @@ document.getElementById("importPyBtn").onclick = async ()=>{
   if (pkg) {
     try {
       await pyodide.loadPackage(pkg);
-      outputEl.innerHTML += `\nImported: ${pkg}\n`;
+      outputEl.textContent += `\nImported: ${pkg}\n`;
     } catch {
-      outputEl.innerHTML += `\nFailed: ${pkg}\n`;
+      outputEl.textContent += `\nFailed: ${pkg}\n`;
     }
   }
 };
 
 /* IMPORT FILE */
 document.getElementById("importFileBtn").onclick = ()=>document.getElementById("fileInput").click();
+
 document.getElementById("fileInput").onchange = async e=>{
   const f = e.target.files[0];
   if (f) {
@@ -428,6 +484,7 @@ document.getElementById("notesBtn").onclick = ()=>{
 
 /* HISTORY */
 let history = [];
+
 document.getElementById("historyBtn").onclick = ()=>{
   const hp = document.getElementById("historyPanel");
   hp.style.display = hp.style.display==="none" ? "block" : "none";
@@ -442,11 +499,6 @@ function addHistory(code){
   div.onclick = ()=> editor.setValue(code,-1);
   document.getElementById("historyPanel").prepend(div);
 }
-
-/* CLEAR OUTPUT */
-document.getElementById("clearOutputBtn").onclick = ()=>{
-  outputEl.innerHTML = "";
-};
 </script>
 
 </body>
