@@ -2,38 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Ecuador Tycoon: Republic Builder</title>
+<title>Ecuador Tycoon: Andes to Galápagos</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: linear-gradient(#0b3d2e, #1b6f4f);
+    background: linear-gradient(#0b2d1f, #144d35);
     color: #fff;
 }
-
 header {
-    background: #022;
+    background: #012;
     padding: 15px;
     text-align: center;
     font-size: 24px;
     font-weight: bold;
 }
-
 #game {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    padding: 15px;
+    padding: 10px;
 }
-
 .panel {
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.45);
     border-radius: 8px;
     padding: 10px;
 }
-
 button {
     width: 100%;
     padding: 8px;
@@ -44,183 +39,183 @@ button {
     font-weight: bold;
     cursor: pointer;
 }
-
-button:hover {
-    background: #27ae60;
-}
-
-.stat {
-    margin: 5px 0;
-}
-
-.red { color: #ff6961; }
+button:hover { background: #27ae60; }
+.stat { margin: 4px 0; }
+.red { color: #ff6b6b; }
 .green { color: #7CFC00; }
-
-footer {
-    text-align: center;
-    padding: 10px;
-    font-size: 12px;
-    opacity: 0.7;
-}
+small { opacity: 0.8; }
 </style>
 </head>
 
 <body>
-<header>🇪🇨 Ecuador Tycoon: Republic Builder</header>
+<header>🇪🇨 Ecuador Tycoon: Andes to Galápagos</header>
 
 <div id="game">
-    <div class="panel">
-        <h3>📊 National Stats</h3>
-        <div class="stat">💰 Money: $<span id="money"></span></div>
-        <div class="stat">🧑 Population: <span id="population"></span> M</div>
-        <div class="stat">📦 Production: <span id="production"></span></div>
-        <div class="stat">🌿 Environment: <span id="environment"></span>%</div>
-        <div class="stat">📅 Year: <span id="year"></span></div>
-        <button onclick="nextYear()">Advance Year</button>
-    </div>
-
-    <div class="panel">
-        <h3>🏭 Industries</h3>
-        <button onclick="build('agriculture')">🌾 Agriculture ($500)</button>
-        <button onclick="build('oil')">🛢️ Oil ($1200)</button>
-        <button onclick="build('tourism')">🏖️ Tourism ($800)</button>
-        <button onclick="build('factory')">🏗️ Manufacturing ($1000)</button>
-    </div>
-
-    <div class="panel">
-        <h3>📜 Policies</h3>
-        <button onclick="policy('education')">🎓 Education Reform</button>
-        <button onclick="policy('green')">🌱 Green Protection</button>
-        <button onclick="policy('tax')">💼 Business Tax Cut</button>
-    </div>
-
-    <div class="panel">
-        <h3>⚠️ Events</h3>
-        <p id="eventText">No major events.</p>
-        <button onclick="saveGame()">💾 Save</button>
-        <button onclick="loadGame()">📂 Load</button>
-    </div>
+<div class="panel">
+<h3>📊 Nation</h3>
+<div class="stat">💰 Money: $<span id="money"></span></div>
+<div class="stat">🧑 Population: <span id="population"></span> M</div>
+<div class="stat">🏭 GDP: <span id="gdp"></span></div>
+<div class="stat">🌿 Environment: <span id="env"></span>%</div>
+<div class="stat">😊 Approval: <span id="approval"></span>%</div>
+<div class="stat">💳 Debt: $<span id="debt"></span></div>
+<div class="stat">📅 Year: <span id="year"></span></div>
+<button onclick="nextYear()">Advance Year</button>
 </div>
 
-<footer>
-Made for GitHub Pages • Single-file HTML Game
-</footer>
+<div class="panel">
+<h3>🗺️ Regions</h3>
+<button onclick="invest('costa')">🌴 Costa (Ports & Bananas)</button>
+<button onclick="invest('sierra')">⛰️ Sierra (Cities & Industry)</button>
+<button onclick="invest('amazon')">🌳 Amazonía (Oil & Indigenous)</button>
+<button onclick="invest('galapagos')">🐢 Galápagos (Tourism)</button>
+</div>
+
+<div class="panel">
+<h3>🏛️ Policies</h3>
+<button onclick="policy('subsidies')">⛽ Fuel Subsidies</button>
+<button onclick="policy('austerity')">📉 IMF Austerity</button>
+<button onclick="policy('indigenous')">🪶 Indigenous Protection</button>
+<button onclick="policy('antiCorruption')">⚖️ Anti-Corruption Drive</button>
+</div>
+
+<div class="panel">
+<h3>⚠️ Events</h3>
+<p id="event">No major events.</p>
+<button onclick="save()">💾 Save</button>
+<button onclick="load()">📂 Load</button>
+</div>
+</div>
 
 <script>
 let game = {
-    money: 2000,
-    population: 17,
-    production: 10,
-    environment: 80,
-    year: 2025,
-    industries: {
-        agriculture: 0,
-        oil: 0,
-        tourism: 0,
-        factory: 0
-    }
+money: 3000,
+population: 18,
+gdp: 15,
+env: 75,
+approval: 60,
+debt: 2000,
+year: 2025,
+regions: {
+    costa: 1,
+    sierra: 1,
+    amazon: 1,
+    galapagos: 1
+}
 };
 
-function updateUI() {
-    money.textContent = game.money;
-    population.textContent = game.population.toFixed(1);
-    production.textContent = game.production;
-    environment.textContent = game.environment;
-    year.textContent = game.year;
+function ui() {
+money.textContent = game.money;
+population.textContent = game.population.toFixed(1);
+gdp.textContent = game.gdp;
+env.textContent = game.env;
+approval.textContent = game.approval;
+debt.textContent = game.debt;
+year.textContent = game.year;
 }
 
-function build(type) {
-    const costs = {
-        agriculture: 500,
-        oil: 1200,
-        tourism: 800,
-        factory: 1000
-    };
+function invest(region) {
+if (game.money < 600) return msg("Not enough funds.");
+game.money -= 600;
+game.regions[region]++;
+game.gdp += 2;
 
-    if (game.money < costs[type]) {
-        event("Not enough money!");
-        return;
-    }
+if (region === "amazon") {
+    game.money += 400;
+    game.env -= 6;
+    game.approval -= 4;
+    msg("Oil expanded in Amazonía. Protests erupt.");
+}
+if (region === "galapagos") {
+    game.money += 300;
+    game.env += 3;
+    msg("Eco-tourism boosts economy.");
+}
+if (region === "costa") msg("Exports increase via Costa.");
+if (region === "sierra") game.population += 0.2;
 
-    game.money -= costs[type];
-    game.industries[type]++;
-    game.production += 3;
-
-    if (type === "oil") game.environment -= 5;
-    if (type === "tourism") game.population += 0.2;
-
-    event(`${type} industry expanded.`);
-    updateUI();
+ui();
 }
 
 function policy(type) {
-    if (type === "education") {
-        game.population += 0.3;
-        game.production += 2;
-        event("Education improves productivity.");
+if (type === "subsidies") {
+    game.money -= 300;
+    game.approval += 6;
+    msg("Fuel subsidies calm the streets.");
+}
+if (type === "austerity") {
+    game.money += 800;
+    game.approval -= 10;
+    game.debt -= 500;
+    msg("IMF austerity imposed. Public anger rises.");
+}
+if (type === "indigenous") {
+    game.env += 5;
+    game.approval += 4;
+    game.gdp -= 1;
+    msg("Indigenous lands protected.");
+}
+if (type === "antiCorruption") {
+    if (Math.random() < 0.5) {
+        game.gdp += 3;
+        msg("Corruption reduced successfully.");
+    } else {
+        game.approval -= 5;
+        msg("Political backlash from elites.");
     }
-    if (type === "green") {
-        game.environment += 5;
-        event("Environmental protections enacted.");
-    }
-    if (type === "tax") {
-        game.money += 500;
-        game.environment -= 3;
-        event("Businesses flourish after tax cuts.");
-    }
-    updateUI();
+}
+ui();
 }
 
 function nextYear() {
-    game.year++;
-    game.money += game.production * 100;
-    game.population += 0.1;
-
-    randomEvent();
-    checkEnd();
-    updateUI();
+game.year++;
+game.money += game.gdp * 120;
+game.population += 0.15;
+game.debt += 200;
+randomEvent();
+check();
+ui();
 }
 
 function randomEvent() {
-    const events = [
-        () => { game.money -= 300; event("Earthquake damages infrastructure."); },
-        () => { game.money += 400; event("Export boom increases revenue."); },
-        () => { game.environment -= 4; event("Illegal logging discovered."); },
-        () => { game.population += 0.4; event("Immigration surge."); }
-    ];
-    if (Math.random() < 0.4) events[Math.floor(Math.random() * events.length)]();
+const events = [
+() => { game.money -= 500; msg("🌋 Volcano eruption damages Sierra."); },
+() => { game.money -= 400; game.approval -= 6; msg("🌊 El Niño floods Costa."); },
+() => { game.env -= 5; msg("Illegal mining discovered."); },
+() => { game.money += 600; msg("📈 China trade deal signed."); },
+() => { game.approval -= 10; msg("🚨 Nationwide protests erupt."); }
+];
+if (Math.random() < 0.5) events[Math.floor(Math.random()*events.length)]();
 }
 
-function event(text) {
-    eventText.textContent = text;
+function check() {
+if (game.approval <= 0) {
+alert("🏴 Coup d'état! Government collapses.");
+location.reload();
+}
+if (game.env <= 0) {
+alert("💀 Ecological collapse destroys Ecuador.");
+location.reload();
+}
+if (game.year >= 2075 && game.approval > 60) {
+alert("🏆 You led Ecuador into a stable, green future!");
+location.reload();
+}
 }
 
-function checkEnd() {
-    if (game.environment <= 0) {
-        alert("💀 Environmental collapse! Game over.");
-        location.reload();
-    }
-    if (game.money >= 20000) {
-        alert("🏆 You transformed Ecuador into a global power!");
-        location.reload();
-    }
+function msg(t){ event.textContent = t; }
+
+function save() {
+localStorage.setItem("ecuadorSave", JSON.stringify(game));
+msg("Game saved.");
 }
 
-function saveGame() {
-    localStorage.setItem("ecuadorTycoonSave", JSON.stringify(game));
-    event("Game saved.");
+function load() {
+const s = localStorage.getItem("ecuadorSave");
+if (s) { game = JSON.parse(s); ui(); msg("Game loaded."); }
 }
 
-function loadGame() {
-    const save = localStorage.getItem("ecuadorTycoonSave");
-    if (save) {
-        game = JSON.parse(save);
-        updateUI();
-        event("Game loaded.");
-    }
-}
-
-updateUI();
+ui();
 </script>
 </body>
 </html>
