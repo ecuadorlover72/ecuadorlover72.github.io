@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ecuador Tycoon: Republic Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(#0b3d2e, #1b6f4f);
+    color: #fff;
+}
+
+header {
+    background: #022;
+    padding: 15px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+#game {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 15px;
+}
+
+.panel {
+    background: rgba(0,0,0,0.4);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+button {
+    width: 100%;
+    padding: 8px;
+    margin: 4px 0;
+    background: #2ecc71;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #27ae60;
+}
+
+.stat {
+    margin: 5px 0;
+}
+
+.red { color: #ff6961; }
+.green { color: #7CFC00; }
+
+footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+</style>
+</head>
+
+<body>
+<header>🇪🇨 Ecuador Tycoon: Republic Builder</header>
+
+<div id="game">
+    <div class="panel">
+        <h3>📊 National Stats</h3>
+        <div class="stat">💰 Money: $<span id="money"></span></div>
+        <div class="stat">🧑 Population: <span id="population"></span> M</div>
+        <div class="stat">📦 Production: <span id="production"></span></div>
+        <div class="stat">🌿 Environment: <span id="environment"></span>%</div>
+        <div class="stat">📅 Year: <span id="year"></span></div>
+        <button onclick="nextYear()">Advance Year</button>
+    </div>
+
+    <div class="panel">
+        <h3>🏭 Industries</h3>
+        <button onclick="build('agriculture')">🌾 Agriculture ($500)</button>
+        <button onclick="build('oil')">🛢️ Oil ($1200)</button>
+        <button onclick="build('tourism')">🏖️ Tourism ($800)</button>
+        <button onclick="build('factory')">🏗️ Manufacturing ($1000)</button>
+    </div>
+
+    <div class="panel">
+        <h3>📜 Policies</h3>
+        <button onclick="policy('education')">🎓 Education Reform</button>
+        <button onclick="policy('green')">🌱 Green Protection</button>
+        <button onclick="policy('tax')">💼 Business Tax Cut</button>
+    </div>
+
+    <div class="panel">
+        <h3>⚠️ Events</h3>
+        <p id="eventText">No major events.</p>
+        <button onclick="saveGame()">💾 Save</button>
+        <button onclick="loadGame()">📂 Load</button>
+    </div>
+</div>
+
+<footer>
+Made for GitHub Pages • Single-file HTML Game
+</footer>
+
+<script>
+let game = {
+    money: 2000,
+    population: 17,
+    production: 10,
+    environment: 80,
+    year: 2025,
+    industries: {
+        agriculture: 0,
+        oil: 0,
+        tourism: 0,
+        factory: 0
+    }
+};
+
+function updateUI() {
+    money.textContent = game.money;
+    population.textContent = game.population.toFixed(1);
+    production.textContent = game.production;
+    environment.textContent = game.environment;
+    year.textContent = game.year;
+}
+
+function build(type) {
+    const costs = {
+        agriculture: 500,
+        oil: 1200,
+        tourism: 800,
+        factory: 1000
+    };
+
+    if (game.money < costs[type]) {
+        event("Not enough money!");
+        return;
+    }
+
+    game.money -= costs[type];
+    game.industries[type]++;
+    game.production += 3;
+
+    if (type === "oil") game.environment -= 5;
+    if (type === "tourism") game.population += 0.2;
+
+    event(`${type} industry expanded.`);
+    updateUI();
+}
+
+function policy(type) {
+    if (type === "education") {
+        game.population += 0.3;
+        game.production += 2;
+        event("Education improves productivity.");
+    }
+    if (type === "green") {
+        game.environment += 5;
+        event("Environmental protections enacted.");
+    }
+    if (type === "tax") {
+        game.money += 500;
+        game.environment -= 3;
+        event("Businesses flourish after tax cuts.");
+    }
+    updateUI();
+}
+
+function nextYear() {
+    game.year++;
+    game.money += game.production * 100;
+    game.population += 0.1;
+
+    randomEvent();
+    checkEnd();
+    updateUI();
+}
+
+function randomEvent() {
+    const events = [
+        () => { game.money -= 300; event("Earthquake damages infrastructure."); },
+        () => { game.money += 400; event("Export boom increases revenue."); },
+        () => { game.environment -= 4; event("Illegal logging discovered."); },
+        () => { game.population += 0.4; event("Immigration surge."); }
+    ];
+    if (Math.random() < 0.4) events[Math.floor(Math.random() * events.length)]();
+}
+
+function event(text) {
+    eventText.textContent = text;
+}
+
+function checkEnd() {
+    if (game.environment <= 0) {
+        alert("💀 Environmental collapse! Game over.");
+        location.reload();
+    }
+    if (game.money >= 20000) {
+        alert("🏆 You transformed Ecuador into a global power!");
+        location.reload();
+    }
+}
+
+function saveGame() {
+    localStorage.setItem("ecuadorTycoonSave", JSON.stringify(game));
+    event("Game saved.");
+}
+
+function loadGame() {
+    const save = localStorage.getItem("ecuadorTycoonSave");
+    if (save) {
+        game = JSON.parse(save);
+        updateUI();
+        event("Game loaded.");
+    }
+}
+
+updateUI();
+</script>
+</body>
+</html>
