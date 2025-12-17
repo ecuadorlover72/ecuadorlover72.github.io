@@ -1,244 +1,283 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Ecuador Tycoon: Endless Republic</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(#0b2f24, #145a40);
-    color: #fff;
-  }
-  header {
-    background: #011;
-    padding: 14px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-  }
-  #game {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    padding: 10px;
-  }
-  .panel {
-    background: rgba(0, 0, 0, 0.45);
-    border-radius: 8px;
-    padding: 10px;
-  }
-  button {
-    width: 100%;
-    padding: 8px;
-    margin: 4px 0;
-    background: #2ecc71;
-    border: none;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  button:hover { background: #27ae60; }
-  .stat { margin: 4px 0; }
-  small { opacity: 0.8; }
-  .red { color: #ff6b6b; }
-  .green { color: #7CFC00; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecuador Tycoon: Endless Republic</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(#0b2f24, #145a40);
+            color: #fff;
+        }
+
+        header {
+            background: #011;
+            padding: 20px;
+            text-align: center;
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        #game {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #2ecc71;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #27ae60;
+        }
+
+        .stat {
+            margin: 10px 0;
+        }
+
+        small {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            width: 100%;
+            background: #444;
+            border-radius: 5px;
+        }
+
+        .progress {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        .green { background: #7CFC00; }
+        .red { background: #ff6b6b; }
+        .yellow { background: #f39c12; }
+    </style>
 </head>
 <body>
 <header>🇪🇨 Ecuador Tycoon: Endless Republic</header>
 
 <div id="game">
-  <div class="panel">
-    <h3>📊 Nation Overview</h3>
-    <div class="stat">💰 Money: $<span id="money"></span></div>
-    <div class="stat">🧑 Population: <span id="population"></span> M</div>
-    <div class="stat">📈 GDP: <span id="gdp"></span></div>
-    <div class="stat">🏗️ Infrastructure: <span id="infra"></span>%</div>
-    <div class="stat">🌿 Environment: <span id="env"></span>%</div>
-    <div class="stat">⚖️ Stability: <span id="stability"></span>%</div>
-    <div class="stat">🗳️ Ideology: <span id="ideology"></span></div>
-    <div class="stat">📅 Year: <span id="year"></span></div>
-    <button onclick="nextYear()">Advance Year</button>
-  </div>
+    <div class="panel">
+        <h3>📊 Nation Overview</h3>
+        <div class="stat">💰 Money: $<span id="money"></span></div>
+        <div class="stat">🧑 Population: <span id="population"></span> M</div>
+        <div class="stat">📈 GDP: <span id="gdp"></span></div>
+        <div class="stat">🏗️ Infrastructure: <span id="infra"></span>%</div>
+        <div class="stat">🌿 Environment: <span id="env"></span>%</div>
+        <div class="stat">⚖️ Stability: <span id="stability"></span>%</div>
+        <div class="stat">🗳️ Ideology: <span id="ideology"></span></div>
+        <div class="stat">📅 Year: <span id="year"></span></div>
+        <button onclick="nextYear()">Advance Year</button>
+    </div>
 
-  <div class="panel">
-    <h3>🗺️ Regional Development</h3>
-    <small>Costs $700 • Effects depend on region</small>
-    <button onclick="region('costa')">🌴 Costa – Ports & Trade</button>
-    <button onclick="region('sierra')">⛰️ Sierra – Cities & Industry</button>
-    <button onclick="region('amazon')">🌳 Amazonía – Oil & Conflict</button>
-    <button onclick="region('galapagos')">🐢 Galápagos – Eco Tourism</button>
-  </div>
+    <div class="panel">
+        <h3>🗺️ Regional Development</h3>
+        <small>Costs $700 • Effects depend on region</small>
+        <button onclick="region('costa')">🌴 Costa – Ports & Trade</button>
+        <button onclick="region('sierra')">⛰️ Sierra – Cities & Industry</button>
+        <button onclick="region('amazon')">🌳 Amazonía – Oil & Conflict</button>
+        <button onclick="region('galapagos')">🐢 Galápagos – Eco Tourism</button>
+    </div>
 
-  <div class="panel">
-    <h3>🏛️ Government Actions</h3>
-    <small>Policies shape long-term stability</small>
-    <button onclick="policy('infrastructure')">🏗️ Invest in Infrastructure</button>
-    <button onclick="policy('social')">🏥 Social Programs</button>
-    <button onclick="policy('business')">💼 Pro-Business Reform</button>
-    <button onclick="policy('environment')">🌱 Environmental Protection</button>
-  </div>
+    <div class="panel">
+        <h3>🏛️ Government Actions</h3>
+        <small>Policies shape long-term stability</small>
+        <button onclick="policy('infrastructure')">🏗️ Invest in Infrastructure</button>
+        <button onclick="policy('social')">🏥 Social Programs</button>
+        <button onclick="policy('business')">💼 Pro-Business Reform</button>
+        <button onclick="policy('environment')">🌱 Environmental Protection</button>
+    </div>
 
-  <div class="panel">
-    <h3>📰 Events & Elections</h3>
-    <p id="log">The republic stands.</p>
-    <button onclick="save()">💾 Save</button>
-    <button onclick="load()">📂 Load</button>
-  </div>
+    <div class="panel">
+        <h3>📰 Events & Elections</h3>
+        <p id="log">The republic stands strong.</p>
+        <button onclick="save()">💾 Save</button>
+        <button onclick="load()">📂 Load</button>
+    </div>
 </div>
 
 <script>
-  class Game {
-    constructor() {
-      this.money = 4000;
-      this.population = 18;
-      this.gdp = 20;
-      this.infra = 50;
-      this.env = 70;
-      this.stability = 65;
-      this.year = 2025;
-      this.ideology = "Center";
+    const game = {
+        money: 4000,
+        population: 18,
+        gdp: 20,
+        infra: 50,
+        env: 70,
+        stability: 65,
+        year: 2025,
+        ideology: "Center"
+    };
+
+    function updateUI() {
+        document.getElementById('money').textContent = game.money;
+        document.getElementById('population').textContent = game.population.toFixed(1);
+        document.getElementById('gdp').textContent = game.gdp;
+        document.getElementById('infra').textContent = game.infra;
+        document.getElementById('env').textContent = game.env;
+        document.getElementById('stability').textContent = game.stability;
+        document.getElementById('ideology').textContent = game.ideology;
+        document.getElementById('year').textContent = game.year;
+
+        // Update Progress Bars
+        document.getElementById('infra').style.width = `${game.infra}%`;
+        document.getElementById('env').style.width = `${game.env}%`;
+        document.getElementById('stability').style.width = `${game.stability}%`;
     }
 
-    updateUI() {
-      document.getElementById('money').textContent = this.money;
-      document.getElementById('population').textContent = this.population.toFixed(1);
-      document.getElementById('gdp').textContent = this.gdp;
-      document.getElementById('infra').textContent = this.infra;
-      document.getElementById('env').textContent = this.env;
-      document.getElementById('stability').textContent = this.stability;
-      document.getElementById('ideology').textContent = this.ideology;
-      document.getElementById('year').textContent = this.year;
+    function log(message) {
+        document.getElementById('log').textContent = message;
     }
 
-    log(message) {
-      document.getElementById("log").textContent = message;
+    function region(r) {
+        if (game.money < 700) return log("Not enough funds.");
+        game.money -= 700;
+        game.gdp += 3;
+
+        if (r === "amazon") {
+            game.money += 600;
+            game.env -= 6;
+            game.stability -= 3;
+            log("Oil expanded in Amazonía. Protests arise.");
+        }
+        if (r === "galapagos") {
+            game.money += 300;
+            game.env += 4;
+            game.stability += 2;
+            log("Eco-tourism booms in the Galápagos.");
+        }
+        if (r === "costa") {
+            game.money += 400;
+            log("Port expansion boosts trade.");
+        }
+        if (r === "sierra") {
+            game.population += 0.2;
+            game.infra += 2;
+            log("Sierra sees urban growth.");
+        }
+
+        updateUI();
     }
 
-    randomEvent() {
-      if (Math.random() < 0.4) {
+    function policy(p) {
+        if (p === "infrastructure") {
+            game.money -= 500;
+            game.infra += 5;
+            log("Infrastructure projects completed.");
+        }
+        if (p === "social") {
+            game.money -= 400;
+            game.stability += 5;
+            game.population += 0.1;
+            log("Social programs calm the population.");
+        }
+        if (p === "business") {
+            game.gdp += 4;
+            game.env -= 3;
+            log("Business reforms boost economy but harm the environment.");
+        }
+        if (p === "environment") {
+            game.env += 6;
+            game.gdp -= 2;
+            log("Environmental protections improve quality of life.");
+        }
+
+        updateUI();
+    }
+
+    function election() {
+        const roll = Math.random();
+        if (roll < 0.33) game.ideology = "Left";
+        else if (roll < 0.66) game.ideology = "Center";
+        else game.ideology = "Right";
+
+        if (game.ideology === "Left") {
+            game.stability += 4;
+            game.env += 3;
+        }
+        if (game.ideology === "Right") {
+            game.gdp += 4;
+            game.env -= 4;
+        }
+
+        log("🗳️ Election held. New government: " + game.ideology);
+    }
+
+    function nextYear() {
+        game.year++;
+        game.money += Math.floor(game.gdp * (game.infra / 50));
+        game.population += 0.12;
+        game.infra -= 0.5;
+
+        if (game.year % 4 === 0) election();
+        randomEvent();
+        checkFailureConditions();
+
+        updateUI();
+    }
+
+    function randomEvent() {
         const events = [
-          () => { this.money -= 500; this.stability -= 4; this.log("🌋 Earthquake damages infrastructure."); },
-          () => { this.env -= 4; this.log("🌊 El Niño disrupts agriculture."); },
-          () => { this.money += 600; this.log("📦 Export boom year."); },
-          () => { this.stability -= 6; this.log("🚨 Nationwide strike."); }
+            () => { game.money -= 500; game.stability -= 4; log("🌋 Earthquake damages infrastructure."); },
+            () => { game.env -= 4; log("🌊 El Niño affects agriculture."); },
+            () => { game.money += 600; log("📦 Export boom year!"); },
+            () => { game.stability -= 6; log("🚨 Nationwide strike disrupts progress."); }
         ];
-        events[Math.floor(Math.random() * events.length)]();
-      }
+        if (Math.random() < 0.4) events[Math.floor(Math.random() * events.length)]();
     }
 
-    softFail() {
-      if (this.stability < 20) {
-        this.gdp -= 3;
-        this.log("⚠️ Low stability: productivity suffers.");
-      }
-      if (this.env < 20) {
-        this.population -= 0.2;
-        this.log("⚠️ Environmental crisis causes migration.");
-      }
+    function checkFailureConditions() {
+        if (game.stability < 20) {
+            game.gdp -= 3;
+            log("⚠️ Low stability: economy suffers.");
+        }
+        if (game.env < 20) {
+            game.population -= 0.2;
+            log("⚠️ Environmental crisis leads to migration.");
+        }
     }
 
-    save() {
-      localStorage.setItem("ecuadorEndless", JSON.stringify(this));
-      this.log("Game saved.");
+    function save() {
+        localStorage.setItem("ecuadorTycoon", JSON.stringify(game));
+        log("Game saved.");
     }
 
-    load() {
-      const savedState = localStorage.getItem("ecuadorEndless");
-      if (savedState) {
-        Object.assign(this, JSON.parse(savedState));
-        this.updateUI();
-        this.log("Game loaded.");
-      }
+    function load() {
+        const savedGame = localStorage.getItem("ecuadorTycoon");
+        if (savedGame) {
+            Object.assign(game, JSON.parse(savedGame));
+            updateUI();
+            log("Game loaded.");
+        }
     }
 
-    regionDevelopment(region) {
-      if (this.money < 700) return this.log("Not enough funds.");
-      this.money -= 700;
-      this.gdp += 3;
-
-      switch (region) {
-        case "amazon":
-          this.money += 600;
-          this.env -= 6;
-          this.stability -= 3;
-          this.log("Oil expanded in Amazonía. Indigenous protests.");
-          break;
-        case "galapagos":
-          this.money += 300;
-          this.env += 4;
-          this.stability += 2;
-          this.log("Eco-tourism flourishes in Galápagos.");
-          break;
-        case "costa":
-          this.money += 400;
-          this.log("Ports expand trade capacity.");
-          break;
-        case "sierra":
-          this.population += 0.2;
-          this.infra += 2;
-          this.log("Urban growth strengthens Sierra.");
-          break;
-      }
-      this.updateUI();
-    }
-
-    governmentPolicy(policy) {
-      if (policy === "infrastructure") {
-        this.money -= 500;
-        this.infra += 5;
-        this.log("Roads and hospitals improve productivity.");
-      } else if (policy === "social") {
-        this.money -= 400;
-        this.stability += 5;
-        this.population += 0.1;
-        this.log("Social programs calm unrest.");
-      } else if (policy === "business") {
-        this.gdp += 4;
-        this.env -= 3;
-        this.log("Businesses boom. Environmentalists angry.");
-      } else if (policy === "environment") {
-        this.env += 6;
-        this.gdp -= 2;
-        this.log("Nature protected for future generations.");
-      }
-      this.updateUI();
-    }
-
-    election() {
-      const roll = Math.random();
-      if (roll < 0.33) this.ideology = "Left";
-      else if (roll < 0.66) this.ideology = "Center";
-      else this.ideology = "Right";
-
-      if (this.ideology === "Left") {
-        this.stability += 4;
-        this.env += 3;
-      } else if (this.ideology === "Right") {
-        this.gdp += 4;
-        this.env -= 4;
-      }
-
-      this.log("🗳️ Election held. New government: " + this.ideology);
-    }
-
-    nextYear() {
-      this.year++;
-      this.money += Math.floor(this.gdp * (this.infra / 50));
-      this.population += 0.12;
-      this.infra -= 0.5;
-
-      if (this.year % 4 === 0) this.election();
-      this.randomEvent();
-      this.softFail();
-      this.updateUI();
-    }
-  }
-
-  const game = new Game();
-  game.updateUI();
+    updateUI();
 </script>
 </body>
 </html>
