@@ -96,14 +96,15 @@ small { opacity: 0.8; font-size: 14px; }
 <div class="panel">
 <h3>🌐 Diplomacy & War</h3>
 <small>Form alliances, declare war, or negotiate peace</small>
-<button onclick="diplomacy('alliance')">🤝 Form Alliance</button>
-<button onclick="diplomacy('war')">⚔️ Declare War</button>
-<button onclick="diplomacy('peace')">✌️ Negotiate Peace</button>
+<button onclick="startWar()">⚔️ Declare War</button>
+<button onclick="negotiatePeace()">✌️ Negotiate Peace</button>
+<button onclick="formAlliance()">🤝 Form Alliance</button>
 </div>
 
 <div class="panel">
-<h3>📰 Events & Elections</h3>
+<h3>📰 Events & Timeline</h3>
 <p id="log">The republic stands strong.</p>
+<p id="warTimeline"></p>
 <button onclick="save()">💾 Save</button>
 <button onclick="load()">📂 Load</button>
 </div>
@@ -111,7 +112,7 @@ small { opacity: 0.8; font-size: 14px; }
 </div>
 
 <script>
-const game = {
+let game = {
     money: 4000,
     population: 18,
     gdp: 20,
@@ -122,7 +123,8 @@ const game = {
     military: 10,
     year: 2025,
     allies: [],
-    enemies: []
+    enemies: [],
+    war: null
 };
 
 function updateUI() {
@@ -135,6 +137,7 @@ function updateUI() {
     document.getElementById('ideology').textContent = game.ideology;
     document.getElementById('military').textContent = game.military;
     document.getElementById('year').textContent = game.year;
+    renderWarTimeline();
 }
 
 function log(message) {
@@ -143,54 +146,83 @@ function log(message) {
 
 // REGIONS
 function region(r) {
-    if(game.money < 700) return log("Not enough funds.");
+    if(game.money<700) return log("Not enough funds.");
     game.money -= 700;
     game.gdp += 3;
-
-    if(r==="amazon") { game.money += 600; game.env -= 6; game.stability -= 3; log("Oil in Amazonía boosts money but causes unrest."); }
-    if(r==="galapagos") { game.money += 300; game.env += 4; game.stability += 2; log("Eco-tourism flourishes in Galápagos."); }
-    if(r==="costa") { game.money += 400; log("Ports expand trade capacity."); }
-    if(r==="sierra") { game.population += 0.2; game.infra += 2; log("Urban growth strengthens Sierra."); }
-
+    if(r==="amazon"){ game.money+=600; game.env-=6; game.stability-=3; log("Oil in Amazonía boosts money but causes unrest."); }
+    if(r==="galapagos"){ game.money+=300; game.env+=4; game.stability+=2; log("Eco-tourism booms in Galápagos."); }
+    if(r==="costa"){ game.money+=400; log("Ports expand trade."); }
+    if(r==="sierra"){ game.population+=0.2; game.infra+=2; log("Sierra urban growth strengthens."); }
     updateUI();
 }
 
 // POLICIES
 function policy(p) {
-    if(p==="infrastructure") { game.money -= 500; game.infra += 5; log("Infrastructure improved."); }
-    if(p==="social") { game.money -= 400; game.stability += 5; game.population += 0.1; log("Social programs implemented."); }
-    if(p==="business") { game.gdp += 4; game.env -= 3; log("Pro-business reforms implemented."); }
-    if(p==="environment") { game.env += 6; game.gdp -= 2; log("Environmental protection enforced."); }
-    if(p==="military") { game.money -= 600; game.military += 5; log("Military expanded."); }
-
+    if(p==="infrastructure"){ game.money-=500; game.infra+=5; log("Infrastructure improved."); }
+    if(p==="social"){ game.money-=400; game.stability+=5; game.population+=0.1; log("Social programs implemented."); }
+    if(p==="business"){ game.gdp+=4; game.env-=3; log("Pro-business reforms implemented."); }
+    if(p==="environment"){ game.env+=6; game.gdp-=2; log("Environmental protection enforced."); }
+    if(p==="military"){ game.money-=600; game.military+=5; log("Military expanded."); }
     updateUI();
 }
 
 // DIPLOMACY
-function diplomacy(action) {
-    const nations = ["Colombia", "Peru", "Brazil"];
-    const target = nations[Math.floor(Math.random()*nations.length)];
-
-    if(action==="alliance") {
-        if(!game.allies.includes(target)) { game.allies.push(target); log(`🤝 Formed alliance with ${target}.`); }
-        else log(`Already allied with ${target}.`);
-    }
-    if(action==="war") {
-        if(!game.enemies.includes(target)) { game.enemies.push(target); log(`⚔️ Declared war on ${target}!`); }
-        else log(`Already at war with ${target}.`);
-        game.military -= 2;
-        game.gdp -= 3;
-        game.stability -= 2;
-    }
-    if(action==="peace") {
-        if(game.enemies.includes(target)) {
-            game.enemies = game.enemies.filter(e => e!==target);
-            log(`✌️ Peace negotiated with ${target}.`);
-            game.stability += 3;
-        } else { log(`No war with ${target} to negotiate.`); }
-    }
-
+function formAlliance() {
+    const nations=["Colombia","Peru","Brazil"];
+    const target=nations[Math.floor(Math.random()*nations.length)];
+    if(!game.allies.includes(target)){ game.allies.push(target); log(`🤝 Formed alliance with ${target}.`); }
+    else log(`Already allied with ${target}.`);
     updateUI();
+}
+
+// WAR SYSTEM
+function startWar() {
+    if(game.war){ return log("Already at war!"); }
+    const nations=["Colombia","Peru","Brazil"];
+    const enemy=nations[Math.floor(Math.random()*nations.length)];
+    game.enemies.push(enemy);
+    game.war={enemy: enemy, year:0, timeline:[]};
+    log(`⚔️ War started with ${enemy}!`);
+    updateUI();
+}
+
+function advanceWar() {
+    if(!game.war) return;
+
+    const w=game.war;
+    w.year++;
+    let event="";
+    const outcome=Math.random();
+    if(outcome<0.4){ game.military-=2; game.population-=0.1; game.gdp-=2; event="Lost a battle."; }
+    else if(outcome<0.8){ game.military-=1; game.gdp+=2; event="Won a skirmish."; }
+    else { game.military+=1; game.gdp+=3; event="Major victory!"; }
+    w.timeline.push(`Year ${w.year}: ${event}`);
+
+    // War ends after 3 years automatically
+    if(w.year>=3){
+        log(`War with ${w.enemy} ended.`);
+        game.money+=Math.floor(Math.random()*1000)+500; // peace reward
+        game.stability+=3;
+        game.war=null;
+    }
+    updateUI();
+}
+
+function negotiatePeace() {
+    if(!game.war) return log("No war to negotiate.");
+    const reward=Math.floor(Math.random()*1500)+500;
+    game.money+=reward;
+    game.stability+=5;
+    log(`✌️ Peace treaty signed with ${game.war.enemy}. Earned $${reward}.`);
+    game.enemies=game.enemies.filter(e=>e!==game.war.enemy);
+    game.war=null;
+    updateUI();
+}
+
+function renderWarTimeline() {
+    const el=document.getElementById("warTimeline");
+    if(!game.war){ el.textContent="No ongoing war."; return; }
+    el.textContent="War Timeline:\n"+game.war.timeline.join("\n");
 }
 
 // ELECTIONS
@@ -200,15 +232,14 @@ function election() {
     else if(roll<0.66) game.ideology="Center";
     else game.ideology="Right";
 
-    if(game.ideology==="Left") { game.stability += 4; game.env +=3; }
-    if(game.ideology==="Right") { game.gdp += 4; game.env -=4; }
-
+    if(game.ideology==="Left"){ game.stability+=4; game.env+=3; }
+    if(game.ideology==="Right"){ game.gdp+=4; game.env-=4; }
     log("🗳️ New government: "+game.ideology);
 }
 
 // RANDOM EVENTS
 function randomEvent() {
-    const events = [
+    const events=[
         ()=>{ game.money-=500; game.stability-=4; log("🌋 Earthquake damages infrastructure."); },
         ()=>{ game.env-=4; log("🌊 El Niño affects agriculture."); },
         ()=>{ game.money+=600; log("📦 Export boom year!"); },
@@ -217,11 +248,11 @@ function randomEvent() {
     if(Math.random()<0.4) events[Math.floor(Math.random()*events.length)]();
 }
 
-// CHECK FAILURES
+// FAILURES
 function checkFailureConditions() {
-    if(game.stability<20) { game.gdp-=3; log("⚠️ Low stability!"); }
-    if(game.env<20) { game.population-=0.2; log("⚠️ Environmental crisis!"); }
-    if(game.military<0) { game.military=0; log("Military depleted!"); }
+    if(game.stability<20){ game.gdp-=3; log("⚠️ Low stability!"); }
+    if(game.env<20){ game.population-=0.2; log("⚠️ Environmental crisis!"); }
+    if(game.military<0) game.military=0;
 }
 
 // ADVANCE YEAR
@@ -232,6 +263,7 @@ function nextYear() {
     game.infra-=0.5;
 
     if(game.year%4===0) election();
+    if(game.war) advanceWar();
     randomEvent();
     checkFailureConditions();
 
@@ -239,8 +271,8 @@ function nextYear() {
 }
 
 // SAVE/LOAD
-function save() { localStorage.setItem("ecuadorTycoon", JSON.stringify(game)); log("Game saved."); }
-function load() { const saved=localStorage.getItem("ecuadorTycoon"); if(saved){ Object.assign(game, JSON.parse(saved)); updateUI(); log("Game loaded."); } }
+function save(){ localStorage.setItem("ecuadorTycoon",JSON.stringify(game)); log("Game saved."); }
+function load(){ const s=localStorage.getItem("ecuadorTycoon"); if(s){ Object.assign(game,JSON.parse(s)); updateUI(); log("Game loaded."); } }
 
 updateUI();
 </script>
