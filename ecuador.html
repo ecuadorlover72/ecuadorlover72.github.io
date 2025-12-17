@@ -1,283 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ecuador Tycoon: Endless Republic</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(#0b2f24, #145a40);
-            color: #fff;
-        }
-
-        header {
-            background: #011;
-            padding: 20px;
-            text-align: center;
-            font-size: 30px;
-            font-weight: bold;
-        }
-
-        #game {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .panel {
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            background: #2ecc71;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        button:hover {
-            background: #27ae60;
-        }
-
-        .stat {
-            margin: 10px 0;
-        }
-
-        small {
-            opacity: 0.8;
-            font-size: 14px;
-        }
-
-        .progress-bar {
-            height: 8px;
-            width: 100%;
-            background: #444;
-            border-radius: 5px;
-        }
-
-        .progress {
-            height: 100%;
-            border-radius: 5px;
-            transition: width 0.3s;
-        }
-
-        .green { background: #7CFC00; }
-        .red { background: #ff6b6b; }
-        .yellow { background: #f39c12; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ecuador Tycoon: Endless Republic</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(#0b2f24, #145a40);
+    color: #fff;
+}
+header {
+    background: #011;
+    padding: 20px;
+    text-align: center;
+    font-size: 30px;
+    font-weight: bold;
+}
+#game {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.panel {
+    background: rgba(0,0,0,0.6);
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+button {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    background: #2ecc71;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+button:hover { background: #27ae60; }
+.stat { margin: 10px 0; }
+small { opacity: 0.8; font-size: 14px; }
+.progress-bar { height: 8px; width: 100%; background: #444; border-radius: 5px; }
+.progress { height: 100%; border-radius: 5px; transition: width 0.3s; }
+.green { background: #7CFC00; }
+.red { background: #ff6b6b; }
+.yellow { background: #f39c12; }
+</style>
 </head>
 <body>
+
 <header>🇪🇨 Ecuador Tycoon: Endless Republic</header>
 
 <div id="game">
-    <div class="panel">
-        <h3>📊 Nation Overview</h3>
-        <div class="stat">💰 Money: $<span id="money"></span></div>
-        <div class="stat">🧑 Population: <span id="population"></span> M</div>
-        <div class="stat">📈 GDP: <span id="gdp"></span></div>
-        <div class="stat">🏗️ Infrastructure: <span id="infra"></span>%</div>
-        <div class="stat">🌿 Environment: <span id="env"></span>%</div>
-        <div class="stat">⚖️ Stability: <span id="stability"></span>%</div>
-        <div class="stat">🗳️ Ideology: <span id="ideology"></span></div>
-        <div class="stat">📅 Year: <span id="year"></span></div>
-        <button onclick="nextYear()">Advance Year</button>
-    </div>
 
-    <div class="panel">
-        <h3>🗺️ Regional Development</h3>
-        <small>Costs $700 • Effects depend on region</small>
-        <button onclick="region('costa')">🌴 Costa – Ports & Trade</button>
-        <button onclick="region('sierra')">⛰️ Sierra – Cities & Industry</button>
-        <button onclick="region('amazon')">🌳 Amazonía – Oil & Conflict</button>
-        <button onclick="region('galapagos')">🐢 Galápagos – Eco Tourism</button>
-    </div>
+<div class="panel">
+<h3>📊 Nation Overview</h3>
+<div class="stat">💰 Money: $<span id="money"></span></div>
+<div class="stat">🧑 Population: <span id="population"></span> M</div>
+<div class="stat">📈 GDP: <span id="gdp"></span></div>
+<div class="stat">🏗️ Infrastructure: <span id="infra"></span>%</div>
+<div class="stat">🌿 Environment: <span id="env"></span>%</div>
+<div class="stat">⚖️ Stability: <span id="stability"></span>%</div>
+<div class="stat">🗳️ Ideology: <span id="ideology"></span></div>
+<div class="stat">🪖 Military: <span id="military"></span></div>
+<div class="stat">📅 Year: <span id="year"></span></div>
+<button onclick="nextYear()">Advance Year</button>
+</div>
 
-    <div class="panel">
-        <h3>🏛️ Government Actions</h3>
-        <small>Policies shape long-term stability</small>
-        <button onclick="policy('infrastructure')">🏗️ Invest in Infrastructure</button>
-        <button onclick="policy('social')">🏥 Social Programs</button>
-        <button onclick="policy('business')">💼 Pro-Business Reform</button>
-        <button onclick="policy('environment')">🌱 Environmental Protection</button>
-    </div>
+<div class="panel">
+<h3>🗺️ Regional Development</h3>
+<small>Costs $700 • Effects depend on region</small>
+<button onclick="region('costa')">🌴 Costa – Ports & Trade</button>
+<button onclick="region('sierra')">⛰️ Sierra – Cities & Industry</button>
+<button onclick="region('amazon')">🌳 Amazonía – Oil & Conflict</button>
+<button onclick="region('galapagos')">🐢 Galápagos – Eco Tourism</button>
+</div>
 
-    <div class="panel">
-        <h3>📰 Events & Elections</h3>
-        <p id="log">The republic stands strong.</p>
-        <button onclick="save()">💾 Save</button>
-        <button onclick="load()">📂 Load</button>
-    </div>
+<div class="panel">
+<h3>🏛️ Government Actions</h3>
+<small>Policies shape long-term stability</small>
+<button onclick="policy('infrastructure')">🏗️ Invest in Infrastructure</button>
+<button onclick="policy('social')">🏥 Social Programs</button>
+<button onclick="policy('business')">💼 Pro-Business Reform</button>
+<button onclick="policy('environment')">🌱 Environmental Protection</button>
+<button onclick="policy('military')">🪖 Military Expansion</button>
+</div>
+
+<div class="panel">
+<h3>🌐 Diplomacy & War</h3>
+<small>Form alliances, declare war, or negotiate peace</small>
+<button onclick="diplomacy('alliance')">🤝 Form Alliance</button>
+<button onclick="diplomacy('war')">⚔️ Declare War</button>
+<button onclick="diplomacy('peace')">✌️ Negotiate Peace</button>
+</div>
+
+<div class="panel">
+<h3>📰 Events & Elections</h3>
+<p id="log">The republic stands strong.</p>
+<button onclick="save()">💾 Save</button>
+<button onclick="load()">📂 Load</button>
+</div>
+
 </div>
 
 <script>
-    const game = {
-        money: 4000,
-        population: 18,
-        gdp: 20,
-        infra: 50,
-        env: 70,
-        stability: 65,
-        year: 2025,
-        ideology: "Center"
-    };
+const game = {
+    money: 4000,
+    population: 18,
+    gdp: 20,
+    infra: 50,
+    env: 70,
+    stability: 65,
+    ideology: "Center",
+    military: 10,
+    year: 2025,
+    allies: [],
+    enemies: []
+};
 
-    function updateUI() {
-        document.getElementById('money').textContent = game.money;
-        document.getElementById('population').textContent = game.population.toFixed(1);
-        document.getElementById('gdp').textContent = game.gdp;
-        document.getElementById('infra').textContent = game.infra;
-        document.getElementById('env').textContent = game.env;
-        document.getElementById('stability').textContent = game.stability;
-        document.getElementById('ideology').textContent = game.ideology;
-        document.getElementById('year').textContent = game.year;
+function updateUI() {
+    document.getElementById('money').textContent = game.money;
+    document.getElementById('population').textContent = game.population.toFixed(1);
+    document.getElementById('gdp').textContent = game.gdp;
+    document.getElementById('infra').textContent = game.infra;
+    document.getElementById('env').textContent = game.env;
+    document.getElementById('stability').textContent = game.stability;
+    document.getElementById('ideology').textContent = game.ideology;
+    document.getElementById('military').textContent = game.military;
+    document.getElementById('year').textContent = game.year;
+}
 
-        // Update Progress Bars
-        document.getElementById('infra').style.width = `${game.infra}%`;
-        document.getElementById('env').style.width = `${game.env}%`;
-        document.getElementById('stability').style.width = `${game.stability}%`;
+function log(message) {
+    document.getElementById('log').textContent = message;
+}
+
+// REGIONS
+function region(r) {
+    if(game.money < 700) return log("Not enough funds.");
+    game.money -= 700;
+    game.gdp += 3;
+
+    if(r==="amazon") { game.money += 600; game.env -= 6; game.stability -= 3; log("Oil in Amazonía boosts money but causes unrest."); }
+    if(r==="galapagos") { game.money += 300; game.env += 4; game.stability += 2; log("Eco-tourism flourishes in Galápagos."); }
+    if(r==="costa") { game.money += 400; log("Ports expand trade capacity."); }
+    if(r==="sierra") { game.population += 0.2; game.infra += 2; log("Urban growth strengthens Sierra."); }
+
+    updateUI();
+}
+
+// POLICIES
+function policy(p) {
+    if(p==="infrastructure") { game.money -= 500; game.infra += 5; log("Infrastructure improved."); }
+    if(p==="social") { game.money -= 400; game.stability += 5; game.population += 0.1; log("Social programs implemented."); }
+    if(p==="business") { game.gdp += 4; game.env -= 3; log("Pro-business reforms implemented."); }
+    if(p==="environment") { game.env += 6; game.gdp -= 2; log("Environmental protection enforced."); }
+    if(p==="military") { game.money -= 600; game.military += 5; log("Military expanded."); }
+
+    updateUI();
+}
+
+// DIPLOMACY
+function diplomacy(action) {
+    const nations = ["Colombia", "Peru", "Brazil"];
+    const target = nations[Math.floor(Math.random()*nations.length)];
+
+    if(action==="alliance") {
+        if(!game.allies.includes(target)) { game.allies.push(target); log(`🤝 Formed alliance with ${target}.`); }
+        else log(`Already allied with ${target}.`);
     }
-
-    function log(message) {
-        document.getElementById('log').textContent = message;
+    if(action==="war") {
+        if(!game.enemies.includes(target)) { game.enemies.push(target); log(`⚔️ Declared war on ${target}!`); }
+        else log(`Already at war with ${target}.`);
+        game.military -= 2;
+        game.gdp -= 3;
+        game.stability -= 2;
     }
-
-    function region(r) {
-        if (game.money < 700) return log("Not enough funds.");
-        game.money -= 700;
-        game.gdp += 3;
-
-        if (r === "amazon") {
-            game.money += 600;
-            game.env -= 6;
-            game.stability -= 3;
-            log("Oil expanded in Amazonía. Protests arise.");
-        }
-        if (r === "galapagos") {
-            game.money += 300;
-            game.env += 4;
-            game.stability += 2;
-            log("Eco-tourism booms in the Galápagos.");
-        }
-        if (r === "costa") {
-            game.money += 400;
-            log("Port expansion boosts trade.");
-        }
-        if (r === "sierra") {
-            game.population += 0.2;
-            game.infra += 2;
-            log("Sierra sees urban growth.");
-        }
-
-        updateUI();
-    }
-
-    function policy(p) {
-        if (p === "infrastructure") {
-            game.money -= 500;
-            game.infra += 5;
-            log("Infrastructure projects completed.");
-        }
-        if (p === "social") {
-            game.money -= 400;
-            game.stability += 5;
-            game.population += 0.1;
-            log("Social programs calm the population.");
-        }
-        if (p === "business") {
-            game.gdp += 4;
-            game.env -= 3;
-            log("Business reforms boost economy but harm the environment.");
-        }
-        if (p === "environment") {
-            game.env += 6;
-            game.gdp -= 2;
-            log("Environmental protections improve quality of life.");
-        }
-
-        updateUI();
-    }
-
-    function election() {
-        const roll = Math.random();
-        if (roll < 0.33) game.ideology = "Left";
-        else if (roll < 0.66) game.ideology = "Center";
-        else game.ideology = "Right";
-
-        if (game.ideology === "Left") {
-            game.stability += 4;
-            game.env += 3;
-        }
-        if (game.ideology === "Right") {
-            game.gdp += 4;
-            game.env -= 4;
-        }
-
-        log("🗳️ Election held. New government: " + game.ideology);
-    }
-
-    function nextYear() {
-        game.year++;
-        game.money += Math.floor(game.gdp * (game.infra / 50));
-        game.population += 0.12;
-        game.infra -= 0.5;
-
-        if (game.year % 4 === 0) election();
-        randomEvent();
-        checkFailureConditions();
-
-        updateUI();
-    }
-
-    function randomEvent() {
-        const events = [
-            () => { game.money -= 500; game.stability -= 4; log("🌋 Earthquake damages infrastructure."); },
-            () => { game.env -= 4; log("🌊 El Niño affects agriculture."); },
-            () => { game.money += 600; log("📦 Export boom year!"); },
-            () => { game.stability -= 6; log("🚨 Nationwide strike disrupts progress."); }
-        ];
-        if (Math.random() < 0.4) events[Math.floor(Math.random() * events.length)]();
-    }
-
-    function checkFailureConditions() {
-        if (game.stability < 20) {
-            game.gdp -= 3;
-            log("⚠️ Low stability: economy suffers.");
-        }
-        if (game.env < 20) {
-            game.population -= 0.2;
-            log("⚠️ Environmental crisis leads to migration.");
-        }
-    }
-
-    function save() {
-        localStorage.setItem("ecuadorTycoon", JSON.stringify(game));
-        log("Game saved.");
-    }
-
-    function load() {
-        const savedGame = localStorage.getItem("ecuadorTycoon");
-        if (savedGame) {
-            Object.assign(game, JSON.parse(savedGame));
-            updateUI();
-            log("Game loaded.");
-        }
+    if(action==="peace") {
+        if(game.enemies.includes(target)) {
+            game.enemies = game.enemies.filter(e => e!==target);
+            log(`✌️ Peace negotiated with ${target}.`);
+            game.stability += 3;
+        } else { log(`No war with ${target} to negotiate.`); }
     }
 
     updateUI();
+}
+
+// ELECTIONS
+function election() {
+    const roll=Math.random();
+    if(roll<0.33) game.ideology="Left";
+    else if(roll<0.66) game.ideology="Center";
+    else game.ideology="Right";
+
+    if(game.ideology==="Left") { game.stability += 4; game.env +=3; }
+    if(game.ideology==="Right") { game.gdp += 4; game.env -=4; }
+
+    log("🗳️ New government: "+game.ideology);
+}
+
+// RANDOM EVENTS
+function randomEvent() {
+    const events = [
+        ()=>{ game.money-=500; game.stability-=4; log("🌋 Earthquake damages infrastructure."); },
+        ()=>{ game.env-=4; log("🌊 El Niño affects agriculture."); },
+        ()=>{ game.money+=600; log("📦 Export boom year!"); },
+        ()=>{ game.stability-=6; log("🚨 Nationwide strike."); }
+    ];
+    if(Math.random()<0.4) events[Math.floor(Math.random()*events.length)]();
+}
+
+// CHECK FAILURES
+function checkFailureConditions() {
+    if(game.stability<20) { game.gdp-=3; log("⚠️ Low stability!"); }
+    if(game.env<20) { game.population-=0.2; log("⚠️ Environmental crisis!"); }
+    if(game.military<0) { game.military=0; log("Military depleted!"); }
+}
+
+// ADVANCE YEAR
+function nextYear() {
+    game.year++;
+    game.money+=Math.floor(game.gdp*(game.infra/50));
+    game.population+=0.12;
+    game.infra-=0.5;
+
+    if(game.year%4===0) election();
+    randomEvent();
+    checkFailureConditions();
+
+    updateUI();
+}
+
+// SAVE/LOAD
+function save() { localStorage.setItem("ecuadorTycoon", JSON.stringify(game)); log("Game saved."); }
+function load() { const saved=localStorage.getItem("ecuadorTycoon"); if(saved){ Object.assign(game, JSON.parse(saved)); updateUI(); log("Game loaded."); } }
+
+updateUI();
 </script>
 </body>
 </html>
