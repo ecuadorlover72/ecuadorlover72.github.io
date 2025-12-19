@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cool Proxy Browser 😎</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      padding: 15px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .bar {
+      display: flex;
+      padding: 10px;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      background: #00c6ff;
+      color: #000;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #00e6ff;
+    }
+
+    iframe {
+      flex: 1;
+      border: none;
+      background: #000;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      padding: 6px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    😎 Cool Proxy Browser
+  </header>
+
+  <div class="bar">
+    <input
+      id="urlInput"
+      type="text"
+      placeholder="Enter a URL (https://example.com)"
+    />
+    <button onclick="openSite()">Go</button>
+  </div>
+
+  <iframe id="proxyFrame" src=""></iframe>
+
+  <footer>
+    Frontend UI only — requires a valid proxy backend
+  </footer>
+
+  <script>
+    function openSite() {
+      let url = document.getElementById("urlInput").value.trim();
+
+      if (!url) return;
+
+      // Auto-add https:// if missing
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        url = "https://" + url;
+      }
+
+      /*
+        IMPORTANT:
+        Replace PROXY_URL with your own proxy endpoint.
+        Example:
+        const proxy = "https://your-proxy.example.com/?url=";
+      */
+
+      const PROXY_URL = ""; // <-- put your proxy here
+      const frame = document.getElementById("proxyFrame");
+
+      if (PROXY_URL) {
+        frame.src = PROXY_URL + encodeURIComponent(url);
+      } else {
+        // Direct load (will fail on many sites due to X-Frame-Options)
+        frame.src = url;
+      }
+    }
+  </script>
+
+</body>
+</html>
