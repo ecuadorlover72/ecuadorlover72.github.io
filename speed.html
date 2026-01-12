@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Speed Typing Test</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #1e1e2f;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    .container {
+        background: #2b2b3d;
+        padding: 20px 30px;
+        border-radius: 10px;
+        width: 400px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        text-align: center;
+    }
+    .quote {
+        background: #1a1a2a;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        min-height: 60px;
+    }
+    textarea {
+        width: 100%;
+        height: 80px;
+        border-radius: 5px;
+        border: none;
+        padding: 10px;
+        font-size: 16px;
+        outline: none;
+    }
+    .stats {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    button {
+        margin-top: 15px;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        background: #4caf50;
+        color: white;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button:hover {
+        background: #45a049;
+    }
+    .correct {
+        color: #4caf50;
+    }
+    .incorrect {
+        color: #f44336;
+        text-decoration: underline;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Speed Typing Test</h2>
+    <div class="quote" id="quote"></div>
+    <textarea id="input" placeholder="Start typing here..."></textarea>
+    <div class="stats">
+        <div>Time: <span id="time">0</span>s</div>
+        <div>WPM: <span id="wpm">0</span></div>
+        <div>Accuracy: <span id="accuracy">100</span>%</div>
+    </div>
+    <button onclick="resetGame()">Restart</button>
+</div>
+
+<script>
+const quotes = [
+    "The quick brown fox jumps over the lazy dog.",
+    "Practice makes perfect.",
+    "Typing fast requires accuracy and focus.",
+    "JavaScript makes websites interactive.",
+    "Never stop learning new skills."
+];
+
+const quoteDisplay = document.getElementById("quote");
+const input = document.getElementById("input");
+const timeDisplay = document.getElementById("time");
+const wpmDisplay = document.getElementById("wpm");
+const accuracyDisplay = document.getElementById("accuracy");
+
+let startTime = null;
+let timer = null;
+let currentQuote = "";
+
+function getRandomQuote() {
+    return quotes[Math.floor(Math.random() * quotes.length)];
+}
+
+function renderQuote() {
+    currentQuote = getRandomQuote();
+    quoteDisplay.innerHTML = "";
+    currentQuote.split("").forEach(char => {
+        const span = document.createElement("span");
+        span.textContent = char;
+        quoteDisplay.appendChild(span);
+    });
+}
+
+function startTimer() {
+    timer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        timeDisplay.textContent = elapsed;
+    }, 1000);
+}
+
+input.addEventListener("input", () => {
+    if (!startTime) {
+        startTime = Date.now();
+        startTimer();
+    }
+
+    const inputChars = input.value.split("");
+    const quoteChars = quoteDisplay.querySelectorAll("span");
+
+    let correct = 0;
+
+    quoteChars.forEach((span, index) => {
+        const typedChar = inputChars[index];
+
+        if (typedChar == null) {
+            span.classList.remove("correct", "incorrect");
+        } else if (typedChar === span.textContent) {
+            span.classList.add("correct");
+            span.classList.remove("incorrect");
+            correct++;
+        } else {
+            span.classList.add("incorrect");
+            span.classList.remove("correct");
+        }
+    });
+
+    const elapsedTime = (Date.now() - startTime) / 1000;
+    const wordsTyped = input.value.length / 5;
+    const wpm = Math.round((wordsTyped / elapsedTime) * 60);
+    wpmDisplay.textContent = isNaN(wpm) ? 0 : wpm;
+
+    const accuracy = Math.round((correct / currentQuote.length) * 100);
+    accuracyDisplay.textContent = accuracy;
+
+    // If finished
+    if (input.value === currentQuote) {
+        clearInterval(timer);
+        input.disabled = true;
+        alert(`Finished!\nWPM: ${wpm}\nAccuracy: ${accuracy}%`);
+    }
+});
+
+function resetGame() {
+    clearInterval(timer);
+    startTime = null;
+    timer = null;
+    timeDisplay.textContent = 0;
+    wpmDisplay.textContent = 0;
+    accuracyDisplay.textContent = 100;
+    input.value = "";
+    input.disabled = false;
+    renderQuote();
+}
+
+renderQuote();
+</script>
+
+</body>
+</html>
