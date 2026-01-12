@@ -2,90 +2,181 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Speed Typing Test</title>
+<title>Advanced Speed Typing Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #1e1e2f;
-        color: #fff;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-    }
-    .container {
-        background: #2b2b3d;
-        padding: 20px 30px;
-        border-radius: 10px;
-        width: 400px;
-        box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        text-align: center;
-    }
-    .quote {
-        background: #1a1a2a;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 15px;
-        min-height: 60px;
-    }
-    textarea {
-        width: 100%;
-        height: 80px;
-        border-radius: 5px;
-        border: none;
-        padding: 10px;
-        font-size: 16px;
-        outline: none;
-    }
-    .stats {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 10px;
-    }
-    button {
-        margin-top: 15px;
-        padding: 8px 15px;
-        border: none;
-        border-radius: 5px;
-        background: #4caf50;
-        color: white;
-        cursor: pointer;
-        font-size: 16px;
-    }
-    button:hover {
-        background: #45a049;
-    }
-    .correct {
-        color: #4caf50;
-    }
-    .incorrect {
-        color: #f44336;
-        text-decoration: underline;
-    }
+:root {
+    --bg: #0f1220;
+    --card: #1b1f3a;
+    --accent: #6c63ff;
+    --correct: #4caf50;
+    --incorrect: #ff5252;
+    --text: #ffffff;
+    --muted: #9aa0c3;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #0f1220, #1a1f40);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background: var(--card);
+    padding: 25px 30px;
+    border-radius: 15px;
+    width: 520px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 15px;
+    color: var(--accent);
+}
+
+.quote-box {
+    background: #121530;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    min-height: 120px;
+    line-height: 1.7;
+    overflow-y: auto;
+}
+
+.quote-box span {
+    transition: all 0.15s ease;
+}
+
+.quote-box span.correct {
+    color: var(--correct);
+}
+
+.quote-box span.incorrect {
+    color: var(--incorrect);
+    background: rgba(255,82,82,0.15);
+    border-radius: 3px;
+}
+
+textarea {
+    width: 100%;
+    height: 90px;
+    border-radius: 10px;
+    border: none;
+    padding: 12px;
+    font-size: 15px;
+    outline: none;
+    background: #0f1330;
+    color: white;
+    resize: none;
+    transition: box-shadow 0.3s ease;
+}
+
+textarea:focus {
+    box-shadow: 0 0 10px var(--accent);
+}
+
+.custom-text {
+    width: 100%;
+    margin-top: 10px;
+    background: #0f1330;
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    color: white;
+    font-size: 13px;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+}
+
+button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(108,99,255,0.4);
+}
+
+button:active {
+    transform: scale(0.96);
+}
+
+.finished {
+    animation: pulse 0.6s infinite alternate;
+}
+
+@keyframes pulse {
+    from { box-shadow: 0 0 10px var(--accent); }
+    to { box-shadow: 0 0 20px var(--accent); }
+}
 </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Speed Typing Test</h2>
-    <div class="quote" id="quote"></div>
+<div class="container" id="gameCard">
+    <h2>Speed Typing Test Pro</h2>
+
+    <div class="quote-box" id="quote"></div>
+
     <textarea id="input" placeholder="Start typing here..."></textarea>
+
+    <input type="text" id="customText" class="custom-text"
+           placeholder="Or paste your own text here and press 'Use Custom Text'">
+
     <div class="stats">
         <div>Time: <span id="time">0</span>s</div>
         <div>WPM: <span id="wpm">0</span></div>
         <div>Accuracy: <span id="accuracy">100</span>%</div>
     </div>
-    <button onclick="resetGame()">Restart</button>
+
+    <div class="buttons">
+        <button onclick="resetGame()">New Quote</button>
+        <button onclick="useCustomText()">Use Custom Text</button>
+    </div>
 </div>
 
 <script>
 const quotes = [
-    "The quick brown fox jumps over the lazy dog.",
-    "Practice makes perfect.",
-    "Typing fast requires accuracy and focus.",
-    "JavaScript makes websites interactive.",
-    "Never stop learning new skills."
+`Typing is a fundamental skill in the modern digital world, allowing individuals to communicate ideas, write programs, and create documents at incredible speeds. Mastering typing requires consistency, patience, and a willingness to improve every single day.`,
+`The journey of learning how to type faster is not just about speed, but also about precision and rhythm. When your fingers move naturally across the keyboard, your thoughts can flow freely without interruption.`,
+`Technology has transformed the way we interact with information, and typing remains one of the most important tools that connects human creativity to digital expression. Improving this skill empowers productivity and confidence.`,
+`A calm mind and relaxed hands are the secrets to achieving better typing performance. Rushing only creates mistakes, while smooth and steady movements lead to lasting improvement and accuracy.`,
+`Every great writer, programmer, and designer relies on typing as a core ability. By practicing daily, you build muscle memory that allows your ideas to travel from your mind to the screen effortlessly.`
 ];
 
 const quoteDisplay = document.getElementById("quote");
@@ -93,6 +184,8 @@ const input = document.getElementById("input");
 const timeDisplay = document.getElementById("time");
 const wpmDisplay = document.getElementById("wpm");
 const accuracyDisplay = document.getElementById("accuracy");
+const customTextInput = document.getElementById("customText");
+const gameCard = document.getElementById("gameCard");
 
 let startTime = null;
 let timer = null;
@@ -102,10 +195,10 @@ function getRandomQuote() {
     return quotes[Math.floor(Math.random() * quotes.length)];
 }
 
-function renderQuote() {
-    currentQuote = getRandomQuote();
+function renderQuote(text) {
+    currentQuote = text;
     quoteDisplay.innerHTML = "";
-    currentQuote.split("").forEach(char => {
+    text.split("").forEach(char => {
         const span = document.createElement("span");
         span.textContent = char;
         quoteDisplay.appendChild(span);
@@ -135,11 +228,13 @@ input.addEventListener("input", () => {
 
         if (typedChar == null) {
             span.classList.remove("correct", "incorrect");
-        } else if (typedChar === span.textContent) {
+        } 
+        else if (typedChar === span.textContent) {
             span.classList.add("correct");
             span.classList.remove("incorrect");
             correct++;
-        } else {
+        } 
+        else {
             span.classList.add("incorrect");
             span.classList.remove("correct");
         }
@@ -153,10 +248,10 @@ input.addEventListener("input", () => {
     const accuracy = Math.round((correct / currentQuote.length) * 100);
     accuracyDisplay.textContent = accuracy;
 
-    // If finished
     if (input.value === currentQuote) {
         clearInterval(timer);
         input.disabled = true;
+        gameCard.classList.add("finished");
         alert(`Finished!\nWPM: ${wpm}\nAccuracy: ${accuracy}%`);
     }
 });
@@ -170,10 +265,22 @@ function resetGame() {
     accuracyDisplay.textContent = 100;
     input.value = "";
     input.disabled = false;
-    renderQuote();
+    gameCard.classList.remove("finished");
+    renderQuote(getRandomQuote());
 }
 
-renderQuote();
+function useCustomText() {
+    const text = customTextInput.value.trim();
+    if (text.length < 20) {
+        alert("Please enter at least 20 characters for a meaningful test.");
+        return;
+    }
+    resetGame();
+    renderQuote(text);
+}
+
+// Init
+renderQuote(getRandomQuote());
 </script>
 
 </body>
