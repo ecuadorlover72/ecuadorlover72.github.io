@@ -2,145 +2,201 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Capital Conquest – Map Mode</title>
+<title>Capital Conquest – Advanced Map</title>
 <style>
-    body {
-        background: #111;
-        color: white;
-        font-family: Arial;
-        text-align: center;
-    }
-    canvas {
-        border: 2px solid #444;
-        background: #2e3b2f;
-        cursor: crosshair;
-    }
-    button {
-        padding: 10px;
-        margin: 5px;
-    }
+body {
+    background:#0e1111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+}
+canvas {
+    border:2px solid #333;
+    background:#2f4f3a;
+}
+button {
+    margin:4px;
+    padding:8px 12px;
+}
 </style>
 </head>
-
 <body>
 
-<h1>🌍 Capital Conquest</h1>
+<h2>🌍 Capital Conquest</h2>
 
-<input id="playerName" placeholder="Your Land Name">
-<button onclick="startGame()">Start</button>
-
-<p id="info"></p>
-
-<canvas id="map" width="800" height="400"></canvas>
+<canvas id="map" width="900" height="450"></canvas>
 
 <div>
-    <button onclick="declareWar()">Declare War</button>
-    <button onclick="advance()">Advance</button>
-    <button onclick="retreat()">Retreat</button>
-    <button onclick="startPeace()">Peace Deal (Draw Border)</button>
+    <button onclick="declareWar()">Declare War</button><br>
+    <button onclick="advance('charge')">Charge</button>
+    <button onclick="advance('normal')">Normal</button>
+    <button onclick="advance('tricky')">Tricky</button>
+    <button onclick="advance('encircle')">Encircle</button><br>
+    <button onclick="peace()">Peace (Edit Border)</button>
 </div>
+
+<p id="info"></p>
 
 <script>
 const canvas = document.getElementById("map");
 const ctx = canvas.getContext("2d");
 
-let playerName = "";
-let aiName = "Red Dominion";
 let atWar = false;
-let drawingPeace = false;
-let borderX = 400;
+let trickyUses = 0;
+let enemyStrength = 1;
 
-let userDots = [];
-let enemyDots = [];
+// Capitals
+const blueCapital = {x:120,y:225};
+const redCapital = {x:780,y:225};
 
-// Create units
-for (let i = 0; i < 15; i++) {
-    userDots.push({ x: 150 + Math.random()*80, y: 50 + Math.random()*300 });
-    enemyDots.push({ x: 550 + Math.random()*80, y: 50 + Math.random()*300 });
+// Curvy border (control points)
+let borderPoints = [
+    {x:450,y:50},
+    {x:430,y:225},
+    {x:450,y:400}
+];
+
+let draggingPoint = null;
+let peaceMode = false;
+
+// Units
+let userDots = Array.from({length:12},()=>({x:200+Math.random()*60,y:60+Math.random()*320}));
+let enemyDots = Array.from({length:12},()=>({x:650+Math.random()*60,y:60+Math.random()*320}));
+
+function declareWar(){
+    atWar=true;
+    peaceMode=false;
+    info("⚔️ War declared");
 }
 
-function startGame() {
-    playerName = document.getElementById("playerName").value || "Blue Republic";
-    updateInfo();
-    drawMap();
+function advance(type){
+    if(!atWar) return;
+
+    let successChance=0.5, shift=20;
+
+    if(type==="charge"){successChance=0.4; shift=40;}
+    if(type==="normal"){successChance=0.55; shift=20;}
+    if(type==="tricky"){
+        successChance=Math.max(0.7 - trickyUses*0.1,0.3);
+        trickyUses++;
+        shift=15;
+    }
+    if(type==="encircle"){
+        successChance=0.3;
+        shift=60;
+    }
+
+    if(Math.random()<successChance){
+        borderPoints.forEach(p=>p.x+=shift);
+        userDots.forEach(d=>d.x+=shift*0.5);
+        if(type==="encircle"){
+            enemyDots.splice(0,Math.floor(enemyDots.length/2));
+            enemyStrength*=0.7;
+        }
+        info("Advance succeeded");
+    } else {
+        borderPoints.forEach(p=>p.x-=shift*0.6);
+        userDots.forEach(d=>d.x-=shift*0.3);
+        info("Advance failed");
+    }
+
+    draw();
 }
 
-function updateInfo() {
-    document.getElementById("info").innerText =
-        `${playerName} (Blue) vs ${aiName} (Red) — ${atWar ? "⚔ WAR" : "🕊 PEACE"}`;
+function peace(){
+    atWar=false;
+    peaceMode=true;
+    info("🕊️ Peace – Drag border points");
 }
 
-function drawMap() {
-    // Earth-like base
-    ctx.fillStyle = "#3a5f3a";
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Earth-like texture
+    ctx.fillStyle="#3c6e47";
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    // Territory
-    ctx.fillStyle = "#1e3f8a";
-    ctx.fillRect(0,0,borderX,canvas.height);
+    // Territories
+    drawTerritory("rgba(40,80,200,0.35)",true);
+    drawTerritory("rgba(200,40,40,0.35)",false);
 
-    ctx.fillStyle = "#8a1e1e";
-    ctx.fillRect(borderX,0,canvas.width-borderX,canvas.height);
+    // Border
+    drawBorder();
 
-    // Border line
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(borderX,0);
-    ctx.lineTo(borderX,canvas.height);
-    ctx.stroke();
+    // Capitals
+    drawDot(blueCapital.x,blueCapital.y,"yellow",8);
+    drawDot(redCapital.x,redCapital.y,"yellow",8);
 
-    // Draw units
-    userDots.forEach(d => drawDot(d.x,d.y,"cyan"));
-    enemyDots.forEach(d => drawDot(d.x,d.y,"red"));
+    // Units
+    userDots.forEach(d=>drawDot(d.x,d.y,"cyan",5));
+    enemyDots.forEach(d=>drawDot(d.x,d.y,"red",5));
+
+    // Peace edit points
+    if(peaceMode){
+        borderPoints.forEach(p=>drawDot(p.x,p.y,"white",6));
+    }
 }
 
-function drawDot(x,y,color){
+function drawTerritory(color,isBlue){
     ctx.beginPath();
-    ctx.arc(x,y,5,0,Math.PI*2);
-    ctx.fillStyle = color;
+    ctx.moveTo(isBlue?0:canvas.width,0);
+    ctx.lineTo(isBlue?borderPoints[0].x:borderPoints[0].x,0);
+    ctx.bezierCurveTo(
+        borderPoints[0].x,borderPoints[0].y,
+        borderPoints[1].x,borderPoints[1].y,
+        borderPoints[2].x,borderPoints[2].y
+    );
+    ctx.lineTo(isBlue?0:canvas.width,canvas.height);
+    ctx.closePath();
+    ctx.fillStyle=color;
     ctx.fill();
 }
 
-function declareWar() {
-    atWar = true;
-    updateInfo();
+function drawBorder(){
+    ctx.strokeStyle="white";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(borderPoints[0].x,0);
+    ctx.bezierCurveTo(
+        borderPoints[0].x,borderPoints[0].y,
+        borderPoints[1].x,borderPoints[1].y,
+        borderPoints[2].x,canvas.height
+    );
+    ctx.stroke();
 }
 
-function advance() {
-    if (!atWar) return;
-
-    borderX += 20;
-    userDots.forEach(d => d.x += 15);
-    enemyDots.forEach(d => d.x += Math.random()*-10);
-
-    drawMap();
+function drawDot(x,y,color,r){
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=color;
+    ctx.fill();
 }
 
-function retreat() {
-    if (!atWar) return;
-
-    borderX -= 20;
-    userDots.forEach(d => d.x -= 15);
-
-    drawMap();
-}
-
-function startPeace() {
-    atWar = false;
-    drawingPeace = true;
-    updateInfo();
-}
-
-canvas.addEventListener("mousedown", e => {
-    if (!drawingPeace) return;
-
-    const rect = canvas.getBoundingClientRect();
-    borderX = e.clientX - rect.left;
-    drawingPeace = false;
-
-    drawMap();
+canvas.addEventListener("mousedown",e=>{
+    if(!peaceMode) return;
+    const r=canvas.getBoundingClientRect();
+    const mx=e.clientX-r.left;
+    const my=e.clientY-r.top;
+    borderPoints.forEach(p=>{
+        if(Math.hypot(p.x-mx,p.y-my)<10) draggingPoint=p;
+    });
 });
+
+canvas.addEventListener("mousemove",e=>{
+    if(!draggingPoint) return;
+    const r=canvas.getBoundingClientRect();
+    draggingPoint.x=e.clientX-r.left;
+    draggingPoint.y=e.clientY-r.top;
+    draw();
+});
+
+canvas.addEventListener("mouseup",()=>draggingPoint=null);
+
+function info(msg){
+    document.getElementById("info").innerText=msg;
+}
+
+draw();
 </script>
 
 </body>
