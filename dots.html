@@ -4,257 +4,171 @@
 <meta charset="UTF-8">
 <title>Capital Conquest</title>
 <style>
-body{
-    margin:0;
-    background:#0d1117;
-    color:white;
-    font-family:system-ui;
-}
-canvas{
-    display:block;
-    margin:auto;
-    border:1px solid #222;
-}
-#topUI{
-    display:flex;
-    justify-content:center;
-    gap:15px;
-    margin:10px;
-}
-.card{
-    background:#161b22;
-    padding:10px 15px;
-    border-radius:12px;
-    box-shadow:0 0 10px #000;
-    font-size:14px;
-}
-button{
-    background:#238636;
-    border:none;
-    padding:8px 12px;
-    border-radius:8px;
-    color:white;
-    cursor:pointer;
-}
-button.red{background:#b91c1c}
-button.gray{background:#30363d}
-button:hover{opacity:.9}
-#actions,#peaceUI,#aiPeaceUI{
-    display:none;
-    text-align:center;
-    margin:10px;
-}
-.modal{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.6);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-.modalBox{
-    background:#161b22;
-    padding:20px;
-    border-radius:14px;
-    width:320px;
-}
+body{margin:0;background:#0d1117;color:white;font-family:system-ui}
+canvas{display:block;margin:auto;border:1px solid #222}
+#ui{display:flex;justify-content:center;gap:10px;padding:10px}
+.card{background:#161b22;padding:10px;border-radius:12px;font-size:13px;min-width:150px}
+button{margin:3px;padding:6px 10px;border:none;border-radius:8px;cursor:pointer}
+.green{background:#238636;color:white}
+.red{background:#b91c1c;color:white}
+.gray{background:#30363d;color:white}
+#panel{text-align:center}
 </style>
 </head>
 <body>
 
-<div id="topUI">
-    <div class="card" id="playerCard"></div>
-    <div class="card" id="enemyCard"></div>
+<div id="ui">
+  <div class="card" id="playerCard"></div>
+  <div class="card" id="nationCard"></div>
 </div>
 
 <canvas id="map" width="900" height="450"></canvas>
 
-<div style="text-align:center">
-    <button onclick="declareWar()">Declare War</button>
-    <button onclick="openPeace()">Peace Deal</button>
-</div>
-
-<div id="actions">
-    <button onclick="attack('charge')">Charge</button>
-    <button onclick="attack('normal')">Normal</button>
-    <button onclick="attack('tricky')">Tricky</button>
-    <button onclick="attack('encircle')">Encircle</button>
-    <button onclick="attack('bombard')">Bombard</button>
-    <button onclick="attack('probe')">Probe</button>
-    <button onclick="attack('blitz')">Blitz</button>
-</div>
-
-<!-- USER PEACE UI -->
-<div id="peaceUI" class="modal">
-    <div class="modalBox">
-        <h3>Offer Peace</h3>
-        <p>Choose what to offer:</p>
-        <button onclick="startBorderEdit()">Border Change</button><br><br>
-        <button onclick="offerMoney()">Offer Money (+10)</button><br><br>
-        <button class="gray" onclick="closePeace()">Cancel</button>
-    </div>
-</div>
-
-<!-- AI PEACE UI -->
-<div id="aiPeaceUI" class="modal">
-    <div class="modalBox">
-        <h3>AI Peace Offer</h3>
-        <p>The enemy proposes this border:</p>
-        <button onclick="acceptAIPeace()">Accept</button>
-        <button class="red" onclick="rejectAIPeace()">Reject</button>
-    </div>
+<div id="panel">
+  <select id="nationSelect"></select><br>
+  <button class="red" onclick="declareWar()">Declare War</button>
+  <button class="green" onclick="makeAlliance('military')">Military Alliance</button>
+  <button class="green" onclick="makeAlliance('economic')">Economic Alliance</button>
+  <button class="gray" onclick="breakAlliance()">Break Alliance</button><br><br>
+  <button onclick="attack()">Attack</button>
 </div>
 
 <script>
 const c=document.getElementById("map"),ctx=c.getContext("2d");
-let atWar=false,paused=false,editing=false;
 
-let player={name:"Blue State",army:20,money:20};
-let ai={name:"Red Dominion",army:20};
+const player={name:"Player",army:30,money:30,allies:[]};
+const nations=[
+ {name:"Red Dominion",army:25,money:20,color:"rgba(220,60,60,.35)",capital:{x:780,y:100},status:"neutral"},
+ {name:"Green Pact",army:20,money:25,color:"rgba(60,220,120,.35)",capital:{x:780,y:350},status:"neutral"},
+ {name:"Iron State",army:35,money:15,color:"rgba(180,180,180,.35)",capital:{x:450,y:50},status:"neutral"}
+];
 
-const blueCap={x:120,y:225}, redCap={x:780,y:225};
+const blueCap={x:120,y:225};
+let units=[];
+let borderX=450;
+let target=null;
 
-let border=[{x:450,y:0},{x:430,y:150},{x:450,y:300},{x:440,y:450}];
-let aiProposal=null,drag=null;
+function init(){
+  const sel=document.getElementById("nationSelect");
+  sel.innerHTML="";
+  nations.forEach((n,i)=>{
+    const o=document.createElement("option");
+    o.value=i;o.text=n.name;sel.appendChild(o);
+  });
+  updateUI();
+  animate();
+}
 
 function declareWar(){
-    if(paused) return;
-    atWar=true;
-    document.getElementById("actions").style.display="block";
+  target=nations[nationSelect.value];
+  target.status="war";
+  updateUI();
 }
 
-function attack(type){
-    if(!atWar||paused) return;
-    let chance=player.army/(player.army+ai.army);
-    let shift=20;
+function makeAlliance(type){
+  const n=nations[nationSelect.value];
+  if(n.status==="allied") return;
+  n.status="allied";
+  n.allianceType=type;
+  player.allies.push(n);
+  updateUI();
+}
 
-    if(type==="charge"){chance-=.15;shift=40;}
-    if(type==="tricky"){chance+=.2;}
-    if(type==="encircle"){chance-=.25;shift=55;ai.army-=5;}
-    if(type==="bombard"){ai.army-=3;shift=10;}
-    if(type==="probe"){chance+=.1;shift=8;}
-    if(type==="blitz"){chance-=.05;shift=35;}
+function breakAlliance(){
+  const n=nations[nationSelect.value];
+  n.status="neutral";
+  player.allies=player.allies.filter(a=>a!==n);
+  updateUI();
+}
 
-    if(Math.random()<chance){
-        border.forEach(p=>p.x+=shift);
-    }else{
-        border.forEach(p=>p.x-=shift*.6);
-        player.army-=2;
+function attack(){
+  if(!target||target.status!=="war") return;
+
+  spawnUnits(player,blueCap,{x:borderX,y:225},player.army*0.2,"blue");
+
+  player.allies.forEach(a=>{
+    if(a.allianceType==="military"){
+      spawnUnits(a,a.capital,{x:borderX,y:225},a.army*0.15,"cyan");
     }
-
-    maybeAIPeace();
-    checkWin();
-    draw();
-}
-
-function maybeAIPeace(){
-    if(Math.random()<.25){
-        paused=true;
-        aiProposal=border.map(p=>({x:p.x-30,y:p.y}));
-        document.getElementById("aiPeaceUI").style.display="flex";
+    if(a.allianceType==="economic"){
+      player.money+=5;
     }
+  });
+
+  if(Math.random()<player.army/(player.army+target.army)){
+    borderX+=25;
+    target.army-=5;
+  }else{
+    borderX-=20;
+    player.army-=4;
+  }
+
+  checkWin();
 }
 
-function acceptAIPeace(){
-    border=aiProposal;
-    closeAIPeace();
-}
-function rejectAIPeace(){
-    closeAIPeace();
-}
-function closeAIPeace(){
-    paused=false;
-    aiProposal=null;
-    document.getElementById("aiPeaceUI").style.display="none";
-    draw();
-}
-
-function openPeace(){
-    if(paused) return;
-    document.getElementById("peaceUI").style.display="flex";
-}
-function closePeace(){
-    document.getElementById("peaceUI").style.display="none";
-}
-function startBorderEdit(){
-    editing=true;
-    closePeace();
-}
-function offerMoney(){
-    player.money+=10;
-    closePeace();
-}
-
-function draw(){
-    ctx.clearRect(0,0,900,450);
-    for(let i=0;i<900;i+=4)
-      for(let j=0;j<450;j+=4){
-        ctx.fillStyle=`rgb(30,${80+Math.random()*30},40)`;
-        ctx.fillRect(i,j,4,4);
-      }
-
-    drawTerritory("rgba(60,100,220,.35)",true);
-    drawTerritory("rgba(220,60,60,.35)",false);
-    drawBorder(border,"white");
-
-    if(aiProposal) drawBorder(aiProposal,"yellow");
-
-    drawDot(blueCap.x,blueCap.y,"yellow",8);
-    drawDot(redCap.x,redCap.y,"yellow",8);
-
-    document.getElementById("playerCard").innerText=
-        `${player.name}\nArmy:${player.army}\nMoney:${player.money}`;
-    document.getElementById("enemyCard").innerText=
-        `${ai.name}\nArmy:${ai.army}`;
-}
-
-function drawTerritory(color,left){
-    ctx.beginPath();
-    ctx.moveTo(left?0:900,0);
-    border.forEach(p=>ctx.lineTo(p.x,p.y));
-    ctx.lineTo(left?0:900,450);
-    ctx.closePath();
-    ctx.fillStyle=color;
-    ctx.fill();
-}
-function drawBorder(b,c){
-    ctx.strokeStyle=c;
-    ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.moveTo(b[0].x,0);
-    b.forEach(p=>ctx.lineTo(p.x,p.y));
-    ctx.stroke();
-}
-function drawDot(x,y,c,r){
-    ctx.beginPath();
-    ctx.arc(x,y,r,0,Math.PI*2);
-    ctx.fillStyle=c;
-    ctx.fill();
-}
-
-c.onmousedown=e=>{
-    if(!editing) return;
-    const r=c.getBoundingClientRect();
-    const x=e.clientX-r.left,y=e.clientY-r.top;
-    border.forEach(p=>{
-        if(Math.hypot(p.x-x,p.y-y)<10) drag=p;
+function spawnUnits(owner,from,to,count,color){
+  for(let i=0;i<count;i++){
+    units.push({
+      x:from.x,y:from.y,
+      tx:to.x+Math.random()*20-10,
+      ty:to.y+Math.random()*20-10,
+      color
     });
-};
-c.onmousemove=e=>{
-    if(!drag) return;
-    const r=c.getBoundingClientRect();
-    drag.x=e.clientX-r.left;
-    drag.y=e.clientY-r.top;
-    draw();
-};
-c.onmouseup=()=>drag=null;
+  }
+}
+
+function animate(){
+  ctx.clearRect(0,0,900,450);
+
+  // earth-like background
+  for(let i=0;i<900;i+=6)
+    for(let j=0;j<450;j+=6){
+      ctx.fillStyle=`rgb(30,${80+Math.random()*30},40)`;
+      ctx.fillRect(i,j,6,6);
+    }
+
+  // territories
+  ctx.fillStyle="rgba(60,100,220,.35)";
+  ctx.fillRect(0,0,borderX,450);
+  ctx.fillStyle="rgba(220,60,60,.35)";
+  ctx.fillRect(borderX,0,900-borderX,450);
+
+  // capitals
+  drawDot(blueCap.x,blueCap.y,"yellow",8);
+  nations.forEach(n=>drawDot(n.capital.x,n.capital.y,"yellow",7));
+
+  // units animation
+  units.forEach(u=>{
+    u.x+=(u.tx-u.x)*0.05;
+    u.y+=(u.ty-u.y)*0.05;
+    drawDot(u.x,u.y,u.color,3);
+  });
+
+  units=units.filter(u=>Math.hypot(u.tx-u.x,u.ty-u.y)>2);
+
+  updateUI();
+  requestAnimationFrame(animate);
+}
+
+function drawDot(x,y,c,r){
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=c;
+  ctx.fill();
+}
+
+function updateUI(){
+  playerCard.innerText=`${player.name}\nArmy:${player.army}\nMoney:${player.money}\nAllies:${player.allies.length}`;
+  const n=nations[nationSelect.value];
+  nationCard.innerText=`${n.name}\nArmy:${n.army}\nStatus:${n.status}\nAlliance:${n.allianceType||"-"}`;
+}
 
 function checkWin(){
-    if(border.some(p=>p.x>=redCap.x)) alert("You Win!");
-    if(border.some(p=>p.x<=blueCap.x)) alert("You Lose!");
+  if(borderX>=780) alert("You win the war!");
+  if(borderX<=120) alert("You lost the war!");
 }
 
-draw();
+init();
 </script>
 </body>
 </html>
