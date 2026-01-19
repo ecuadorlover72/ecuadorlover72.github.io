@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Capital Conquest</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #1b1b1b;
+        color: #eee;
+        text-align: center;
+        padding: 20px;
+    }
+    button {
+        margin: 5px;
+        padding: 10px 15px;
+        cursor: pointer;
+    }
+    #game {
+        max-width: 600px;
+        margin: auto;
+        border: 1px solid #555;
+        padding: 15px;
+        background: #2a2a2a;
+    }
+    .hidden {
+        display: none;
+    }
+</style>
+</head>
+<body>
+
+<h1>🏰 Capital Conquest</h1>
+
+<div id="setup">
+    <p>Name your land:</p>
+    <input id="playerName" placeholder="Your Land Name">
+    <br><br>
+    <button onclick="startGame()">Start Game</button>
+</div>
+
+<div id="game" class="hidden">
+    <p><strong>Your Land:</strong> <span id="pLand"></span></p>
+    <p><strong>Enemy Land:</strong> <span id="aiLand"></span></p>
+    <p><strong>Distance to Capital:</strong> <span id="distance"></span></p>
+    <p><strong>Your Territory:</strong> <span id="playerLand"></span></p>
+    <p><strong>AI Territory:</strong> <span id="aiTerritory"></span></p>
+    <p><strong>Status:</strong> <span id="status"></span></p>
+
+    <div id="peaceTime">
+        <button onclick="declareWar()">Declare War</button>
+    </div>
+
+    <div id="warTime" class="hidden">
+        <button onclick="advance()">Advance</button>
+        <button onclick="retreat()">Retreat</button>
+        <button onclick="peaceDeal()">Offer Peace</button>
+    </div>
+
+    <p id="log"></p>
+</div>
+
+<script>
+let playerLandName;
+let aiLandName;
+let distanceToCapital = 5;
+let playerTerritory = 5;
+let aiTerritory = 5;
+let atWar = false;
+
+const aiNames = [
+    "Iron Dominion", "Red Banner State", "Shadow Republic",
+    "Obsidian Union", "Northern Pact"
+];
+
+function startGame() {
+    playerLandName = document.getElementById("playerName").value || "Unnamed Realm";
+    aiLandName = aiNames[Math.floor(Math.random() * aiNames.length)];
+
+    document.getElementById("pLand").innerText = playerLandName;
+    document.getElementById("aiLand").innerText = aiLandName;
+
+    updateUI();
+    document.getElementById("setup").classList.add("hidden");
+    document.getElementById("game").classList.remove("hidden");
+}
+
+function declareWar() {
+    atWar = true;
+    document.getElementById("status").innerText = "At War ⚔️";
+    document.getElementById("peaceTime").classList.add("hidden");
+    document.getElementById("warTime").classList.remove("hidden");
+    log("War has been declared!");
+}
+
+function advance() {
+    let battleOutcome = Math.random();
+
+    if (battleOutcome > 0.5) {
+        distanceToCapital--;
+        aiTerritory--;
+        log("You won the battle and pushed forward!");
+    } else {
+        playerTerritory--;
+        log("You lost the battle and lost territory!");
+    }
+
+    checkGameState();
+    updateUI();
+}
+
+function retreat() {
+    playerTerritory += 0;
+    log("You retreated to regroup. Safer, but no progress made.");
+    updateUI();
+}
+
+function peaceDeal() {
+    if (aiTerritory < playerTerritory) {
+        aiTerritory--;
+        playerTerritory++;
+        atWar = false;
+        log("Peace accepted! Borders adjusted in your favor.");
+        endWar();
+    } else {
+        log("Peace rejected! The enemy believes they can still win.");
+    }
+    updateUI();
+}
+
+function endWar() {
+    document.getElementById("status").innerText = "At Peace 🕊️";
+    document.getElementById("peaceTime").classList.remove("hidden");
+    document.getElementById("warTime").classList.add("hidden");
+}
+
+function checkGameState() {
+    if (distanceToCapital <= 0) {
+        alert("🏆 You have reached the Capital and won!");
+        location.reload();
+    }
+    if (playerTerritory <= 0) {
+        alert("💀 Your land has collapsed. Game Over.");
+        location.reload();
+    }
+}
+
+function updateUI() {
+    document.getElementById("distance").innerText = distanceToCapital;
+    document.getElementById("playerLand").innerText = playerTerritory;
+    document.getElementById("aiTerritory").innerText = aiTerritory;
+    document.getElementById("status").innerText = atWar ? "At War ⚔️" : "At Peace 🕊️";
+}
+
+function log(message) {
+    document.getElementById("log").innerText = message;
+}
+</script>
+
+</body>
+</html>
