@@ -6,20 +6,23 @@
 <style>
 body{margin:0;background:#0d1117;color:white;font-family:system-ui}
 canvas{display:block;margin:auto;border:1px solid #222}
-#ui{display:flex;justify-content:center;gap:10px;padding:10px}
-.card{background:#161b22;padding:10px;border-radius:12px;font-size:13px;min-width:150px}
+#top{display:flex;justify-content:center;gap:10px;padding:8px}
+.card{background:#161b22;padding:10px;border-radius:10px;font-size:13px;min-width:160px}
 button{margin:3px;padding:6px 10px;border:none;border-radius:8px;cursor:pointer}
 .green{background:#238636;color:white}
 .red{background:#b91c1c;color:white}
 .gray{background:#30363d;color:white}
-#panel{text-align:center}
+#panel{text-align:center;padding:6px}
+.hidden{display:none}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
+.box{background:#161b22;padding:15px;border-radius:12px;width:350px}
 </style>
 </head>
 <body>
 
-<div id="ui">
+<div id="top">
   <div class="card" id="playerCard"></div>
-  <div class="card" id="nationCard"></div>
+  <div class="card" id="allianceCard"></div>
 </div>
 
 <canvas id="map" width="900" height="450"></canvas>
@@ -29,98 +32,118 @@ button{margin:3px;padding:6px 10px;border:none;border-radius:8px;cursor:pointer}
   <button class="red" onclick="declareWar()">Declare War</button>
   <button class="green" onclick="makeAlliance('military')">Military Alliance</button>
   <button class="green" onclick="makeAlliance('economic')">Economic Alliance</button>
-  <button class="gray" onclick="breakAlliance()">Break Alliance</button><br><br>
-  <button onclick="attack()">Attack</button>
+  <button class="gray" onclick="openPeace()">Peace Deal</button>
+  <button class="gray" onclick="openNationStats()">All Nations</button>
+</div>
+
+<div id="attacks" class="hidden" style="text-align:center">
+  <button onclick="attack('charge')">Charge</button>
+  <button onclick="attack('normal')">Normal</button>
+  <button onclick="attack('tricky')">Tricky</button>
+  <button onclick="attack('encircle')">Encircle</button>
+  <button onclick="attack('bombard')">Bombard</button>
+  <button onclick="attack('probe')">Probe</button>
+  <button onclick="attack('blitz')">Blitz</button>
+</div>
+
+<!-- PEACE UI -->
+<div id="peaceUI" class="modal hidden">
+  <div class="box">
+    <h3>Offer Peace</h3>
+    <button onclick="offerMoney()">Offer Money (+10)</button><br><br>
+    <button onclick="editBorder()">Border Change</button><br><br>
+    <button class="gray" onclick="closePeace()">Cancel</button>
+  </div>
+</div>
+
+<!-- NATION STATS -->
+<div id="nationStatsUI" class="modal hidden">
+  <div class="box" id="nationStatsBox"></div>
 </div>
 
 <script>
 const c=document.getElementById("map"),ctx=c.getContext("2d");
 
 const player={name:"Player",army:30,money:30,allies:[]};
+const blueCap={x:120,y:225};
+
 const nations=[
- {name:"Red Dominion",army:25,money:20,color:"rgba(220,60,60,.35)",capital:{x:780,y:100},status:"neutral"},
- {name:"Green Pact",army:20,money:25,color:"rgba(60,220,120,.35)",capital:{x:780,y:350},status:"neutral"},
- {name:"Iron State",army:35,money:15,color:"rgba(180,180,180,.35)",capital:{x:450,y:50},status:"neutral"}
+ {name:"Red Dominion",army:25,money:20,color:"rgba(220,60,60,.35)",capital:{x:780,y:120},status:"neutral"},
+ {name:"Green Pact",army:20,money:25,color:"rgba(60,220,120,.35)",capital:{x:780,y:330},status:"neutral"},
+ {name:"Iron State",army:35,money:15,color:"rgba(180,180,180,.35)",capital:{x:450,y:60},status:"neutral"}
 ];
 
-const blueCap={x:120,y:225};
-let units=[];
-let borderX=450;
-let target=null;
+let borderX=450,units=[],target=null,atWar=false;
 
 function init(){
-  const sel=document.getElementById("nationSelect");
-  sel.innerHTML="";
+  nationSelect.innerHTML="";
   nations.forEach((n,i)=>{
     const o=document.createElement("option");
-    o.value=i;o.text=n.name;sel.appendChild(o);
+    o.value=i;o.text=n.name;nationSelect.appendChild(o);
   });
-  updateUI();
+  draw();
   animate();
 }
 
 function declareWar(){
   target=nations[nationSelect.value];
   target.status="war";
-  updateUI();
+  atWar=true;
+  attacks.classList.remove("hidden");
 }
 
 function makeAlliance(type){
   const n=nations[nationSelect.value];
   if(n.status==="allied") return;
-  n.status="allied";
-  n.allianceType=type;
+  n.status="allied";n.allianceType=type;
   player.allies.push(n);
-  updateUI();
 }
 
-function breakAlliance(){
-  const n=nations[nationSelect.value];
-  n.status="neutral";
-  player.allies=player.allies.filter(a=>a!==n);
-  updateUI();
-}
-
-function attack(){
-  if(!target||target.status!=="war") return;
-
-  spawnUnits(player,blueCap,{x:borderX,y:225},player.army*0.2,"blue");
+function attack(type){
+  if(!atWar) return;
+  spawnUnits(blueCap,{x:borderX,y:225},"cyan",10);
 
   player.allies.forEach(a=>{
-    if(a.allianceType==="military"){
-      spawnUnits(a,a.capital,{x:borderX,y:225},a.army*0.15,"cyan");
-    }
-    if(a.allianceType==="economic"){
+    if(a.allianceType==="military")
+      spawnUnits(a.capital,{x:borderX,y:225},"white",6);
+    if(a.allianceType==="economic")
       player.money+=5;
-    }
   });
 
-  if(Math.random()<player.army/(player.army+target.army)){
-    borderX+=25;
-    target.army-=5;
-  }else{
-    borderX-=20;
-    player.army-=4;
-  }
+  let chance=player.army/(player.army+target.army);
+  let shift={charge:40,normal:25,tricky:20,encircle:55,bombard:10,probe:8,blitz:35}[type];
 
-  checkWin();
+  if(Math.random()<chance){
+    borderX+=shift;
+    target.army-=3;
+  }else{
+    borderX-=shift*.6;
+    player.army-=3;
+  }
 }
 
-function spawnUnits(owner,from,to,count,color){
+function openPeace(){peaceUI.classList.remove("hidden")}
+function closePeace(){peaceUI.classList.add("hidden")}
+function offerMoney(){player.money+=10;closePeace()}
+function editBorder(){closePeace()}
+
+function openNationStats(){
+  nationStatsUI.classList.remove("hidden");
+  nationStatsBox.innerHTML="<h3>All Nations</h3>"+
+    nations.map(n=>`${n.name}<br>Army:${n.army} Money:${n.money} Status:${n.status}<hr>`).join("")+
+    `<button onclick="nationStatsUI.classList.add('hidden')">Close</button>`;
+}
+
+function spawnUnits(from,to,color,count){
   for(let i=0;i<count;i++){
-    units.push({
-      x:from.x,y:from.y,
-      tx:to.x+Math.random()*20-10,
-      ty:to.y+Math.random()*20-10,
-      color
-    });
+    units.push({x:from.x,y:from.y,tx:to.x,ty:to.y,color});
   }
 }
 
 function animate(){
   ctx.clearRect(0,0,900,450);
 
-  // earth-like background
+  // earth texture
   for(let i=0;i<900;i+=6)
     for(let j=0;j<450;j+=6){
       ctx.fillStyle=`rgb(30,${80+Math.random()*30},40)`;
@@ -130,20 +153,19 @@ function animate(){
   // territories
   ctx.fillStyle="rgba(60,100,220,.35)";
   ctx.fillRect(0,0,borderX,450);
-  ctx.fillStyle="rgba(220,60,60,.35)";
-  ctx.fillRect(borderX,0,900-borderX,450);
+  nations.forEach(n=>{
+    ctx.fillStyle=n.color;
+    ctx.fillRect(borderX,0,900-borderX,450);
+  });
 
-  // capitals
   drawDot(blueCap.x,blueCap.y,"yellow",8);
   nations.forEach(n=>drawDot(n.capital.x,n.capital.y,"yellow",7));
 
-  // units animation
   units.forEach(u=>{
-    u.x+=(u.tx-u.x)*0.05;
-    u.y+=(u.ty-u.y)*0.05;
+    u.x+=(u.tx-u.x)*.05;
+    u.y+=(u.ty-u.y)*.05;
     drawDot(u.x,u.y,u.color,3);
   });
-
   units=units.filter(u=>Math.hypot(u.tx-u.x,u.ty-u.y)>2);
 
   updateUI();
@@ -151,21 +173,13 @@ function animate(){
 }
 
 function drawDot(x,y,c,r){
-  ctx.beginPath();
-  ctx.arc(x,y,r,0,Math.PI*2);
-  ctx.fillStyle=c;
-  ctx.fill();
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();
 }
 
 function updateUI(){
-  playerCard.innerText=`${player.name}\nArmy:${player.army}\nMoney:${player.money}\nAllies:${player.allies.length}`;
-  const n=nations[nationSelect.value];
-  nationCard.innerText=`${n.name}\nArmy:${n.army}\nStatus:${n.status}\nAlliance:${n.allianceType||"-"}`;
-}
-
-function checkWin(){
-  if(borderX>=780) alert("You win the war!");
-  if(borderX<=120) alert("You lost the war!");
+  playerCard.innerText=`${player.name}\nArmy:${player.army}\nMoney:${player.money}`;
+  allianceCard.innerText="Alliances:\n"+
+    (player.allies.length?player.allies.map(a=>`${a.name} (${a.allianceType})`).join("\n"):"None");
 }
 
 init();
