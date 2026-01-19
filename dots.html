@@ -4,169 +4,208 @@
 <meta charset="UTF-8">
 <title>Capital Conquest</title>
 <style>
-body {
-    background:#0b0f0f;
+body{
+    margin:0;
+    background:#0d1117;
     color:white;
-    font-family:Arial;
+    font-family:system-ui;
+}
+canvas{
+    display:block;
+    margin:auto;
+    border:1px solid #222;
+}
+#topUI{
+    display:flex;
+    justify-content:center;
+    gap:15px;
+    margin:10px;
+}
+.card{
+    background:#161b22;
+    padding:10px 15px;
+    border-radius:12px;
+    box-shadow:0 0 10px #000;
+    font-size:14px;
+}
+button{
+    background:#238636;
+    border:none;
+    padding:8px 12px;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;
+}
+button.red{background:#b91c1c}
+button.gray{background:#30363d}
+button:hover{opacity:.9}
+#actions,#peaceUI,#aiPeaceUI{
+    display:none;
     text-align:center;
+    margin:10px;
 }
-canvas {
-    border:2px solid #222;
-    background:#264c3b;
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
-button {
-    padding:6px 10px;
-    margin:4px;
-}
-#panel {
-    margin-top:10px;
+.modalBox{
+    background:#161b22;
+    padding:20px;
+    border-radius:14px;
+    width:320px;
 }
 </style>
 </head>
-
 <body>
 
-<h2>🌍 Capital Conquest</h2>
-
-<div id="start">
-    <input id="nameInput" placeholder="Your Nation Name">
-    <button onclick="start()">Start Game</button>
+<div id="topUI">
+    <div class="card" id="playerCard"></div>
+    <div class="card" id="enemyCard"></div>
 </div>
-
-<p id="info"></p>
 
 <canvas id="map" width="900" height="450"></canvas>
 
-<div id="panel">
+<div style="text-align:center">
     <button onclick="declareWar()">Declare War</button>
-    <button onclick="advance('charge')">Charge</button>
-    <button onclick="advance('normal')">Normal</button>
-    <button onclick="advance('tricky')">Tricky</button>
-    <button onclick="advance('encircle')">Encircle</button><br>
-    <button onclick="openPeace()">Peace</button>
-    <button onclick="recruit()">Recruit Army (💰10)</button>
+    <button onclick="openPeace()">Peace Deal</button>
+</div>
+
+<div id="actions">
+    <button onclick="attack('charge')">Charge</button>
+    <button onclick="attack('normal')">Normal</button>
+    <button onclick="attack('tricky')">Tricky</button>
+    <button onclick="attack('encircle')">Encircle</button>
+    <button onclick="attack('bombard')">Bombard</button>
+    <button onclick="attack('probe')">Probe</button>
+    <button onclick="attack('blitz')">Blitz</button>
+</div>
+
+<!-- USER PEACE UI -->
+<div id="peaceUI" class="modal">
+    <div class="modalBox">
+        <h3>Offer Peace</h3>
+        <p>Choose what to offer:</p>
+        <button onclick="startBorderEdit()">Border Change</button><br><br>
+        <button onclick="offerMoney()">Offer Money (+10)</button><br><br>
+        <button class="gray" onclick="closePeace()">Cancel</button>
+    </div>
+</div>
+
+<!-- AI PEACE UI -->
+<div id="aiPeaceUI" class="modal">
+    <div class="modalBox">
+        <h3>AI Peace Offer</h3>
+        <p>The enemy proposes this border:</p>
+        <button onclick="acceptAIPeace()">Accept</button>
+        <button class="red" onclick="rejectAIPeace()">Reject</button>
+    </div>
 </div>
 
 <script>
-const canvas=document.getElementById("map");
-const ctx=canvas.getContext("2d");
+const c=document.getElementById("map"),ctx=c.getContext("2d");
+let atWar=false,paused=false,editing=false;
 
-let player="Blue State";
-let ai="Red Dominion";
-let atWar=false;
-let peaceMode=false;
-let peaceChoice=null;
+let player={name:"Blue State",army:20,money:20};
+let ai={name:"Red Dominion",army:20};
 
-let money=20, aiMoney=20;
-let army=20, aiArmy=20;
-let trickyUses=0;
+const blueCap={x:120,y:225}, redCap={x:780,y:225};
 
-const blueCapital={x:120,y:225};
-const redCapital={x:780,y:225};
+let border=[{x:450,y:0},{x:430,y:150},{x:450,y:300},{x:440,y:450}];
+let aiProposal=null,drag=null;
 
-let border=[
-    {x:450,y:0},
-    {x:430,y:150},
-    {x:450,y:300},
-    {x:440,y:450}
-];
-
-let dragging=null;
-
-function start(){
-    player=document.getElementById("nameInput").value||"Blue State";
-    document.getElementById("start").style.display="none";
-    draw();
+function declareWar(){
+    if(paused) return;
+    atWar=true;
+    document.getElementById("actions").style.display="block";
 }
 
-function declareWar(){atWar=true; peaceMode=false; updateInfo("⚔ War");}
-function openPeace(){
-    atWar=false;
-    peaceMode=true;
-    money+=5;
-    updateInfo("🕊 Peace – Choose Border or Money");
-}
-
-function recruit(){
-    if(money>=10){
-        money-=10;
-        army+=5;
-    }
-    draw();
-}
-
-function advance(type){
-    if(!atWar) return;
-
-    let base=army/(army+aiArmy);
-    let chance=base;
+function attack(type){
+    if(!atWar||paused) return;
+    let chance=player.army/(player.army+ai.army);
     let shift=20;
 
-    if(type==="charge"){chance-=0.15; shift=40;}
-    if(type==="normal"){shift=25;}
-    if(type==="tricky"){
-        chance+=0.2-trickyUses*0.1;
-        trickyUses++;
-        shift=20;
-    }
-    if(type==="encircle"){chance-=0.25; shift=55;}
+    if(type==="charge"){chance-=.15;shift=40;}
+    if(type==="tricky"){chance+=.2;}
+    if(type==="encircle"){chance-=.25;shift=55;ai.army-=5;}
+    if(type==="bombard"){ai.army-=3;shift=10;}
+    if(type==="probe"){chance+=.1;shift=8;}
+    if(type==="blitz"){chance-=.05;shift=35;}
 
     if(Math.random()<chance){
         border.forEach(p=>p.x+=shift);
-        aiArmy=Math.max(5,aiArmy-5);
     }else{
-        border.forEach(p=>p.x-=shift*0.7);
-        army=Math.max(5,army-5);
+        border.forEach(p=>p.x-=shift*.6);
+        player.army-=2;
     }
 
-    aiPeaceAttempt();
+    maybeAIPeace();
     checkWin();
     draw();
 }
 
-function aiPeaceAttempt(){
-    if(Math.random()<0.2){
-        atWar=false;
-        peaceMode=true;
-        updateInfo("AI offers peace!");
+function maybeAIPeace(){
+    if(Math.random()<.25){
+        paused=true;
+        aiProposal=border.map(p=>({x:p.x-30,y:p.y}));
+        document.getElementById("aiPeaceUI").style.display="flex";
     }
 }
 
-function checkWin(){
-    if(border.some(p=>p.x>=redCapital.x)){
-        alert(player+" wins!");
-        location.reload();
-    }
-    if(border.some(p=>p.x<=blueCapital.x)){
-        alert(ai+" wins!");
-        location.reload();
-    }
+function acceptAIPeace(){
+    border=aiProposal;
+    closeAIPeace();
+}
+function rejectAIPeace(){
+    closeAIPeace();
+}
+function closeAIPeace(){
+    paused=false;
+    aiProposal=null;
+    document.getElementById("aiPeaceUI").style.display="none";
+    draw();
 }
 
-function updateInfo(msg){
-    document.getElementById("info").innerText=
-    `${player} | Army:${army} Money:${money} vs ${ai} | Army:${aiArmy} | ${msg||""}`;
+function openPeace(){
+    if(paused) return;
+    document.getElementById("peaceUI").style.display="flex";
+}
+function closePeace(){
+    document.getElementById("peaceUI").style.display="none";
+}
+function startBorderEdit(){
+    editing=true;
+    closePeace();
+}
+function offerMoney(){
+    player.money+=10;
+    closePeace();
 }
 
 function draw(){
     ctx.clearRect(0,0,900,450);
+    for(let i=0;i<900;i+=4)
+      for(let j=0;j<450;j+=4){
+        ctx.fillStyle=`rgb(30,${80+Math.random()*30},40)`;
+        ctx.fillRect(i,j,4,4);
+      }
 
-    // Earth texture
-    for(let i=0;i<900;i+=4){
-        for(let j=0;j<450;j+=4){
-            ctx.fillStyle=`rgb(30,${80+Math.random()*40},40)`;
-            ctx.fillRect(i,j,4,4);
-        }
-    }
+    drawTerritory("rgba(60,100,220,.35)",true);
+    drawTerritory("rgba(220,60,60,.35)",false);
+    drawBorder(border,"white");
 
-    drawTerritory("rgba(50,100,220,0.35)",true);
-    drawTerritory("rgba(220,60,60,0.35)",false);
-    drawBorder();
+    if(aiProposal) drawBorder(aiProposal,"yellow");
 
-    drawDot(blueCapital.x,blueCapital.y,"yellow",8);
-    drawDot(redCapital.x,redCapital.y,"yellow",8);
+    drawDot(blueCap.x,blueCap.y,"yellow",8);
+    drawDot(redCap.x,redCap.y,"yellow",8);
 
-    updateInfo();
+    document.getElementById("playerCard").innerText=
+        `${player.name}\nArmy:${player.army}\nMoney:${player.money}`;
+    document.getElementById("enemyCard").innerText=
+        `${ai.name}\nArmy:${ai.army}`;
 }
 
 function drawTerritory(color,left){
@@ -178,20 +217,14 @@ function drawTerritory(color,left){
     ctx.fillStyle=color;
     ctx.fill();
 }
-
-function drawBorder(){
-    ctx.strokeStyle="white";
+function drawBorder(b,c){
+    ctx.strokeStyle=c;
     ctx.lineWidth=2;
     ctx.beginPath();
-    ctx.moveTo(border[0].x,0);
-    border.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.moveTo(b[0].x,0);
+    b.forEach(p=>ctx.lineTo(p.x,p.y));
     ctx.stroke();
-
-    if(peaceMode){
-        border.forEach(p=>drawDot(p.x,p.y,"white",6));
-    }
 }
-
 function drawDot(x,y,c,r){
     ctx.beginPath();
     ctx.arc(x,y,r,0,Math.PI*2);
@@ -199,27 +232,29 @@ function drawDot(x,y,c,r){
     ctx.fill();
 }
 
-canvas.onmousedown=e=>{
-    if(!peaceMode) return;
-    const r=canvas.getBoundingClientRect();
-    const x=e.clientX-r.left, y=e.clientY-r.top;
+c.onmousedown=e=>{
+    if(!editing) return;
+    const r=c.getBoundingClientRect();
+    const x=e.clientX-r.left,y=e.clientY-r.top;
     border.forEach(p=>{
-        if(Math.hypot(p.x-x,p.y-y)<10) dragging=p;
+        if(Math.hypot(p.x-x,p.y-y)<10) drag=p;
     });
 };
-
-canvas.onmousemove=e=>{
-    if(!dragging) return;
-    const r=canvas.getBoundingClientRect();
-    dragging.x=e.clientX-r.left;
-    dragging.y=e.clientY-r.top;
+c.onmousemove=e=>{
+    if(!drag) return;
+    const r=c.getBoundingClientRect();
+    drag.x=e.clientX-r.left;
+    drag.y=e.clientY-r.top;
     draw();
 };
+c.onmouseup=()=>drag=null;
 
-canvas.onmouseup=()=>dragging=null;
+function checkWin(){
+    if(border.some(p=>p.x>=redCap.x)) alert("You Win!");
+    if(border.some(p=>p.x<=blueCap.x)) alert("You Lose!");
+}
 
 draw();
 </script>
-
 </body>
 </html>
