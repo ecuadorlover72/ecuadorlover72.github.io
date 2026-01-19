@@ -2,151 +2,178 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Capital Conquest – Advanced Map</title>
+<title>Capital Conquest</title>
 <style>
 body {
-    background:#0e1111;
+    background:#0b0f0f;
     color:white;
     font-family:Arial;
     text-align:center;
 }
 canvas {
-    border:2px solid #333;
-    background:#2f4f3a;
+    border:2px solid #222;
+    background:#264c3b;
 }
 button {
+    padding:6px 10px;
     margin:4px;
-    padding:8px 12px;
+}
+#panel {
+    margin-top:10px;
 }
 </style>
 </head>
+
 <body>
 
 <h2>🌍 Capital Conquest</h2>
 
-<canvas id="map" width="900" height="450"></canvas>
-
-<div>
-    <button onclick="declareWar()">Declare War</button><br>
-    <button onclick="advance('charge')">Charge</button>
-    <button onclick="advance('normal')">Normal</button>
-    <button onclick="advance('tricky')">Tricky</button>
-    <button onclick="advance('encircle')">Encircle</button><br>
-    <button onclick="peace()">Peace (Edit Border)</button>
+<div id="start">
+    <input id="nameInput" placeholder="Your Nation Name">
+    <button onclick="start()">Start Game</button>
 </div>
 
 <p id="info"></p>
 
+<canvas id="map" width="900" height="450"></canvas>
+
+<div id="panel">
+    <button onclick="declareWar()">Declare War</button>
+    <button onclick="advance('charge')">Charge</button>
+    <button onclick="advance('normal')">Normal</button>
+    <button onclick="advance('tricky')">Tricky</button>
+    <button onclick="advance('encircle')">Encircle</button><br>
+    <button onclick="openPeace()">Peace</button>
+    <button onclick="recruit()">Recruit Army (💰10)</button>
+</div>
+
 <script>
-const canvas = document.getElementById("map");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("map");
+const ctx=canvas.getContext("2d");
 
-let atWar = false;
-let trickyUses = 0;
-let enemyStrength = 1;
+let player="Blue State";
+let ai="Red Dominion";
+let atWar=false;
+let peaceMode=false;
+let peaceChoice=null;
 
-// Capitals
-const blueCapital = {x:120,y:225};
-const redCapital = {x:780,y:225};
+let money=20, aiMoney=20;
+let army=20, aiArmy=20;
+let trickyUses=0;
 
-// Curvy border (control points)
-let borderPoints = [
-    {x:450,y:50},
-    {x:430,y:225},
-    {x:450,y:400}
+const blueCapital={x:120,y:225};
+const redCapital={x:780,y:225};
+
+let border=[
+    {x:450,y:0},
+    {x:430,y:150},
+    {x:450,y:300},
+    {x:440,y:450}
 ];
 
-let draggingPoint = null;
-let peaceMode = false;
+let dragging=null;
 
-// Units
-let userDots = Array.from({length:12},()=>({x:200+Math.random()*60,y:60+Math.random()*320}));
-let enemyDots = Array.from({length:12},()=>({x:650+Math.random()*60,y:60+Math.random()*320}));
+function start(){
+    player=document.getElementById("nameInput").value||"Blue State";
+    document.getElementById("start").style.display="none";
+    draw();
+}
 
-function declareWar(){
-    atWar=true;
-    peaceMode=false;
-    info("⚔️ War declared");
+function declareWar(){atWar=true; peaceMode=false; updateInfo("⚔ War");}
+function openPeace(){
+    atWar=false;
+    peaceMode=true;
+    money+=5;
+    updateInfo("🕊 Peace – Choose Border or Money");
+}
+
+function recruit(){
+    if(money>=10){
+        money-=10;
+        army+=5;
+    }
+    draw();
 }
 
 function advance(type){
     if(!atWar) return;
 
-    let successChance=0.5, shift=20;
+    let base=army/(army+aiArmy);
+    let chance=base;
+    let shift=20;
 
-    if(type==="charge"){successChance=0.4; shift=40;}
-    if(type==="normal"){successChance=0.55; shift=20;}
+    if(type==="charge"){chance-=0.15; shift=40;}
+    if(type==="normal"){shift=25;}
     if(type==="tricky"){
-        successChance=Math.max(0.7 - trickyUses*0.1,0.3);
+        chance+=0.2-trickyUses*0.1;
         trickyUses++;
-        shift=15;
+        shift=20;
     }
-    if(type==="encircle"){
-        successChance=0.3;
-        shift=60;
+    if(type==="encircle"){chance-=0.25; shift=55;}
+
+    if(Math.random()<chance){
+        border.forEach(p=>p.x+=shift);
+        aiArmy=Math.max(5,aiArmy-5);
+    }else{
+        border.forEach(p=>p.x-=shift*0.7);
+        army=Math.max(5,army-5);
     }
 
-    if(Math.random()<successChance){
-        borderPoints.forEach(p=>p.x+=shift);
-        userDots.forEach(d=>d.x+=shift*0.5);
-        if(type==="encircle"){
-            enemyDots.splice(0,Math.floor(enemyDots.length/2));
-            enemyStrength*=0.7;
-        }
-        info("Advance succeeded");
-    } else {
-        borderPoints.forEach(p=>p.x-=shift*0.6);
-        userDots.forEach(d=>d.x-=shift*0.3);
-        info("Advance failed");
-    }
-
+    aiPeaceAttempt();
+    checkWin();
     draw();
 }
 
-function peace(){
-    atWar=false;
-    peaceMode=true;
-    info("🕊️ Peace – Drag border points");
-}
-
-function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // Earth-like texture
-    ctx.fillStyle="#3c6e47";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    // Territories
-    drawTerritory("rgba(40,80,200,0.35)",true);
-    drawTerritory("rgba(200,40,40,0.35)",false);
-
-    // Border
-    drawBorder();
-
-    // Capitals
-    drawDot(blueCapital.x,blueCapital.y,"yellow",8);
-    drawDot(redCapital.x,redCapital.y,"yellow",8);
-
-    // Units
-    userDots.forEach(d=>drawDot(d.x,d.y,"cyan",5));
-    enemyDots.forEach(d=>drawDot(d.x,d.y,"red",5));
-
-    // Peace edit points
-    if(peaceMode){
-        borderPoints.forEach(p=>drawDot(p.x,p.y,"white",6));
+function aiPeaceAttempt(){
+    if(Math.random()<0.2){
+        atWar=false;
+        peaceMode=true;
+        updateInfo("AI offers peace!");
     }
 }
 
-function drawTerritory(color,isBlue){
+function checkWin(){
+    if(border.some(p=>p.x>=redCapital.x)){
+        alert(player+" wins!");
+        location.reload();
+    }
+    if(border.some(p=>p.x<=blueCapital.x)){
+        alert(ai+" wins!");
+        location.reload();
+    }
+}
+
+function updateInfo(msg){
+    document.getElementById("info").innerText=
+    `${player} | Army:${army} Money:${money} vs ${ai} | Army:${aiArmy} | ${msg||""}`;
+}
+
+function draw(){
+    ctx.clearRect(0,0,900,450);
+
+    // Earth texture
+    for(let i=0;i<900;i+=4){
+        for(let j=0;j<450;j+=4){
+            ctx.fillStyle=`rgb(30,${80+Math.random()*40},40)`;
+            ctx.fillRect(i,j,4,4);
+        }
+    }
+
+    drawTerritory("rgba(50,100,220,0.35)",true);
+    drawTerritory("rgba(220,60,60,0.35)",false);
+    drawBorder();
+
+    drawDot(blueCapital.x,blueCapital.y,"yellow",8);
+    drawDot(redCapital.x,redCapital.y,"yellow",8);
+
+    updateInfo();
+}
+
+function drawTerritory(color,left){
     ctx.beginPath();
-    ctx.moveTo(isBlue?0:canvas.width,0);
-    ctx.lineTo(isBlue?borderPoints[0].x:borderPoints[0].x,0);
-    ctx.bezierCurveTo(
-        borderPoints[0].x,borderPoints[0].y,
-        borderPoints[1].x,borderPoints[1].y,
-        borderPoints[2].x,borderPoints[2].y
-    );
-    ctx.lineTo(isBlue?0:canvas.width,canvas.height);
+    ctx.moveTo(left?0:900,0);
+    border.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.lineTo(left?0:900,450);
     ctx.closePath();
     ctx.fillStyle=color;
     ctx.fill();
@@ -156,45 +183,40 @@ function drawBorder(){
     ctx.strokeStyle="white";
     ctx.lineWidth=2;
     ctx.beginPath();
-    ctx.moveTo(borderPoints[0].x,0);
-    ctx.bezierCurveTo(
-        borderPoints[0].x,borderPoints[0].y,
-        borderPoints[1].x,borderPoints[1].y,
-        borderPoints[2].x,canvas.height
-    );
+    ctx.moveTo(border[0].x,0);
+    border.forEach(p=>ctx.lineTo(p.x,p.y));
     ctx.stroke();
+
+    if(peaceMode){
+        border.forEach(p=>drawDot(p.x,p.y,"white",6));
+    }
 }
 
-function drawDot(x,y,color,r){
+function drawDot(x,y,c,r){
     ctx.beginPath();
     ctx.arc(x,y,r,0,Math.PI*2);
-    ctx.fillStyle=color;
+    ctx.fillStyle=c;
     ctx.fill();
 }
 
-canvas.addEventListener("mousedown",e=>{
+canvas.onmousedown=e=>{
     if(!peaceMode) return;
     const r=canvas.getBoundingClientRect();
-    const mx=e.clientX-r.left;
-    const my=e.clientY-r.top;
-    borderPoints.forEach(p=>{
-        if(Math.hypot(p.x-mx,p.y-my)<10) draggingPoint=p;
+    const x=e.clientX-r.left, y=e.clientY-r.top;
+    border.forEach(p=>{
+        if(Math.hypot(p.x-x,p.y-y)<10) dragging=p;
     });
-});
+};
 
-canvas.addEventListener("mousemove",e=>{
-    if(!draggingPoint) return;
+canvas.onmousemove=e=>{
+    if(!dragging) return;
     const r=canvas.getBoundingClientRect();
-    draggingPoint.x=e.clientX-r.left;
-    draggingPoint.y=e.clientY-r.top;
+    dragging.x=e.clientX-r.left;
+    dragging.y=e.clientY-r.top;
     draw();
-});
+};
 
-canvas.addEventListener("mouseup",()=>draggingPoint=null);
-
-function info(msg){
-    document.getElementById("info").innerText=msg;
-}
+canvas.onmouseup=()=>dragging=null;
 
 draw();
 </script>
