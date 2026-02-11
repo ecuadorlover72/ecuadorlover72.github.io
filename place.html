@@ -10,44 +10,239 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      font-family: Arial, sans-serif;
+      gap: 20px;
     }
+    
+    .container {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    
     canvas {
       image-rendering: pixelated;
       border: 1px solid #444;
+      cursor: crosshair;
+      background: white;
+    }
+    
+    .sidebar {
+      color: white;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .color-palette {
+      display: grid;
+      grid-template-columns: repeat(4, 40px);
+      gap: 5px;
+    }
+    
+    .color-box {
+      width: 40px;
+      height: 40px;
+      border: 2px solid #666;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    
+    .color-box:hover {
+      transform: scale(1.1);
+      border-color: #fff;
+    }
+    
+    .color-box.active {
+      border: 3px solid #fff;
+      box-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
+    
+    button {
+      padding: 10px 15px;
+      background: #444;
+      color: white;
+      border: 1px solid #666;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    button:hover {
+      background: #555;
+      border-color: #999;
+    }
+    
+    .stats {
+      background: #222;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .stats-label {
+      color: #aaa;
+      font-size: 11px;
+    }
+    
+    .stats-value {
+      color: #0f0;
+      font-size: 16px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
-<canvas id="grid" width="500" height="500"></canvas>
+<div class="container">
+  <canvas id="grid" width="500" height="500"></canvas>
+  
+  <div class="sidebar">
+    <div>
+      <div style="margin-bottom: 8px; font-size: 12px; color: #aaa;">COLOR PALETTE</div>
+      <div class="color-palette" id="palette"></div>
+    </div>
+    
+    <div>
+      <div style="margin-bottom: 8px; font-size: 12px; color: #aaa;">TOOLS</div>
+      <button onclick="clearGrid()">Clear Grid</button>
+      <button onclick="exportImage()">Export PNG</button>
+      <button onclick="exportJSON()">Export Data</button>
+    </div>
+    
+    <div class="stats">
+      <div class="stats-label">CELLS FILLED</div>
+      <div class="stats-value" id="cellCount">0</div>
+    </div>
+    
+    <div class="stats">
+      <div class="stats-label">CURRENT COLOR</div>
+      <div style="width: 30px; height: 30px; margin-top: 5px; border-radius: 3px;" id="colorDisplay"></div>
+    </div>
+  </div>
+</div>
 
 <script>
   const canvas = document.getElementById("grid");
   const ctx = canvas.getContext("2d");
 
-  const size = 500;      // 500x500 grid
-  const cellSize = 1;    // 1 pixel per cell
+  const size = 500;
+  const cellSize = 1;
+  
+  const colors = [
+    "#ffffff", "#000000", "#ff0000", "#00ff00",
+    "#0000ff", "#ffff00", "#ff00ff", "#00ffff",
+    "#ff6600", "#ff0066", "#00ff66", "#6600ff",
+    "#888888", "#cccccc", "#ff9900", "#99ff00"
+  ];
+  
+  let selectedColor = colors[0];
+  let grid = {};
 
-  // Fill background
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Draw vertical lines
-  ctx.strokeStyle = "#ddd";
-  for (let x = 0; x <= size; x++) {
-    ctx.beginPath();
-    ctx.moveTo(x * cellSize, 0);
-    ctx.lineTo(x * cellSize, size * cellSize);
-    ctx.stroke();
+  function initPalette() {
+    const palette = document.getElementById("palette");
+    colors.forEach((color, index) => {
+      const box = document.createElement("div");
+      box.className = "color-box";
+      if (index === 0) box.classList.add("active");
+      box.style.backgroundColor = color;
+      box.onclick = () => selectColor(box, color);
+      palette.appendChild(box);
+    });
+    updateColorDisplay();
   }
 
-  // Draw horizontal lines
-  for (let y = 0; y <= size; y++) {
-    ctx.beginPath();
-    ctx.moveTo(0, y * cellSize);
-    ctx.lineTo(size * cellSize, y * cellSize);
-    ctx.stroke();
+  function selectColor(element, color) {
+    document.querySelectorAll(".color-box").forEach(box => box.classList.remove("active"));
+    element.classList.add("active");
+    selectedColor = color;
+    updateColorDisplay();
   }
+
+  function updateColorDisplay() {
+    document.getElementById("colorDisplay").style.backgroundColor = selectedColor;
+  }
+
+  function drawGrid() {
+    // Fill background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw colored cells
+    Object.entries(grid).forEach(([cellIndex, color]) => {
+      const x = cellIndex % size;
+      const y = Math.floor(cellIndex / size);
+      ctx.fillStyle = color;
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    });
+
+    // Draw grid lines
+    ctx.strokeStyle = "#ddd";
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= size; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * cellSize, 0);
+      ctx.lineTo(x * cellSize, size * cellSize);
+      ctx.stroke();
+    }
+
+    for (let y = 0; y <= size; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * cellSize);
+      ctx.lineTo(size * cellSize, y * cellSize);
+      ctx.stroke();
+    }
+  }
+
+  function updateCellCount() {
+    document.getElementById("cellCount").textContent = Object.keys(grid).length;
+  }
+
+  function clearGrid() {
+    if (confirm("Clear all cells?")) {
+      grid = {};
+      drawGrid();
+      updateCellCount();
+    }
+  }
+
+  function exportImage() {
+    const link = document.createElement("a");
+    link.download = "grid.png";
+    link.href = canvas.toDataURL();
+    link.click();
+  }
+
+  function exportJSON() {
+    const data = JSON.stringify(grid, null, 2);
+    const link = document.createElement("a");
+    link.download = "grid-data.json";
+    link.href = "data:text/json;charset=utf-8," + encodeURIComponent(data);
+    link.click();
+  }
+
+  canvas.addEventListener("click", (event) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((event.clientX - rect.left) / cellSize);
+    const y = Math.floor((event.clientY - rect.top) / cellSize);
+
+    if (x >= 0 && x < size && y >= 0 && y < size) {
+      const cellIndex = y * size + x;
+      if (grid[cellIndex] === selectedColor) {
+        delete grid[cellIndex];
+      } else {
+        grid[cellIndex] = selectedColor;
+      }
+      drawGrid();
+      updateCellCount();
+    }
+  });
+
+  initPalette();
+  drawGrid();
+  updateCellCount();
 </script>
 
 </body>
