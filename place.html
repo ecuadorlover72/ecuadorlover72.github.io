@@ -3,109 +3,510 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>r/place Replica</title>
+    <title>r/place Clone</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .controls-top {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .zoom-control {
             display: flex;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f0f0f0;
+            gap: 10px;
         }
-        #canvas {
-            border: 1px solid #ccc;
+
+        .zoom-control input {
+            width: 150px;
+        }
+
+        .zoom-control span {
+            font-weight: bold;
+            min-width: 50px;
+        }
+
+        #canvasContainer {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: grab;
+        }
+
+        #canvasContainer.grabbing {
+            cursor: grabbing;
+        }
+
+        canvas {
             image-rendering: pixelated;
-        }
-        #controls {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 100;
+            top: 0;
+            left: 0;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-section h3 {
+            font-size: 0.9em;
+            text-transform: uppercase;
+            color: #666;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .color-box {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-box:hover {
+            transform: scale(1.05);
+        }
+
+        .color-box.active {
+            border: 3px solid #000;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #000;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e8e8e8;
+        }
+
+        .stats {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            font-size: 0.85em;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        @media (max-width: 1000px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="controls">
-        <button id="clear">Clear</button>
-        <input type="color" id="colorPicker" value="#ff0000">
-        <button id="zoomIn">Zoom In</button>
-        <button id="zoomOut">Zoom Out</button>
+
+<header>
+    <h1>r/place Clone</h1>
+    <p>A collaborative pixel canvas - your art persists forever</p>
+</header>
+
+<div class="container">
+    <div class="canvas-wrapper">
+        <div class="controls-top">
+            <div class="zoom-control">
+                <label>🔍 Zoom:</label>
+                <input type="range" id="zoomSlider" min="1" max="20" value="2" step="0.5">
+                <span id="zoomLevel">2x</span>
+            </div>
+            <button class="btn-secondary" onclick="resetView()">Reset View</button>
+        </div>
+        <div id="canvasContainer">
+            <canvas id="grid"></canvas>
+        </div>
     </div>
-    <canvas id="canvas" width="500" height="500"></canvas>
-    <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const colorPicker = document.getElementById('colorPicker');
-        const clearButton = document.getElementById('clear');
-        const zoomInButton = document.getElementById('zoomIn');
-        const zoomOutButton = document.getElementById('zoomOut');
-        let grid = [];
-        let scale = 1;
-        let offsetX = 0;
-        let offsetY = 0;
 
-        function initGrid() {
-            for (let i = 0; i < 500; i++) {
-                grid[i] = [];
-                for (let j = 0; j < 500; j++) {
-                    grid[i][j] = '#ffffff';
-                }
-            }
-            drawGrid();
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <h3>🎨 Colors</h3>
+            <div class="color-palette" id="palette"></div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>⚙️ Tools</h3>
+            <div class="button-group">
+                <button class="btn-primary" onclick="clearGrid()">Clear Canvas</button>
+                <button class="btn-secondary" onclick="exportImage()">Download PNG</button>
+                <button class="btn-secondary" onclick="exportJSON()">Export Data</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-row">
+                <span class="stat-label">Pixels Placed</span>
+                <span class="stat-value" id="cellCount">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Canvas Size</span>
+                <span class="stat-value">500×500</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Storage</span>
+                <span class="stat-value" id="storageStatus">✓ Ready</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>ℹ️ About</h3>
+            <p style="font-size: 0.85em; color: #666; line-height: 1.6;">
+                Click pixels to place them. Scroll to zoom. Drag to pan. Your art is saved automatically.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById("grid");
+    const ctx = canvas.getContext("2d");
+    const container = document.getElementById("canvasContainer");
+    const zoomSlider = document.getElementById("zoomSlider");
+    const zoomLevelDisplay = document.getElementById("zoomLevel");
+
+    const GRID_SIZE = 500;
+    const CELL_SIZE = 1;
+    const STORAGE_KEY = "place-grid-data";
+    const AUTO_SAVE_INTERVAL = 1000;
+
+    const colors = [
+        "#FFFFFF", "#E4E4E4", "#888888", "#222222",
+        "#FFA7D1", "#E50000", "#E59500", "#A06A42",
+        "#E5D900", "#94E044", "#02BE01", "#00D3FF",
+        "#0083F0", "#CF6EFF", "#DF7126", "#D500F9"
+    ];
+
+    let selectedColor = colors[0];
+    let grid = {};
+    let zoom = 2;
+    let offsetX = 0;
+    let offsetY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let needsSave = false;
+
+    function initPalette() {
+        const palette = document.getElementById("palette");
+        colors.forEach((color, index) => {
+            const box = document.createElement("div");
+            box.className = "color-box";
+            if (index === 0) box.classList.add("active");
+            box.style.backgroundColor = color;
+            box.onclick = () => selectColor(box, color);
+            palette.appendChild(box);
+        });
+    }
+
+    function selectColor(element, color) {
+        document.querySelectorAll(".color-box").forEach(box => box.classList.remove("active"));
+        element.classList.add("active");
+        selectedColor = color;
+    }
+
+    function resizeCanvas() {
+        canvas.width = GRID_SIZE * zoom;
+        canvas.height = GRID_SIZE * zoom;
+        drawGrid();
+    }
+
+    function drawGrid() {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        Object.entries(grid).forEach(([cellIndex, color]) => {
+            const x = cellIndex % GRID_SIZE;
+            const y = Math.floor(cellIndex / GRID_SIZE);
+            ctx.fillStyle = color;
+            ctx.fillRect(x * CELL_SIZE * zoom, y * CELL_SIZE * zoom, CELL_SIZE * zoom, CELL_SIZE * zoom);
+        });
+
+        ctx.strokeStyle = "#E0E0E0";
+        ctx.lineWidth = 0.5;
+
+        for (let i = 0; i <= GRID_SIZE; i += 10) {
+            ctx.beginPath();
+            ctx.moveTo(i * CELL_SIZE * zoom, 0);
+            ctx.lineTo(i * CELL_SIZE * zoom, canvas.height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, i * CELL_SIZE * zoom);
+            ctx.lineTo(canvas.width, i * CELL_SIZE * zoom);
+            ctx.stroke();
         }
+    }
 
-        function drawGrid() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let i = 0; i < 500; i++) {
-                for (let j = 0; j < 500; j++) {
-                    ctx.fillStyle = grid[i][j];
-                    ctx.fillRect(i * scale + offsetX, j * scale + offsetY, scale, scale);
-                }
-            }
+    function updateCellCount() {
+        document.getElementById("cellCount").textContent = Object.keys(grid).length;
+    }
+
+    function saveToStorage() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(grid));
+            document.getElementById("storageStatus").textContent = "✓ Saved";
+            needsSave = false;
+        } catch (e) {
+            document.getElementById("storageStatus").textContent = "✗ Error";
         }
+    }
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (e.buttons != 1) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = Math.floor((e.clientX - rect.left - offsetX) / scale);
-            const y = Math.floor((e.clientY - rect.top - offsetY) / scale);
-            if (x >= 0 && x < 500 && y >= 0 && y < 500) {
-                grid[x][y] = colorPicker.value;
+    function loadFromStorage() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                grid = JSON.parse(saved);
+                updateCellCount();
                 drawGrid();
-                saveGrid();
             }
-        });
-
-        clearButton.addEventListener('click', () => {
-            initGrid();
-            saveGrid();
-        });
-
-        zoomInButton.addEventListener('click', () => {
-            scale = Math.min(scale * 1.2, 16);
-            drawGrid();
-        });
-
-        zoomOutButton.addEventListener('click', () => {
-            scale = Math.max(scale / 1.2, 1);
-            drawGrid();
-        });
-
-        function saveGrid() {
-            localStorage.setItem('grid', JSON.stringify(grid));
+        } catch (e) {
+            console.error("Load error:", e);
         }
+    }
 
-        function loadGrid() {
-            const savedGrid = localStorage.getItem('grid');
-            if (savedGrid) {
-                grid = JSON.parse(savedGrid);
-            } else {
-                initGrid();
-            }
+    function clearGrid() {
+        if (confirm("Clear all pixels? This cannot be undone.")) {
+            grid = {};
             drawGrid();
+            updateCellCount();
+            saveToStorage();
         }
+    }
 
-        window.addEventListener('load', loadGrid);
-    </script>
+    function exportImage() {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = GRID_SIZE;
+        tempCanvas.height = GRID_SIZE;
+        const tempCtx = tempCanvas.getContext("2d");
+
+        tempCtx.fillStyle = "#FFFFFF";
+        tempCtx.fillRect(0, 0, GRID_SIZE, GRID_SIZE);
+
+        Object.entries(grid).forEach(([cellIndex, color]) => {
+            const x = cellIndex % GRID_SIZE;
+            const y = Math.floor(cellIndex / GRID_SIZE);
+            tempCtx.fillStyle = color;
+            tempCtx.fillRect(x, y, 1, 1);
+        });
+
+        const link = document.createElement("a");
+        link.download = "place-canvas.png";
+        link.href = tempCanvas.toDataURL();
+        link.click();
+    }
+
+    function exportJSON() {
+        const data = JSON.stringify(grid, null, 2);
+        const link = document.createElement("a");
+        link.download = "place-data.json";
+        link.href = "data:text/json;charset=utf-8," + encodeURIComponent(data);
+        link.click();
+    }
+
+    function resetView() {
+        zoom = 2;
+        offsetX = 0;
+        offsetY = 0;
+        zoomSlider.value = 2;
+        zoomLevelDisplay.textContent = "2x";
+        container.style.transform = "translate(0, 0)";
+        resizeCanvas();
+    }
+
+    zoomSlider.addEventListener("input", (e) => {
+        zoom = parseFloat(e.target.value);
+        zoomLevelDisplay.textContent = `${zoom.toFixed(1)}x`;
+        resizeCanvas();
+    });
+
+    container.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        zoom = Math.max(1, Math.min(20, zoom + (e.deltaY > 0 ? -0.5 : 0.5)));
+        zoomSlider.value = zoom;
+        zoomLevelDisplay.textContent = `${zoom.toFixed(1)}x`;
+        resizeCanvas();
+    });
+
+    container.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        dragStartX = e.clientX - offsetX;
+        dragStartY = e.clientY - offsetY;
+        container.classList.add("grabbing");
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if (isDragging) {
+            offsetX = e.clientX - dragStartX;
+            offsetY = e.clientY - dragStartY;
+            container.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+        }
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        container.classList.remove("grabbing");
+    });
+
+    container.addEventListener("click", (e) => {
+        if (isDragging) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / (CELL_SIZE * zoom));
+        const y = Math.floor((e.clientY - rect.top) / (CELL_SIZE * zoom));
+
+        if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
+            const cellIndex = y * GRID_SIZE + x;
+            grid[cellIndex] = selectedColor;
+            drawGrid();
+            updateCellCount();
+            needsSave = true;
+        }
+    });
+
+    setInterval(() => {
+        if (needsSave) saveToStorage();
+    }, AUTO_SAVE_INTERVAL);
+
+    window.addEventListener("beforeunload", () => {
+        if (needsSave) saveToStorage();
+    });
+
+    initPalette();
+    loadFromStorage();
+    resizeCanvas();
+</script>
+
 </body>
 </html>
