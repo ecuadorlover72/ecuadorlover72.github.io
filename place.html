@@ -2,107 +2,110 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Interactive Drawing Canvas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>r/place Replica</title>
     <style>
         body {
-            background-color: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
         }
         #canvas {
-            border: 1px solid #fff;
-            cursor: grab;
-            transition: transform 0.1s;
+            border: 1px solid #ccc;
+            image-rendering: pixelated;
         }
-        .sidebar {
-            width: 200px;
+        #controls {
             position: absolute;
-            top: 0;
-            left: 0;
-            background-color: rgba(0,0,0,0.8);
-            padding: 10px;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h3>Tools</h3>
+    <div id="controls">
+        <button id="clear">Clear</button>
         <input type="color" id="colorPicker" value="#ff0000">
-        <input type="range" id="zoomSlider" min="1" max="20" value="1">
-        <label>Zoom: <span id="zoomValue">1x</span></label>
+        <button id="zoomIn">Zoom In</button>
+        <button id="zoomOut">Zoom Out</button>
     </div>
-    <canvas id="canvas" width="800" height="600"></canvas>
+    <canvas id="canvas" width="500" height="500"></canvas>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        let drawing = false;
+        const colorPicker = document.getElementById('colorPicker');
+        const clearButton = document.getElementById('clear');
+        const zoomInButton = document.getElementById('zoomIn');
+        const zoomOutButton = document.getElementById('zoomOut');
+        let grid = [];
         let scale = 1;
-        let lastX, lastY;
+        let offsetX = 0;
+        let offsetY = 0;
 
-        const savedDrawing = localStorage.getItem('canvasDrawing');
-        if (savedDrawing) {
-            const img = new Image();
-            img.src = savedDrawing;
-            img.onload = () => ctx.drawImage(img, 0, 0);
+        function initGrid() {
+            for (let i = 0; i < 500; i++) {
+                grid[i] = [];
+                for (let j = 0; j < 500; j++) {
+                    grid[i][j] = '#ffffff';
+                }
+            }
+            drawGrid();
         }
 
-        function draw(x, y) {
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = document.getElementById('colorPicker').value;
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            lastX = x;
-            lastY = y;
-            saveDrawing();
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < 500; i++) {
+                for (let j = 0; j < 500; j++) {
+                    ctx.fillStyle = grid[i][j];
+                    ctx.fillRect(i * scale + offsetX, j * scale + offsetY, scale, scale);
+                }
+            }
         }
 
-        function saveDrawing() {
-            localStorage.setItem('canvasDrawing', canvas.toDataURL());
-        }
-
-        canvas.addEventListener('mousedown', (evt) => {
-            drawing = true;
-            lastX = (evt.offsetX / scale);
-            lastY = (evt.offsetY / scale);
-            canvas.style.cursor = 'grabbing';
-        });
-
-        canvas.addEventListener('mousemove', (evt) => {
-            if (drawing) {
-                draw(evt.offsetX / scale, evt.offsetY / scale);
+        canvas.addEventListener('mousemove', (e) => {
+            if (e.buttons != 1) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left - offsetX) / scale);
+            const y = Math.floor((e.clientY - rect.top - offsetY) / scale);
+            if (x >= 0 && x < 500 && y >= 0 && y < 500) {
+                grid[x][y] = colorPicker.value;
+                drawGrid();
+                saveGrid();
             }
         });
 
-        canvas.addEventListener('mouseup', () => {
-            drawing = false;
-            canvas.style.cursor = 'grab';
+        clearButton.addEventListener('click', () => {
+            initGrid();
+            saveGrid();
         });
 
-        canvas.addEventListener('mouseleave', () => {
-            drawing = false;
+        zoomInButton.addEventListener('click', () => {
+            scale = Math.min(scale * 1.2, 16);
+            drawGrid();
         });
 
-        canvas.addEventListener('wheel', (evt) => {
-            evt.preventDefault();
-            scale += evt.deltaY * -0.01;
-            scale = Math.min(Math.max(1, scale), 20);
-            ctx.setTransform(scale, 0, 0, scale, 0, 0);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(savedDrawing, 0, 0);
-            document.getElementById('zoomValue').innerText = scale.toFixed(1) + 'x';
+        zoomOutButton.addEventListener('click', () => {
+            scale = Math.max(scale / 1.2, 1);
+            drawGrid();
         });
 
-        document.getElementById('zoomSlider').addEventListener('input', (evt) => {
-            scale = evt.target.value;
-            ctx.setTransform(scale, 0, 0, scale, 0, 0);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(savedDrawing, 0, 0);
-            document.getElementById('zoomValue').innerText = scale + 'x';
-        });
+        function saveGrid() {
+            localStorage.setItem('grid', JSON.stringify(grid));
+        }
+
+        function loadGrid() {
+            const savedGrid = localStorage.getItem('grid');
+            if (savedGrid) {
+                grid = JSON.parse(savedGrid);
+            } else {
+                initGrid();
+            }
+            drawGrid();
+        }
+
+        window.addEventListener('load', loadGrid);
     </script>
 </body>
 </html>
