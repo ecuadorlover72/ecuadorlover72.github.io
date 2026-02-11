@@ -1,43 +1,108 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Place</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Interactive Drawing Canvas</title>
     <style>
-        #map {
-            height: 500px;
-            width: 100%;
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #canvas {
+            border: 1px solid #fff;
+            cursor: grab;
+            transition: transform 0.1s;
+        }
+        .sidebar {
+            width: 200px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(0,0,0,0.8);
+            padding: 10px;
         }
     </style>
-    <script>
-        let map;
-        let zoomLevel = localStorage.getItem('zoomLevel') ? parseInt(localStorage.getItem('zoomLevel')) : 8;
-
-        function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: -0.22985, lng: -78.52456 },
-                zoom: zoomLevel
-            });
-        }
-
-        function updateZoomLevel() {
-            zoomLevel = map.getZoom();
-            localStorage.setItem('zoomLevel', zoomLevel);
-        }
-
-        function setupListeners() {
-            google.maps.event.addListener(map, 'zoom_changed', updateZoomLevel);
-        }
-
-        window.onload = function() {
-            initMap();
-            setupListeners();
-        };
-    </script>
 </head>
 <body>
-    <h1>My Place</h1>
-    <div id="map"></div>
-    <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
+    <div class="sidebar">
+        <h3>Tools</h3>
+        <input type="color" id="colorPicker" value="#ff0000">
+        <input type="range" id="zoomSlider" min="1" max="20" value="1">
+        <label>Zoom: <span id="zoomValue">1x</span></label>
+    </div>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        let scale = 1;
+        let lastX, lastY;
+
+        const savedDrawing = localStorage.getItem('canvasDrawing');
+        if (savedDrawing) {
+            const img = new Image();
+            img.src = savedDrawing;
+            img.onload = () => ctx.drawImage(img, 0, 0);
+        }
+
+        function draw(x, y) {
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = document.getElementById('colorPicker').value;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            lastX = x;
+            lastY = y;
+            saveDrawing();
+        }
+
+        function saveDrawing() {
+            localStorage.setItem('canvasDrawing', canvas.toDataURL());
+        }
+
+        canvas.addEventListener('mousedown', (evt) => {
+            drawing = true;
+            lastX = (evt.offsetX / scale);
+            lastY = (evt.offsetY / scale);
+            canvas.style.cursor = 'grabbing';
+        });
+
+        canvas.addEventListener('mousemove', (evt) => {
+            if (drawing) {
+                draw(evt.offsetX / scale, evt.offsetY / scale);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            drawing = false;
+            canvas.style.cursor = 'grab';
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            drawing = false;
+        });
+
+        canvas.addEventListener('wheel', (evt) => {
+            evt.preventDefault();
+            scale += evt.deltaY * -0.01;
+            scale = Math.min(Math.max(1, scale), 20);
+            ctx.setTransform(scale, 0, 0, scale, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(savedDrawing, 0, 0);
+            document.getElementById('zoomValue').innerText = scale.toFixed(1) + 'x';
+        });
+
+        document.getElementById('zoomSlider').addEventListener('input', (evt) => {
+            scale = evt.target.value;
+            ctx.setTransform(scale, 0, 0, scale, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(savedDrawing, 0, 0);
+            document.getElementById('zoomValue').innerText = scale + 'x';
+        });
     </script>
 </body>
 </html>
