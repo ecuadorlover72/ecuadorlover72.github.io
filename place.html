@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>r/place Clone</title>
+    <title>r/place Replica - Interactive Pixel Canvas</title>
     <style>
         * {
             margin: 0;
@@ -12,501 +12,748 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-
-        header {
-            text-align: center;
-            color: white;
-            margin-bottom: 20px;
-        }
-
-        header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        header p {
-            font-size: 1.1em;
-            opacity: 0.9;
+            height: 100vh;
+            overflow: hidden;
         }
 
         .container {
             display: flex;
-            gap: 20px;
-            max-width: 1400px;
             width: 100%;
+            height: 100%;
         }
 
-        .canvas-wrapper {
-            flex: 1;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .controls-top {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-            padding: 15px;
-            background: #f5f5f5;
-            border-radius: 8px;
-        }
-
-        .zoom-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .zoom-control input {
-            width: 150px;
-        }
-
-        .zoom-control span {
-            font-weight: bold;
-            min-width: 50px;
-        }
-
-        #canvasContainer {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            background: white;
-            cursor: grab;
-        }
-
-        #canvasContainer.grabbing {
-            cursor: grabbing;
-        }
-
-        canvas {
-            image-rendering: pixelated;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
+        /* Sidebar */
         .sidebar {
             width: 300px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.95);
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
         }
 
-        .sidebar-section {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .sidebar-section h3 {
-            font-size: 0.9em;
+        .sidebar h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
             text-transform: uppercase;
-            color: #666;
-            font-weight: 600;
             letter-spacing: 1px;
         }
 
+        .panel {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .panel h3 {
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        /* Coordinates Section */
+        .coordinates-panel {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px solid #667eea;
+        }
+
+        .coord-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .coord-item {
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .coord-item label {
+            display: block;
+            color: #764ba2;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .coord-item value {
+            display: block;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .coord-input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .coord-input-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .coord-input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .coord-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .coord-btn {
+            flex: 1;
+            padding: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .coord-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .coord-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Color Palette */
         .color-palette {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 8px;
         }
 
-        .color-box {
+        .color-btn {
             width: 100%;
             aspect-ratio: 1;
-            border: 2px solid transparent;
+            border: 3px solid transparent;
             border-radius: 6px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .color-box:hover {
-            transform: scale(1.05);
+        .color-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .color-box.active {
-            border: 3px solid #000;
-            box-shadow: 0 0 0 2px white, 0 0 0 4px #000;
+        .color-btn.selected {
+            border-color: #333;
+            box-shadow: 0 0 0 3px white, 0 0 0 5px #333;
         }
 
-        .button-group {
+        /* Canvas Area */
+        .canvas-container {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
         }
 
-        button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        #canvas {
+            border: 2px solid white;
+            cursor: crosshair;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
         }
 
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        .btn-secondary:hover {
-            background: #e8e8e8;
-        }
-
-        .stats {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        /* Controls */
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
             padding: 15px;
-            background: #f5f5f5;
-            border-radius: 6px;
-            font-size: 0.85em;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: 100;
         }
 
-        .stat-row {
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            color: #667eea;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .control-group input[type="range"] {
+            width: 150px;
+        }
+
+        .control-group input[type="text"] {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .zoom-display {
+            font-size: 14px;
+            color: #333;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        /* Stats */
+        .stat-item {
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
         }
 
-        .stat-label {
-            color: #666;
-            font-weight: 600;
-        }
-
-        .stat-value {
+        .stat-item label {
             color: #667eea;
             font-weight: bold;
         }
 
-        @media (max-width: 1000px) {
-            .container {
-                flex-direction: column;
-            }
+        .stat-item value {
+            color: #333;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
 
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
+                max-height: 50vh;
             }
 
-            header h1 {
-                font-size: 1.8em;
+            .canvas-container {
+                height: 50vh;
             }
+
+            .controls {
+                bottom: 20px;
+                top: auto;
+                right: 20px;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .color-btn.placed {
+            animation: pulse 0.5s ease;
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>🎨 Place</h2>
 
-<header>
-    <h1>r/place Clone</h1>
-    <p>A collaborative pixel canvas - your art persists forever</p>
-</header>
-
-<div class="container">
-    <div class="canvas-wrapper">
-        <div class="controls-top">
-            <div class="zoom-control">
-                <label>🔍 Zoom:</label>
-                <input type="range" id="zoomSlider" min="1" max="20" value="2" step="0.5">
-                <span id="zoomLevel">2x</span>
+            <!-- Coordinates Panel -->
+            <div class="coordinates-panel">
+                <h3>📍 Coordinates</h3>
+                <div class="coord-display">
+                    <div class="coord-item">
+                        <label>X</label>
+                        <value id="currentX">0</value>
+                    </div>
+                    <div class="coord-item">
+                        <label>Y</label>
+                        <value id="currentY">0</value>
+                    </div>
+                </div>
+                <div class="coord-input-group">
+                    <input type="number" id="jumpX" placeholder="X coordinate" min="0" max="999">
+                    <input type="number" id="jumpY" placeholder="Y coordinate" min="0" max="999">
+                </div>
+                <div class="coord-buttons">
+                    <button class="coord-btn" onclick="jumpToCoordinates()">Go To</button>
+                    <button class="coord-btn" onclick="centerCanvas()">Center</button>
+                </div>
             </div>
-            <button class="btn-secondary" onclick="resetView()">Reset View</button>
+
+            <!-- Color Palette -->
+            <div class="panel">
+                <h3>🎯 Color Palette</h3>
+                <div class="color-palette" id="colorPalette"></div>
+            </div>
+
+            <!-- Stats -->
+            <div class="panel">
+                <h3>📊 Stats</h3>
+                <div class="stat-item">
+                    <label>Pixels Placed</label>
+                    <value id="pixelCount">0</value>
+                </div>
+                <div class="stat-item">
+                    <label>Empty Spaces</label>
+                    <value id="emptyCount">1000000</value>
+                </div>
+                <div class="stat-item">
+                    <label>Canvas Size</label>
+                    <value>1000×1000</value>
+                </div>
+                <div class="stat-item">
+                    <label>Storage</label>
+                    <value id="storageSize">0 KB</value>
+                </div>
+            </div>
+
+            <!-- Export -->
+            <div class="panel">
+                <h3>💾 Export</h3>
+                <button class="btn" onclick="exportAsPNG()">Download PNG</button>
+                <button class="btn" onclick="exportAsJSON()">Download JSON</button>
+            </div>
+
+            <!-- Clear Canvas -->
+            <div class="panel">
+                <h3>⚠️ Actions</h3>
+                <button class="btn" onclick="clearCanvasConfirm()" style="background: linear-gradient(135deg, #f093fb, #f5576c);">Clear Canvas</button>
+            </div>
         </div>
-        <div id="canvasContainer">
-            <canvas id="grid"></canvas>
+
+        <!-- Canvas Area -->
+        <div class="canvas-container">
+            <canvas id="canvas" width="1000" height="1000"></canvas>
+
+            <!-- Controls -->
+            <div class="controls">
+                <div class="control-group">
+                    <label for="zoomSlider">🔍 Zoom</label>
+                    <input type="range" id="zoomSlider" min="1" max="20" value="1">
+                    <div class="zoom-display" id="zoomDisplay">1x</div>
+                </div>
+                <div class="control-group">
+                    <label>Cooldown</label>
+                    <input type="text" id="cooldownDisplay" value="Ready!" readonly>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="sidebar">
-        <div class="sidebar-section">
-            <h3>🎨 Colors</h3>
-            <div class="color-palette" id="palette"></div>
-        </div>
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // Constants
+        const CANVAS_WIDTH = 1000;
+        const CANVAS_HEIGHT = 1000;
+        const GRID_SIZE = 10; // 10x10 pixels per cell
+        const CELLS_WIDE = CANVAS_WIDTH / GRID_SIZE;
+        const CELLS_HIGH = CANVAS_HEIGHT / GRID_SIZE;
+        const COOLDOWN_TIME = 10; // 5 minutes in milliseconds
 
-        <div class="sidebar-section">
-            <h3>⚙️ Tools</h3>
-            <div class="button-group">
-                <button class="btn-primary" onclick="clearGrid()">Clear Canvas</button>
-                <button class="btn-secondary" onclick="exportImage()">Download PNG</button>
-                <button class="btn-secondary" onclick="exportJSON()">Export Data</button>
-            </div>
-        </div>
+        // r/place official colors
+        const COLORS = [
+            '#6D001A', '#BE0039', '#FF4500', '#FFA800',
+            '#FFD635', '#00D4AA', '#00A368', '#2450A4',
+            '#3690EA', '#9494FF', '#B44AC0', '#E4ABFF',
+            '#FFFFFF', '#898D90', '#000000', '#430B21'
+        ];
 
-        <div class="stats">
-            <div class="stat-row">
-                <span class="stat-label">Pixels Placed</span>
-                <span class="stat-value" id="cellCount">0</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Canvas Size</span>
-                <span class="stat-value">500×500</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">Storage</span>
-                <span class="stat-value" id="storageStatus">✓ Ready</span>
-            </div>
-        </div>
+        // State
+        let pixels = {};
+        let selectedColor = COLORS[0];
+        let zoom = 1;
+        let panX = 0;
+        let panY = 0;
+        let lastPixelPlacedTime = 0;
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let mouseX = 0;
+        let mouseY = 0;
 
-        <div class="sidebar-section">
-            <h3>ℹ️ About</h3>
-            <p style="font-size: 0.85em; color: #666; line-height: 1.6;">
-                Click pixels to place them. Scroll to zoom. Drag to pan. Your art is saved automatically.
-            </p>
-        </div>
-    </div>
-</div>
-
-<script>
-    const canvas = document.getElementById("grid");
-    const ctx = canvas.getContext("2d");
-    const container = document.getElementById("canvasContainer");
-    const zoomSlider = document.getElementById("zoomSlider");
-    const zoomLevelDisplay = document.getElementById("zoomLevel");
-
-    const GRID_SIZE = 500;
-    const CELL_SIZE = 1;
-    const STORAGE_KEY = "place-grid-data";
-    const AUTO_SAVE_INTERVAL = 1000;
-
-    const colors = [
-        "#FFFFFF", "#E4E4E4", "#888888", "#222222",
-        "#FFA7D1", "#E50000", "#E59500", "#A06A42",
-        "#E5D900", "#94E044", "#02BE01", "#00D3FF",
-        "#0083F0", "#CF6EFF", "#DF7126", "#D500F9"
-    ];
-
-    let selectedColor = colors[0];
-    let grid = {};
-    let zoom = 2;
-    let offsetX = 0;
-    let offsetY = 0;
-    let isDragging = false;
-    let dragStartX = 0;
-    let dragStartY = 0;
-    let needsSave = false;
-
-    function initPalette() {
-        const palette = document.getElementById("palette");
-        colors.forEach((color, index) => {
-            const box = document.createElement("div");
-            box.className = "color-box";
-            if (index === 0) box.classList.add("active");
-            box.style.backgroundColor = color;
-            box.onclick = () => selectColor(box, color);
-            palette.appendChild(box);
-        });
-    }
-
-    function selectColor(element, color) {
-        document.querySelectorAll(".color-box").forEach(box => box.classList.remove("active"));
-        element.classList.add("active");
-        selectedColor = color;
-    }
-
-    function resizeCanvas() {
-        canvas.width = GRID_SIZE * zoom;
-        canvas.height = GRID_SIZE * zoom;
-        drawGrid();
-    }
-
-    function drawGrid() {
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        Object.entries(grid).forEach(([cellIndex, color]) => {
-            const x = cellIndex % GRID_SIZE;
-            const y = Math.floor(cellIndex / GRID_SIZE);
-            ctx.fillStyle = color;
-            ctx.fillRect(x * CELL_SIZE * zoom, y * CELL_SIZE * zoom, CELL_SIZE * zoom, CELL_SIZE * zoom);
-        });
-
-        ctx.strokeStyle = "#E0E0E0";
-        ctx.lineWidth = 0.5;
-
-        for (let i = 0; i <= GRID_SIZE; i += 10) {
-            ctx.beginPath();
-            ctx.moveTo(i * CELL_SIZE * zoom, 0);
-            ctx.lineTo(i * CELL_SIZE * zoom, canvas.height);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(0, i * CELL_SIZE * zoom);
-            ctx.lineTo(canvas.width, i * CELL_SIZE * zoom);
-            ctx.stroke();
+        // Initialize
+        function init() {
+            loadFromLocalStorage();
+            createColorPalette();
+            setupCanvasEvents();
+            setupZoomControl();
+            setupCoordinateInputs();
+            draw();
+            updateStats();
+            animateCooldownTimer();
         }
-    }
 
-    function updateCellCount() {
-        document.getElementById("cellCount").textContent = Object.keys(grid).length;
-    }
-
-    function saveToStorage() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(grid));
-            document.getElementById("storageStatus").textContent = "✓ Saved";
-            needsSave = false;
-        } catch (e) {
-            document.getElementById("storageStatus").textContent = "✗ Error";
+        // Create color palette
+        function createColorPalette() {
+            const palette = document.getElementById('colorPalette');
+            COLORS.forEach((color, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'color-btn';
+                btn.style.backgroundColor = color;
+                btn.onclick = () => selectColor(color, btn);
+                if (index === 0) {
+                    btn.classList.add('selected');
+                }
+                palette.appendChild(btn);
+            });
         }
-    }
 
-    function loadFromStorage() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                grid = JSON.parse(saved);
-                updateCellCount();
-                drawGrid();
+        // Select color
+        function selectColor(color, element) {
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedColor = color;
+        }
+
+        // Canvas events
+        function setupCanvasEvents() {
+            canvas.addEventListener('mousedown', onCanvasMouseDown);
+            canvas.addEventListener('mousemove', onCanvasMouseMove);
+            canvas.addEventListener('mouseup', onCanvasMouseUp);
+            canvas.addEventListener('mouseleave', onCanvasMouseLeave);
+            canvas.addEventListener('wheel', onCanvasWheel, { passive: false });
+            canvas.addEventListener('click', onCanvasClick);
+        }
+
+        function onCanvasMouseDown(e) {
+            isDragging = true;
+            dragStartX = e.clientX - canvas.getBoundingClientRect().left;
+            dragStartY = e.clientY - canvas.getBoundingClientRect().top;
+        }
+
+        function onCanvasMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = (e.clientX - rect.left - panX) / zoom;
+            mouseY = (e.clientY - rect.top - panY) / zoom;
+
+            // Update coordinate display
+            const cellX = Math.floor(mouseX / GRID_SIZE);
+            const cellY = Math.floor(mouseY / GRID_SIZE);
+            document.getElementById('currentX').textContent = Math.max(0, Math.min(CELLS_WIDE - 1, cellX));
+            document.getElementById('currentY').textContent = Math.max(0, Math.min(CELLS_HIGH - 1, cellY));
+
+            if (isDragging) {
+                const currentX = e.clientX - canvas.getBoundingClientRect().left;
+                const currentY = e.clientY - canvas.getBoundingClientRect().top;
+                panX += currentX - dragStartX;
+                panY += currentY - dragStartY;
+                dragStartX = currentX;
+                dragStartY = currentY;
+                draw();
             }
-        } catch (e) {
-            console.error("Load error:", e);
         }
-    }
 
-    function clearGrid() {
-        if (confirm("Clear all pixels? This cannot be undone.")) {
-            grid = {};
-            drawGrid();
-            updateCellCount();
-            saveToStorage();
+        function onCanvasMouseUp() {
+            isDragging = false;
         }
-    }
 
-    function exportImage() {
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = GRID_SIZE;
-        tempCanvas.height = GRID_SIZE;
-        const tempCtx = tempCanvas.getContext("2d");
-
-        tempCtx.fillStyle = "#FFFFFF";
-        tempCtx.fillRect(0, 0, GRID_SIZE, GRID_SIZE);
-
-        Object.entries(grid).forEach(([cellIndex, color]) => {
-            const x = cellIndex % GRID_SIZE;
-            const y = Math.floor(cellIndex / GRID_SIZE);
-            tempCtx.fillStyle = color;
-            tempCtx.fillRect(x, y, 1, 1);
-        });
-
-        const link = document.createElement("a");
-        link.download = "place-canvas.png";
-        link.href = tempCanvas.toDataURL();
-        link.click();
-    }
-
-    function exportJSON() {
-        const data = JSON.stringify(grid, null, 2);
-        const link = document.createElement("a");
-        link.download = "place-data.json";
-        link.href = "data:text/json;charset=utf-8," + encodeURIComponent(data);
-        link.click();
-    }
-
-    function resetView() {
-        zoom = 2;
-        offsetX = 0;
-        offsetY = 0;
-        zoomSlider.value = 2;
-        zoomLevelDisplay.textContent = "2x";
-        container.style.transform = "translate(0, 0)";
-        resizeCanvas();
-    }
-
-    zoomSlider.addEventListener("input", (e) => {
-        zoom = parseFloat(e.target.value);
-        zoomLevelDisplay.textContent = `${zoom.toFixed(1)}x`;
-        resizeCanvas();
-    });
-
-    container.addEventListener("wheel", (e) => {
-        e.preventDefault();
-        zoom = Math.max(1, Math.min(20, zoom + (e.deltaY > 0 ? -0.5 : 0.5)));
-        zoomSlider.value = zoom;
-        zoomLevelDisplay.textContent = `${zoom.toFixed(1)}x`;
-        resizeCanvas();
-    });
-
-    container.addEventListener("mousedown", (e) => {
-        isDragging = true;
-        dragStartX = e.clientX - offsetX;
-        dragStartY = e.clientY - offsetY;
-        container.classList.add("grabbing");
-    });
-
-    document.addEventListener("mousemove", (e) => {
-        if (isDragging) {
-            offsetX = e.clientX - dragStartX;
-            offsetY = e.clientY - dragStartY;
-            container.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+        function onCanvasMouseLeave() {
+            isDragging = false;
         }
-    });
 
-    document.addEventListener("mouseup", () => {
-        isDragging = false;
-        container.classList.remove("grabbing");
-    });
+        function onCanvasWheel(e) {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const mouseCanvasX = e.clientX - rect.left;
+            const mouseCanvasY = e.clientY - rect.top;
 
-    container.addEventListener("click", (e) => {
-        if (isDragging) return;
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = Math.max(1, Math.min(20, zoom * zoomFactor));
 
-        const rect = canvas.getBoundingClientRect();
-        const x = Math.floor((e.clientX - rect.left) / (CELL_SIZE * zoom));
-        const y = Math.floor((e.clientY - rect.top) / (CELL_SIZE * zoom));
+            panX = mouseCanvasX - (mouseCanvasX - panX) * (newZoom / zoom);
+            panY = mouseCanvasY - (mouseCanvasY - panY) * (newZoom / zoom);
 
-        if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
-            const cellIndex = y * GRID_SIZE + x;
-            grid[cellIndex] = selectedColor;
-            drawGrid();
-            updateCellCount();
-            needsSave = true;
+            zoom = newZoom;
+            document.getElementById('zoomSlider').value = zoom;
+            document.getElementById('zoomDisplay').textContent = zoom.toFixed(1) + 'x';
+            draw();
         }
-    });
 
-    setInterval(() => {
-        if (needsSave) saveToStorage();
-    }, AUTO_SAVE_INTERVAL);
+        function onCanvasClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left - panX) / zoom;
+            const y = (e.clientY - rect.top - panY) / zoom;
 
-    window.addEventListener("beforeunload", () => {
-        if (needsSave) saveToStorage();
-    });
+            const cellX = Math.floor(x / GRID_SIZE);
+            const cellY = Math.floor(y / GRID_SIZE);
 
-    initPalette();
-    loadFromStorage();
-    resizeCanvas();
-</script>
+            if (cellX >= 0 && cellX < CELLS_WIDE && cellY >= 0 && cellY < CELLS_HIGH) {
+                placePixel(cellX, cellY);
+            }
+        }
 
+        // Place pixel
+        function placePixel(cellX, cellY) {
+            const now = Date.now();
+            if (now - lastPixelPlacedTime < COOLDOWN_TIME) {
+                alert('⏳ Please wait before placing another pixel!');
+                return;
+            }
+
+            const key = `${cellX},${cellY}`;
+            pixels[key] = selectedColor;
+            lastPixelPlacedTime = now;
+            
+            saveToLocalStorage();
+            updateStats();
+            draw();
+
+            // Animate color button
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                if (btn.style.backgroundColor === selectedColor) {
+                    btn.classList.add('placed');
+                    setTimeout(() => btn.classList.remove('placed'), 500);
+                }
+            });
+        }
+
+        // Zoom control
+        function setupZoomControl() {
+            document.getElementById('zoomSlider').addEventListener('input', (e) => {
+                zoom = parseFloat(e.target.value);
+                document.getElementById('zoomDisplay').textContent = zoom.toFixed(1) + 'x';
+                draw();
+            });
+        }
+
+        // Coordinate inputs
+        function setupCoordinateInputs() {
+            const jumpXInput = document.getElementById('jumpX');
+            const jumpYInput = document.getElementById('jumpY');
+
+            jumpXInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') jumpToCoordinates();
+            });
+
+            jumpYInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') jumpToCoordinates();
+            });
+        }
+
+        // Jump to coordinates
+        function jumpToCoordinates() {
+            const x = parseInt(document.getElementById('jumpX').value);
+            const y = parseInt(document.getElementById('jumpY').value);
+
+            if (isNaN(x) || isNaN(y)) {
+                alert('Please enter valid coordinates');
+                return;
+            }
+
+            if (x < 0 || x >= CELLS_WIDE || y < 0 || y >= CELLS_HIGH) {
+                alert(`Coordinates must be between 0-${CELLS_WIDE - 1} for X and 0-${CELLS_HIGH - 1} for Y`);
+                return;
+            }
+
+            // Center on the pixel
+            const pixelCenterX = x * GRID_SIZE + GRID_SIZE / 2;
+            const pixelCenterY = y * GRID_SIZE + GRID_SIZE / 2;
+
+            panX = canvas.width / 2 - pixelCenterX * zoom;
+            panY = canvas.height / 2 - pixelCenterY * zoom;
+
+            draw();
+        }
+
+        // Center canvas
+        function centerCanvas() {
+            panX = 0;
+            panY = 0;
+            zoom = 1;
+            document.getElementById('zoomSlider').value = zoom;
+            document.getElementById('zoomDisplay').textContent = '1x';
+            document.getElementById('jumpX').value = '';
+            document.getElementById('jumpY').value = '';
+            draw();
+        }
+
+        // Draw canvas
+        function draw() {
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(panX, panY);
+            ctx.scale(zoom, zoom);
+
+            // Draw grid
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 0.5;
+            for (let x = 0; x <= CANVAS_WIDTH; x += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, CANVAS_HEIGHT);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= CANVAS_HEIGHT; y += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(CANVAS_WIDTH, y);
+                ctx.stroke();
+            }
+
+            // Draw pixels
+            for (const [key, color] of Object.entries(pixels)) {
+                const [x, y] = key.split(',').map(Number);
+                ctx.fillStyle = color;
+                ctx.fillRect(x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+            }
+
+            ctx.restore();
+        }
+
+        // Update stats
+        function updateStats() {
+            const pixelCount = Object.keys(pixels).length;
+            const emptyCount = CELLS_WIDE * CELLS_HIGH - pixelCount;
+            const storageSize = (new Blob([JSON.stringify(pixels)]).size / 1024).toFixed(2);
+
+            document.getElementById('pixelCount').textContent = pixelCount.toLocaleString();
+            document.getElementById('emptyCount').textContent = emptyCount.toLocaleString();
+            document.getElementById('storageSize').textContent = storageSize + ' KB';
+        }
+
+        // Cooldown timer
+        function animateCooldownTimer() {
+            setInterval(() => {
+                const now = Date.now();
+                const timeSinceLastPixel = now - lastPixelPlacedTime;
+                const timeRemaining = Math.max(0, COOLDOWN_TIME - timeSinceLastPixel);
+
+                if (timeRemaining > 0) {
+                    const minutes = Math.floor(timeRemaining / 60000);
+                    const seconds = Math.floor((timeRemaining % 60000) / 1000);
+                    document.getElementById('cooldownDisplay').value = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    document.getElementById('cooldownDisplay').value = 'Ready!';
+                }
+            }, 1000);
+        }
+
+        // Export as PNG
+        function exportAsPNG() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = CANVAS_WIDTH;
+            tempCanvas.height = CANVAS_HEIGHT;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCtx.fillStyle = '#ffffff';
+            tempCtx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            for (const [key, color] of Object.entries(pixels)) {
+                const [x, y] = key.split(',').map(Number);
+                tempCtx.fillStyle = color;
+                tempCtx.fillRect(x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+            }
+
+            const link = document.createElement('a');
+            link.href = tempCanvas.toDataURL('image/png');
+            link.download = `place-${new Date().toISOString().slice(0, 10)}.png`;
+            link.click();
+        }
+
+        // Export as JSON
+        function exportAsJSON() {
+            const data = {
+                canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
+                timestamp: new Date().toISOString(),
+                pixels: pixels
+            };
+
+            const link = document.createElement('a');
+            link.href = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
+            link.download = `place-${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+        }
+
+        // LocalStorage
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('placePixels', JSON.stringify(pixels));
+            } catch (e) {
+                console.error('LocalStorage quota exceeded', e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('placePixels');
+            if (saved) {
+                pixels = JSON.parse(saved);
+            }
+        }
+
+        // Clear canvas
+        function clearCanvasConfirm() {
+            if (confirm('⚠️ Are you sure you want to clear the entire canvas? This cannot be undone!')) {
+                pixels = {};
+                saveToLocalStorage();
+                updateStats();
+                draw();
+            }
+        }
+
+        // Start
+        window.addEventListener('load', init);
+    </script>
 </body>
 </html>
