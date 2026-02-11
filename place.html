@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>500x500 Grid</title>
+  <title>500x500 Grid - Zoomable</title>
   <style>
     body {
       margin: 0;
@@ -12,19 +12,28 @@
       height: 100vh;
       font-family: Arial, sans-serif;
       gap: 20px;
+      overflow: hidden;
     }
     
-    .container {
-      display: flex;
-      gap: 20px;
-      align-items: flex-start;
+    #canvasContainer {
+      position: relative;
+      width: 600px;
+      height: 600px;
+      border: 1px solid #444;
+      overflow: hidden;
+      background: white;
+      cursor: grab;
+    }
+    
+    #canvasContainer.grabbing {
+      cursor: grabbing;
     }
     
     canvas {
       image-rendering: pixelated;
-      border: 1px solid #444;
-      cursor: crosshair;
-      background: white;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
     
     .sidebar {
@@ -32,6 +41,7 @@
       display: flex;
       flex-direction: column;
       gap: 15px;
+      user-select: none;
     }
     
     .color-palette {
@@ -92,44 +102,73 @@
       font-size: 16px;
       font-weight: bold;
     }
+    
+    .zoom-info {
+      background: #222;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #aaa;
+    }
+    
+    .zoom-slider {
+      width: 150px;
+    }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <canvas id="grid" width="500" height="500"></canvas>
+<div id="canvasContainer">
+  <canvas id="grid"></canvas>
+</div>
+
+<div class="sidebar">
+  <div>
+    <div style="margin-bottom: 8px; font-size: 12px; color: #aaa;">COLOR PALETTE</div>
+    <div class="color-palette" id="palette"></div>
+  </div>
   
-  <div class="sidebar">
-    <div>
-      <div style="margin-bottom: 8px; font-size: 12px; color: #aaa;">COLOR PALETTE</div>
-      <div class="color-palette" id="palette"></div>
-    </div>
-    
-    <div>
-      <div style="margin-bottom: 8px; font-size: 12px; color: #aaa;">TOOLS</div>
-      <button onclick="clearGrid()">Clear Grid</button>
-      <button onclick="exportImage()">Export PNG</button>
-      <button onclick="exportJSON()">Export Data</button>
-    </div>
-    
-    <div class="stats">
-      <div class="stats-label">CELLS FILLED</div>
-      <div class="stats-value" id="cellCount">0</div>
-    </div>
-    
-    <div class="stats">
-      <div class="stats-label">CURRENT COLOR</div>
-      <div style="width: 30px; height: 30px; margin-top: 5px; border-radius: 3px;" id="colorDisplay"></div>
-    </div>
+  <div>
+    <div style="margin-bottom: 8px; font-size: 12px; color: #aaa;">ZOOM</div>
+    <input type="range" class="zoom-slider" id="zoomSlider" min="1" max="20" value="1" step="0.5">
+    <div class="zoom-info" id="zoomLevel">Zoom: 1x</div>
+  </div>
+  
+  <div>
+    <div style="margin-bottom: 8px; font-size: 12px; color: #aaa;">TOOLS</div>
+    <button onclick="clearGrid()">Clear Grid</button>
+    <button onclick="exportImage()">Export PNG</button>
+    <button onclick="exportJSON()">Export Data</button>
+    <button onclick="resetView()">Reset View</button>
+  </div>
+  
+  <div class="stats">
+    <div class="stats-label">CELLS FILLED</div>
+    <div class="stats-value" id="cellCount">0</div>
+  </div>
+  
+  <div class="stats">
+    <div class="stats-label">CURRENT COLOR</div>
+    <div style="width: 30px; height: 30px; margin-top: 5px; border-radius: 3px;" id="colorDisplay"></div>
+  </div>
+  
+  <div class="stats">
+    <div class="stats-label">STORAGE</div>
+    <div style="color: #0f0; font-size: 12px; margin-top: 5px;" id="storageStatus">Saving...</div>
   </div>
 </div>
 
 <script>
   const canvas = document.getElementById("grid");
   const ctx = canvas.getContext("2d");
+  const container = document.getElementById("canvasContainer");
+  const zoomSlider = document.getElementById("zoomSlider");
+  const zoomLevelDisplay = document.getElementById("zoomLevel");
 
-  const size = 500;
-  const cellSize = 1;
+  const GRID_SIZE = 500;
+  const CELL_SIZE = 1;
+  const STORAGE_KEY = "place-grid-data";
+  const AUTO_SAVE_INTERVAL = 1000; // Save every 1 second
   
   const colors = [
     "#ffffff", "#000000", "#ff0000", "#00ff00",
@@ -140,6 +179,14 @@
   
   let selectedColor = colors[0];
   let grid = {};
+  let zoom = 1;
+  let offsetX = 0;
+  let offsetY = 0;
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let lastSaveTime = 0;
+  let needsSave = false;
 
   function initPalette() {
     const palette = document.getElementById("palette");
@@ -165,33 +212,40 @@
     document.getElementById("colorDisplay").style.backgroundColor = selectedColor;
   }
 
+  function resizeCanvas() {
+    canvas.width = GRID_SIZE * zoom;
+    canvas.height = GRID_SIZE * zoom;
+    drawGrid();
+  }
+
   function drawGrid() {
-    // Fill background
+    // Clear canvas
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw colored cells
     Object.entries(grid).forEach(([cellIndex, color]) => {
-      const x = cellIndex % size;
-      const y = Math.floor(cellIndex / size);
+      const x = cellIndex % GRID_SIZE;
+      const y = Math.floor(cellIndex / GRID_SIZE);
       ctx.fillStyle = color;
-      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+      ctx.fillRect(x * CELL_SIZE * zoom, y * CELL_SIZE * zoom, CELL_SIZE * zoom, CELL_SIZE * zoom);
     });
 
-    // Draw grid lines
-    ctx.strokeStyle = "#ddd";
+    // Draw grid lines every 10 cells for visibility at zoom
+    ctx.strokeStyle = zoom > 2 ? "#ddd" : "#f0f0f0";
     ctx.lineWidth = 0.5;
-    for (let x = 0; x <= size; x++) {
+    
+    for (let x = 0; x <= GRID_SIZE; x++) {
       ctx.beginPath();
-      ctx.moveTo(x * cellSize, 0);
-      ctx.lineTo(x * cellSize, size * cellSize);
+      ctx.moveTo(x * CELL_SIZE * zoom, 0);
+      ctx.lineTo(x * CELL_SIZE * zoom, canvas.height);
       ctx.stroke();
     }
 
-    for (let y = 0; y <= size; y++) {
+    for (let y = 0; y <= GRID_SIZE; y++) {
       ctx.beginPath();
-      ctx.moveTo(0, y * cellSize);
-      ctx.lineTo(size * cellSize, y * cellSize);
+      ctx.moveTo(0, y * CELL_SIZE * zoom);
+      ctx.lineTo(canvas.width, y * CELL_SIZE * zoom);
       ctx.stroke();
     }
   }
@@ -200,18 +254,59 @@
     document.getElementById("cellCount").textContent = Object.keys(grid).length;
   }
 
+  function saveToStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(grid));
+      document.getElementById("storageStatus").textContent = "✓ Saved";
+      needsSave = false;
+    } catch (e) {
+      document.getElementById("storageStatus").textContent = "✗ Error";
+      console.error("Storage error:", e);
+    }
+  }
+
+  function loadFromStorage() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        grid = JSON.parse(saved);
+        updateCellCount();
+        drawGrid();
+      }
+    } catch (e) {
+      console.error("Load error:", e);
+    }
+  }
+
   function clearGrid() {
     if (confirm("Clear all cells?")) {
       grid = {};
       drawGrid();
       updateCellCount();
+      saveToStorage();
     }
   }
 
   function exportImage() {
+    // Create a temporary canvas with the full grid
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = GRID_SIZE;
+    tempCanvas.height = GRID_SIZE;
+    const tempCtx = tempCanvas.getContext("2d");
+    
+    tempCtx.fillStyle = "#ffffff";
+    tempCtx.fillRect(0, 0, GRID_SIZE, GRID_SIZE);
+    
+    Object.entries(grid).forEach(([cellIndex, color]) => {
+      const x = cellIndex % GRID_SIZE;
+      const y = Math.floor(cellIndex / GRID_SIZE);
+      tempCtx.fillStyle = color;
+      tempCtx.fillRect(x, y, 1, 1);
+    });
+    
     const link = document.createElement("a");
     link.download = "grid.png";
-    link.href = canvas.toDataURL();
+    link.href = tempCanvas.toDataURL();
     link.click();
   }
 
@@ -223,13 +318,64 @@
     link.click();
   }
 
-  canvas.addEventListener("click", (event) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((event.clientX - rect.left) / cellSize);
-    const y = Math.floor((event.clientY - rect.top) / cellSize);
+  function resetView() {
+    zoom = 1;
+    offsetX = 0;
+    offsetY = 0;
+    zoomSlider.value = 1;
+    zoomLevelDisplay.textContent = "Zoom: 1x";
+    container.style.transform = "translate(0, 0)";
+    resizeCanvas();
+  }
 
-    if (x >= 0 && x < size && y >= 0 && y < size) {
-      const cellIndex = y * size + x;
+  // Zoom with slider
+  zoomSlider.addEventListener("input", (e) => {
+    zoom = parseFloat(e.target.value);
+    zoomLevelDisplay.textContent = `Zoom: ${zoom.toFixed(1)}x`;
+    resizeCanvas();
+  });
+
+  // Mouse wheel zoom
+  container.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.5 : 0.5;
+    zoom = Math.max(1, Math.min(20, zoom + delta));
+    zoomSlider.value = zoom;
+    zoomLevelDisplay.textContent = `Zoom: ${zoom.toFixed(1)}x`;
+    resizeCanvas();
+  });
+
+  // Dragging for panning
+  container.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    dragStartX = e.clientX - offsetX;
+    dragStartY = e.clientY - offsetY;
+    container.classList.add("grabbing");
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+      offsetX = e.clientX - dragStartX;
+      offsetY = e.clientY - dragStartY;
+      container.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+    container.classList.remove("grabbing");
+  });
+
+  // Canvas clicking
+  container.addEventListener("click", (e) => {
+    if (isDragging) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / (CELL_SIZE * zoom));
+    const y = Math.floor((e.clientY - rect.top) / (CELL_SIZE * zoom));
+
+    if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
+      const cellIndex = y * GRID_SIZE + x;
       if (grid[cellIndex] === selectedColor) {
         delete grid[cellIndex];
       } else {
@@ -237,12 +383,25 @@
       }
       drawGrid();
       updateCellCount();
+      needsSave = true;
     }
   });
 
+  // Auto-save periodically
+  setInterval(() => {
+    if (needsSave) {
+      saveToStorage();
+    }
+  }, AUTO_SAVE_INTERVAL);
+
+  // Save on page leave
+  window.addEventListener("beforeunload", () => {
+    if (needsSave) saveToStorage();
+  });
+
   initPalette();
-  drawGrid();
-  updateCellCount();
+  loadFromStorage();
+  resizeCanvas();
 </script>
 
 </body>
