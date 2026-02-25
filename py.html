@@ -5,32 +5,123 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SecretPool</title>
 
+<!-- CodeMirror -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
 
 <style>
-body{margin:0;font-family:system-ui;height:100vh;display:flex;flex-direction:column;background:#1e1e1e;color:white;}
-header{background:#111;padding:10px;display:flex;justify-content:space-between;align-items:center;}
-button{background:#4CAF50;border:none;padding:6px 12px;color:white;border-radius:6px;cursor:pointer;margin-left:4px;}
-button:hover{background:#45a049;}
-#tab-bar{display:flex;align-items:center;background:#222;padding:4px;overflow-x:auto;}
-.tab{padding:6px 12px;background:#333;margin-right:2px;border-radius:4px;cursor:pointer;white-space:nowrap;}
-.tab.active{background:#4CAF50;}
-.tab .close{margin-left:6px;color:red;font-weight:bold;cursor:pointer;}
-.tab .rename{margin-left:4px;color:yellow;font-weight:bold;cursor:pointer;}
-.container{flex:1;display:grid;grid-template-columns:1fr 1fr;}
-.CodeMirror{height:100%;font-size:14px;}
-.output{background:black;color:#00ff90;font-family:monospace;padding:10px;overflow:auto;}
-#pip-section{background:#222;padding:4px;display:flex;align-items:center;}
-#pip-section input{flex:1;padding:4px;margin-right:4px;border-radius:4px;border:none;}
-#findreplace{background:#222;padding:4px;display:flex;align-items:center;margin-top:2px;}
-#findreplace input{padding:4px;margin-right:4px;border-radius:4px;border:none;}
+/* ---------- Reset & Fonts ---------- */
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family: "Segoe UI", Roboto, sans-serif;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  background:#1e1e2e;
+  color:white;
+}
+
+/* ---------- Header ---------- */
+header{
+  background:#2a2a3a;
+  padding:10px 20px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:0 2px 5px rgba(0,0,0,0.5);
+}
+header strong{font-size:1.1rem; letter-spacing:0.5px;}
+header button{
+  background:#4CAF50;
+  border:none;
+  padding:6px 14px;
+  border-radius:6px;
+  color:white;
+  cursor:pointer;
+  font-weight:bold;
+  transition:0.2s;
+}
+header button:hover{background:#45a049;}
+
+/* ---------- Tab Bar ---------- */
+#tab-bar{
+  display:flex;
+  align-items:center;
+  background:#252535;
+  padding:6px 10px;
+  overflow-x:auto;
+  box-shadow:inset 0 -1px 0 rgba(255,255,255,0.1);
+}
+.tab{
+  padding:6px 14px;
+  margin-right:4px;
+  border-radius:8px 8px 0 0;
+  cursor:pointer;
+  background:#3a3a50;
+  transition:0.2s;
+  display:flex;
+  align-items:center;
+  font-weight:500;
+}
+.tab:hover{background:#4a4a6a;}
+.tab.active{background:#4CAF50;color:white;}
+.tab .close{margin-left:6px;color:#ff6b6b;font-weight:bold;cursor:pointer;}
+.tab .rename{margin-left:4px;color:#ffd966;font-weight:bold;cursor:pointer;}
+
+/* ---------- Control Bars ---------- */
+#pip-section,#findreplace{
+  background:#2a2a3a;
+  padding:6px 10px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  box-shadow:inset 0 -1px 0 rgba(255,255,255,0.1);
+}
+#pip-section input,#findreplace input{
+  flex:1;
+  padding:6px 8px;
+  border-radius:4px;
+  border:none;
+  background:#3a3a50;
+  color:white;
+}
+#pip-section input::placeholder,#findreplace input::placeholder{
+  color:rgba(255,255,255,0.5);
+}
+
+/* ---------- Main Container ---------- */
+.container{
+  flex:1;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  padding:6px;
+}
+
+/* ---------- Editor & Output ---------- */
+.CodeMirror{
+  height:100%;
+  font-size:14px;
+  border-radius:6px;
+  overflow:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,0.3);
+}
+.output{
+  background:#1e1e2e;
+  color:#00ff90;
+  font-family:monospace;
+  padding:10px;
+  border-radius:6px;
+  overflow:auto;
+  box-shadow:0 2px 6px rgba(0,0,0,0.3);
+}
 </style>
 </head>
 <body>
 
 <header>
-  <strong>🐍 Python IDE — Multi-Tab + Pip + Find/Replace</strong>
+  <strong>SecretPool</strong>
   <div>
     <button onclick="runPython()">▶ Run</button>
     <button onclick="addTab()">+ Tab</button>
@@ -64,27 +155,20 @@ button:hover{background:#45a049;}
 <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 
 <script>
-let pyodide;
-const outputDiv = document.getElementById("output");
-const pipInput = document.getElementById("pip-input");
-const findInput = document.getElementById("find-input");
-const replaceInput = document.getElementById("replace-input");
-
-/* ---------- Autocomplete ---------- */
-const pythonKeywords = [
-"print","input","len","range","int","float","str","list","dict","set","tuple",
-"for","while","if","elif","else","try","except","finally","def","return",
-"class","import","from","as","pass","break","continue","True","False","None",
-"and","or","not","in","is","with","lambda","yield","global","nonlocal"
-];
-
-/* ---------- Editor ---------- */
+// ---------- Editor ----------
 let editor = CodeMirror.fromTextArea(document.getElementById("editor"),{
   mode:"python",
   lineNumbers:true,
   extraKeys:{"Ctrl-Space":"autocomplete"}
 });
 
+// ---------- Autocomplete ----------
+const pythonKeywords = [
+"print","input","len","range","int","float","str","list","dict","set","tuple",
+"for","while","if","elif","else","try","except","finally","def","return",
+"class","import","from","as","pass","break","continue","True","False","None",
+"and","or","not","in","is","with","lambda","yield","global","nonlocal"
+];
 CodeMirror.registerHelper("hint","python",function(cm){
   const cursor = cm.getCursor();
   const token = cm.getTokenAt(cursor);
@@ -92,12 +176,11 @@ CodeMirror.registerHelper("hint","python",function(cm){
   const list = pythonKeywords.filter(k=>k.startsWith(word));
   return {list:list, from:CodeMirror.Pos(cursor.line,start), to:CodeMirror.Pos(cursor.line,end)};
 });
-
 editor.on("inputRead", function(cm,change){
   if(change.text[0].match(/[a-zA-Z_]/)){cm.showHint({completeSingle:false});}
 });
 
-/* ---------- Multi-tab system ---------- */
+// ---------- Tabs ----------
 let tabs = []; 
 let activeTab = null;
 const tabBar = document.getElementById("tab-bar");
@@ -109,7 +192,6 @@ function addTab(name="main", code="print('Hello Python!')"){
   renderTabs();
   loadTab(tab);
 }
-
 function renderTabs(){
   tabBar.innerHTML="";
   tabs.forEach((t,i)=>{
@@ -130,70 +212,52 @@ function renderTabs(){
     tabBar.appendChild(el);
   });
 }
-
 function loadTab(tab){editor.setValue(tab.code);}
 function saveTab(){if(activeTab) activeTab.code=editor.getValue();}
 function deleteTab(index){if(tabs[index]===activeTab){activeTab=tabs[0]||null;} tabs.splice(index,1); renderTabs(); if(activeTab) loadTab(activeTab);}
 function renameTab(index){const newName=prompt("Enter new tab name:",tabs[index].name);if(newName) tabs[index].name=newName; renderTabs();}
 
-/* ---------- Load Python ---------- */
-async function loadPython(){
-  pyodide = await loadPyodide();
-  outputDiv.textContent="Python ready. Click Run ▶";
-}
+// ---------- Pyodide ----------
+let pyodide;
+const outputDiv=document.getElementById("output");
+async function loadPython(){pyodide = await loadPyodide(); outputDiv.textContent="Python ready. Click Run ▶";}
 loadPython();
 
-/* ---------- Python input ---------- */
-async function getInput(promptText){return new Promise(resolve=>{
-  const val=window.prompt(promptText||"Input:");
-  resolve(val);
-});}
+// ---------- Python input ----------
+async function getInput(promptText){return new Promise(resolve=>{const val=window.prompt(promptText||"Input:");resolve(val);});}
 
-/* ---------- Run Python ---------- */
+// ---------- Run ----------
 async function runPython(){
   if(!pyodide){outputDiv.textContent="Python still loading..."; return;}
   saveTab();
   outputDiv.textContent="Running...";
   let firstOutput=true;
-  
-  pyodide.setStdout({
-    batched:(msg)=>{if(firstOutput){outputDiv.textContent=""; firstOutput=false;} outputDiv.textContent+=msg+"\n";}
-  });
-  pyodide.setStderr({
-    batched:(msg)=>{if(firstOutput){outputDiv.textContent=""; firstOutput=false;} outputDiv.textContent+="ERROR: "+msg+"\n";}
-  });
-  
+  pyodide.setStdout({batched:(msg)=>{if(firstOutput){outputDiv.textContent=""; firstOutput=false;} outputDiv.textContent+=msg+"\n";}});
+  pyodide.setStderr({batched:(msg)=>{if(firstOutput){outputDiv.textContent=""; firstOutput=false;} outputDiv.textContent+="ERROR: "+msg+"\n";}});
   pyodide.globals.set("input", getInput);
-
-  try{
-    await pyodide.runPythonAsync(activeTab.code);
-    if(firstOutput){outputDiv.textContent="✓ Finished (no output)";}
-  }catch(err){outputDiv.textContent="❌ "+err;}
+  try{await pyodide.runPythonAsync(activeTab.code); if(firstOutput){outputDiv.textContent="✓ Finished (no output)";}}
+  catch(err){outputDiv.textContent="❌ "+err;}
 }
 
-/* ---------- Pip Install ---------- */
+// ---------- Pip ----------
 async function installPackage(){
-  const pkg = pipInput.value.trim();
+  const pkg=document.getElementById("pip-input").value.trim();
   if(!pkg){alert("Enter a package name"); return;}
   outputDiv.textContent=`Installing ${pkg}...`;
-  try{
-    await pyodide.loadPackage(pkg);
-    outputDiv.textContent=`✅ ${pkg} installed successfully.`;
-  }catch(err){outputDiv.textContent=`❌ Failed to install ${pkg}: ${err}`;}
+  try{await pyodide.loadPackage(pkg); outputDiv.textContent=`✅ ${pkg} installed successfully.`;}
+  catch(err){outputDiv.textContent=`❌ Failed to install ${pkg}: ${err}`;}
 }
 
-/* ---------- Find & Replace ---------- */
+// ---------- Find & Replace ----------
 function findReplace(){
-  const findText = findInput.value;
-  const replaceText = replaceInput.value;
+  const findText=document.getElementById("find-input").value;
+  const replaceText=document.getElementById("replace-input").value;
   if(!findText) return;
-  const cursor = editor.getSearchCursor(findText);
-  editor.operation(()=>{
-    while(cursor.findNext()){cursor.replace(replaceText);}
-  });
+  const cursor=editor.getSearchCursor(findText);
+  editor.operation(()=>{while(cursor.findNext()){cursor.replace(replaceText);}});
 }
 
-/* ---------- Initialize ---------- */
+// ---------- Init ----------
 addTab();
 </script>
 </body>
