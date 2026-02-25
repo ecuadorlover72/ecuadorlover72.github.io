@@ -1,505 +1,200 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Python Runner — Multi-Tab</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecretPool</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
 
 <style>
-:root {
-  --bg:#0f1720;
-  --card:#0b1220;
-  --muted:#94a3b8;
-  --accent:#0ea5a3;
-  --danger:#ef4444;
-}
-
-* { box-sizing:border-box }
-
-html, body {
-  height:100%;
-  margin:0;
-  font-family:Inter,ui-sans-serif,system-ui;
-}
-
-body {
-  background:linear-gradient(180deg,#071029 0%, #071827 60%);
-  color:#dbe7f0;
-}
-
-.app {
-  display:grid;
-  grid-template-columns:1fr 400px;
-  gap:20px;
-  padding:28px;
-  min-height:100vh;
-}
-
-.panel {
-  background:rgba(255,255,255,0.02);
-  border-radius:12px;
-  padding:14px;
-  border:1px solid rgba(255,255,255,0.03);
-}
-
-header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:12px;
-}
-
-#tabBar {
-  display:flex;
-  gap:6px;
-  margin-bottom:10px;
-  flex-wrap:wrap;
-  user-select:none;
-}
-
-.tab {
-  padding:6px 10px;
-  border-radius:6px;
-  background:#0b1220;
-  border:1px solid rgba(255,255,255,0.08);
-  cursor:pointer;
-  font-size:13px;
-  display:flex;
-  align-items:center;
-}
-
-.tab.active {
-  background:var(--accent);
-  color:#072024;
-  font-weight:700;
-}
-
-.tab .close {
-  margin-left:6px;
-  cursor:pointer;
-  font-weight:bold;
-}
-
-.tab.dragging {
-  opacity:0.4;
-}
-
-#editor {
-  height:55vh;
-  border-radius:8px;
-  overflow:hidden;
-}
-
-.controls {
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-button {
-  background:transparent;
-  border:1px solid rgba(255,255,255,0.06);
-  color:#e6f3f6;
-  padding:8px 10px;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-}
-
-button.primary {
-  background:linear-gradient(90deg,var(--accent),#06b6d4);
-  color:#072024;
-  border:none;
-}
-
-.output {
-  height:35vh;
-  overflow:auto;
-  padding:12px;
-  border-radius:8px;
-  background:#050812;
-  border:1px solid rgba(255,255,255,0.02);
-  font-family:monospace;
-  font-size:13px;
-}
-
-#notesPanel {
-  width:100%;
-  min-height:150px;
-  display:none;
-  background:#050812;
-  color:white;
-}
-
-#historyPanel {
-  width:100%;
-  min-height:100px;
-  display:none;
-  overflow:auto;
-  background:#061226;
-  padding:6px;
-  border-radius:6px;
-}
-
-.small {
-  font-size:12px;
-  color:var(--muted);
-}
+body{margin:0;font-family:system-ui;height:100vh;display:flex;flex-direction:column;background:#1e1e1e;color:white;}
+header{background:#111;padding:10px;display:flex;justify-content:space-between;align-items:center;}
+button{background:#4CAF50;border:none;padding:6px 12px;color:white;border-radius:6px;cursor:pointer;margin-left:4px;}
+button:hover{background:#45a049;}
+#tab-bar{display:flex;align-items:center;background:#222;padding:4px;overflow-x:auto;}
+.tab{padding:6px 12px;background:#333;margin-right:2px;border-radius:4px;cursor:pointer;white-space:nowrap;}
+.tab.active{background:#4CAF50;}
+.tab .close{margin-left:6px;color:red;font-weight:bold;cursor:pointer;}
+.tab .rename{margin-left:4px;color:yellow;font-weight:bold;cursor:pointer;}
+.container{flex:1;display:grid;grid-template-columns:1fr 1fr;}
+.CodeMirror{height:100%;font-size:14px;}
+.output{background:black;color:#00ff90;font-family:monospace;padding:10px;overflow:auto;}
+#pip-section{background:#222;padding:4px;display:flex;align-items:center;}
+#pip-section input{flex:1;padding:4px;margin-right:4px;border-radius:4px;border:none;}
+#findreplace{background:#222;padding:4px;display:flex;align-items:center;margin-top:2px;}
+#findreplace input{padding:4px;margin-right:4px;border-radius:4px;border:none;}
 </style>
-
 </head>
 <body>
 
-<div class="app">
-
-<!-- MAIN PANEL -->
-<div class="panel">
 <header>
+  <strong>🐍 Python IDE — Multi-Tab + Pip + Find/Replace</strong>
   <div>
-    <h1>Python Runner</h1>
-    <p class="small">Multi-tab editor with Pyodide runtime</p>
+    <button onclick="runPython()">▶ Run</button>
+    <button onclick="addTab()">+ Tab</button>
   </div>
-  <div class="small">Runtime: <span id="py-status">Loading…</span></div>
 </header>
 
-<!-- TABS -->
-<div id="tabBar">
-  <div class="tab active" data-id="0" draggable="true">Tab 1</div>
-  <div class="tab" id="newTabBtn">+ New</div>
+<div id="tab-bar"></div>
+
+<div id="pip-section">
+  <input id="pip-input" placeholder="Package name (e.g., numpy)" />
+  <button onclick="installPackage()">Install Package</button>
 </div>
 
-<div class="controls">
-  <button id="runBtn" class="primary">Run</button>
-  <button id="stopBtn">Stop</button>
-  <button id="downloadBtn">Download</button>
-  <button id="formatBtn">Format</button>
-  <button id="importPyBtn">Import Package</button>
-  <button id="importFileBtn">Import .py</button>
-  <button id="notesBtn" class="primary">Notes</button>
-  <button id="historyBtn">History</button>
-  <input type="file" id="fileInput" accept=".py" style="display:none">
+<div id="findreplace">
+  <input id="find-input" placeholder="Find" />
+  <input id="replace-input" placeholder="Replace" />
+  <button onclick="findReplace()">Replace</button>
 </div>
 
-<div id="editor"></div>
+<div class="container">
+  <textarea id="editor"></textarea>
+  <div id="output" class="output">Loading Python runtime...</div>
 </div>
 
-<!-- SIDE PANEL -->
-<aside class="panel">
-<h3>Console Output</h3>
-<div id="output" class="output"></div>
+<!-- CodeMirror -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
 
-<h3>Notes</h3>
-<textarea id="notesPanel" class="output"></textarea>
-
-<h3>History</h3>
-<div id="historyPanel"></div>
-</aside>
-
-</div>
-
-<!-- JS + ACE + PYODIDE -->
-<script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4.14/src-min-noconflict/ace.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4.14/src-min-noconflict/ext-language_tools.js"></script>
-<script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+<!-- Pyodide -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 
 <script>
-/* ========================== ACE EDITOR INIT =========================== */
-const editor = ace.edit("editor", {
-  mode: "ace/mode/python",
-  theme: "ace/theme/monokai"
-});
+let pyodide;
+const outputDiv = document.getElementById("output");
+const pipInput = document.getElementById("pip-input");
+const findInput = document.getElementById("find-input");
+const replaceInput = document.getElementById("replace-input");
 
-editor.setOptions({
-  fontSize: 14,
-  wrap: true,
-  enableBasicAutocompletion: true,
-  enableSnippets: true,
-  enableLiveAutocompletion: true
-});
-
-editor.session.setUseWorker(false);
-
-/* ========================== TAB SYSTEM =========================== */
-
-let tabs = [
-  { id:0, name:"Tab 1", code:"# Welcome to Tab 1\nprint('Hello!')" }
+/* ---------- Autocomplete ---------- */
+const pythonKeywords = [
+"print","input","len","range","int","float","str","list","dict","set","tuple",
+"for","while","if","elif","else","try","except","finally","def","return",
+"class","import","from","as","pass","break","continue","True","False","None",
+"and","or","not","in","is","with","lambda","yield","global","nonlocal"
 ];
 
-let activeTab = 0;
-const tabBar = document.getElementById("tabBar");
-const newTabBtn = document.getElementById("newTabBtn");
-
-/* SAVE ACTIVE TAB CODE */
-function saveCurrentTab() {
-  let t = tabs.find(x => x.id === activeTab);
-  if (t) t.code = editor.getValue();
-}
-
-/* REFRESH TAB BAR */
-function refreshTabs() {
-  [...tabBar.querySelectorAll(".tab")].forEach(t=>{
-    if (t.id !== "newTabBtn") t.remove();
-  });
-
-  tabs.forEach(t=>{
-    const el = document.createElement("div");
-    el.className = "tab" + (t.id===activeTab ? " active" : "");
-    el.dataset.id = t.id;
-    el.draggable = true;
-    el.textContent = t.name;
-
-    const close = document.createElement("span");
-    close.textContent = " ×";
-    close.className = "close";
-    close.onclick = e=>{
-      e.stopPropagation();
-      closeTab(t.id);
-    };
-
-    el.appendChild(close);
-    el.ondblclick = ()=>renameTab(t.id);
-
-    /* DRAG */
-    el.addEventListener("dragstart", e=>{
-      e.dataTransfer.setData("text/plain", t.id);
-      el.classList.add("dragging");
-    });
-
-    el.addEventListener("dragend", ()=>{
-      el.classList.remove("dragging");
-    });
-
-    tabBar.insertBefore(el, newTabBtn);
-  });
-
-  enableReorder();
-}
-
-/* SWITCH TAB */
-function switchTab(id) {
-  saveCurrentTab();
-  activeTab = id;
-  editor.setValue(tabs.find(t=>t.id===id).code, -1);
-  refreshTabs();
-}
-
-/* CLOSE TAB */
-function closeTab(id) {
-  saveCurrentTab();
-  tabs = tabs.filter(t => t.id !== id);
-  if (tabs.length === 0) {
-    tabs.push({id:0, name:"Tab 1", code:""});
-  }
-  activeTab = tabs[0].id;
-  editor.setValue(tabs[0].code,-1);
-  refreshTabs();
-}
-
-/* RENAME TAB */
-function renameTab(id) {
-  let t = tabs.find(x => x.id === id);
-  let newName = prompt("Rename tab:", t.name);
-  if (newName) {
-    t.name = newName;
-    refreshTabs();
-  }
-}
-
-/* DRAG-REORDER */
-function enableReorder() {
-  const elements = tabBar.querySelectorAll(".tab:not(#newTabBtn)");
-
-  elements.forEach(el=>{
-    el.addEventListener("dragover", e=>{
-      e.preventDefault();
-
-      const draggedId = Number(e.dataTransfer.getData("text/plain"));
-      const draggedTab = tabs.find(t=>t.id===draggedId);
-
-      const targetId = Number(el.dataset.id);
-      const targetTab = tabs.find(t=>t.id===targetId);
-
-      let from = tabs.indexOf(draggedTab);
-      let to = tabs.indexOf(targetTab);
-
-      if (from !== -1 && to !== -1 && from !== to) {
-        tabs.splice(from,1);
-        tabs.splice(to,0,draggedTab);
-        refreshTabs();
-      }
-    });
-  });
-}
-
-newTabBtn.onclick = ()=>{
-  saveCurrentTab();
-  const id = Date.now();
-  tabs.push({id, name:"Tab "+(tabs.length+1), code:"# New tab\n"});
-  activeTab = id;
-  editor.setValue("",-1);
-  refreshTabs();
-};
-
-tabBar.addEventListener("click", e=>{
-  if (e.target.classList.contains("tab") && e.target.id!=="newTabBtn") {
-    switchTab(Number(e.target.dataset.id));
-  }
+/* ---------- Editor ---------- */
+let editor = CodeMirror.fromTextArea(document.getElementById("editor"),{
+  mode:"python",
+  lineNumbers:true,
+  extraKeys:{"Ctrl-Space":"autocomplete"}
 });
 
-refreshTabs();
+CodeMirror.registerHelper("hint","python",function(cm){
+  const cursor = cm.getCursor();
+  const token = cm.getTokenAt(cursor);
+  const start = token.start, end = cursor.ch, word = token.string;
+  const list = pythonKeywords.filter(k=>k.startsWith(word));
+  return {list:list, from:CodeMirror.Pos(cursor.line,start), to:CodeMirror.Pos(cursor.line,end)};
+});
 
-/* ========================== PYODIDE + TURTLE =========================== */
+editor.on("inputRead", function(cm,change){
+  if(change.text[0].match(/[a-zA-Z_]/)){cm.showHint({completeSingle:false});}
+});
 
-let pyodide = null;
-let running = false;
+/* ---------- Multi-tab system ---------- */
+let tabs = []; 
+let activeTab = null;
+const tabBar = document.getElementById("tab-bar");
 
-const outputEl = document.getElementById("output");
-const statusEl = document.getElementById("py-status");
+function addTab(name="main", code="print('Hello Python!')"){
+  const tab = {name, code};
+  tabs.push(tab);
+  activeTab = tab;
+  renderTabs();
+  loadTab(tab);
+}
 
-async function loadPyodideAndPackages(){
-  statusEl.textContent = "Loading…";
-
-  pyodide = await loadPyodide({
-    indexURL:"https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+function renderTabs(){
+  tabBar.innerHTML="";
+  tabs.forEach((t,i)=>{
+    const el=document.createElement("div");
+    el.className="tab"+(t===activeTab?" active":"");
+    el.textContent=t.name;
+    el.onclick=()=>{saveTab(); activeTab=t; loadTab(t); renderTabs();};
+    const closeBtn=document.createElement("span");
+    closeBtn.textContent="✕";
+    closeBtn.className="close";
+    closeBtn.onclick=e=>{e.stopPropagation(); deleteTab(i);}
+    const renameBtn=document.createElement("span");
+    renameBtn.textContent="✎";
+    renameBtn.className="rename";
+    renameBtn.onclick=e=>{e.stopPropagation(); renameTab(i);}
+    el.appendChild(renameBtn);
+    el.appendChild(closeBtn);
+    tabBar.appendChild(el);
   });
-
-  await pyodide.loadPackage("micropip");
-  await pyodide.runPythonAsync(`
-import js
-from pyodide.ffi import create_proxy
-  `);
-
-  statusEl.textContent = "Ready";
 }
 
-loadPyodideAndPackages();
+function loadTab(tab){editor.setValue(tab.code);}
+function saveTab(){if(activeTab) activeTab.code=editor.getValue();}
+function deleteTab(index){if(tabs[index]===activeTab){activeTab=tabs[0]||null;} tabs.splice(index,1); renderTabs(); if(activeTab) loadTab(activeTab);}
+function renameTab(index){const newName=prompt("Enter new tab name:",tabs[index].name);if(newName) tabs[index].name=newName; renderTabs();}
 
-/* OUTPUT STREAM */
-function createOutputStreams(){
-  const write = s=>{
-    outputEl.textContent += s;
-    outputEl.scrollTop = outputEl.scrollHeight;
-  };
-  return {write};
+/* ---------- Load Python ---------- */
+async function loadPython(){
+  pyodide = await loadPyodide();
+  outputDiv.textContent="Python ready. Click Run ▶";
+}
+loadPython();
+
+/* ---------- Python input ---------- */
+async function getInput(promptText){return new Promise(resolve=>{
+  const val=window.prompt(promptText||"Input:");
+  resolve(val);
+});}
+
+/* ---------- Run Python ---------- */
+async function runPython(){
+  if(!pyodide){outputDiv.textContent="Python still loading..."; return;}
+  saveTab();
+  outputDiv.textContent="Running...";
+  let firstOutput=true;
+  
+  pyodide.setStdout({
+    batched:(msg)=>{if(firstOutput){outputDiv.textContent=""; firstOutput=false;} outputDiv.textContent+=msg+"\n";}
+  });
+  pyodide.setStderr({
+    batched:(msg)=>{if(firstOutput){outputDiv.textContent=""; firstOutput=false;} outputDiv.textContent+="ERROR: "+msg+"\n";}
+  });
+  
+  pyodide.globals.set("input", getInput);
+
+  try{
+    await pyodide.runPythonAsync(activeTab.code);
+    if(firstOutput){outputDiv.textContent="✓ Finished (no output)";}
+  }catch(err){outputDiv.textContent="❌ "+err;}
 }
 
-/* RUN CODE */
-document.getElementById("runBtn").onclick = async ()=>{
-  saveCurrentTab();
-  outputEl.textContent = "";
-
-  if (!pyodide) return;
-
-  const code = editor.getValue();
-  const streams = createOutputStreams();
-
-  statusEl.textContent="Running…";
-  running = true;
-
-  const oldLog = console.log;
-  console.log = (...args)=>args.forEach(a=>streams.write(String(a)));
-
-  const redirect = `
-import sys
-from js import console
-
-class _W:
-  def write(self,s): console.log(s)
-  def flush(self): pass
-
-sys.stdout = _W()
-sys.stderr = _W()
-  `;
-
-  try {
-    await pyodide.runPythonAsync(redirect + "\n" + code);
-  } catch(e) {
-    streams.write("\\n"+e+"\\n");
-  }
-
-  running = false;
-  statusEl.textContent="Ready";
-  console.log = oldLog;
-};
-
-/* STOP BUTTON */
-document.getElementById("stopBtn").onclick = ()=>{
-  outputEl.textContent += "\n*** Interrupt requested — refresh page to force stop ***\n";
-};
-
-/* DOWNLOAD */
-document.getElementById("downloadBtn").onclick = ()=>{
-  saveCurrentTab();
-  const tab = tabs.find(t=>t.id===activeTab);
-  const blob = new Blob([tab.code],{type:"text/plain"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = tab.name + ".py";
-  a.click();
-};
-
-/* FORMAT */
-document.getElementById("formatBtn").onclick = async ()=>{
-  const code = editor.getValue();
-  try {
-    const formatted = await pyodide.runPythonAsync(`
-import ast, astor
-tree = ast.parse("""${code.replace(/"/g,'\\"')}""")
-astor.to_source(tree)
-    `);
-    editor.setValue(formatted,-1);
-  } catch {
-    alert("Formatting failed.");
-  }
-};
-
-/* IMPORT PACKAGE */
-document.getElementById("importPyBtn").onclick = async ()=>{
-  let pkg = prompt("Package name:");
-  if (pkg) {
-    try {
-      await pyodide.loadPackage(pkg);
-      outputEl.textContent += `\nImported: ${pkg}\n`;
-    } catch {
-      outputEl.textContent += `\nFailed: ${pkg}\n`;
-    }
-  }
-};
-
-/* IMPORT FILE */
-document.getElementById("importFileBtn").onclick = ()=>document.getElementById("fileInput").click();
-
-document.getElementById("fileInput").onchange = async e=>{
-  const f = e.target.files[0];
-  if (f) {
-    editor.setValue(await f.text(),-1);
-  }
-};
-
-/* NOTES TOGGLE */
-document.getElementById("notesBtn").onclick = ()=>{
-  const n = document.getElementById("notesPanel");
-  n.style.display = n.style.display==="none" ? "block" : "none";
-};
-
-/* HISTORY */
-let history = [];
-
-document.getElementById("historyBtn").onclick = ()=>{
-  const hp = document.getElementById("historyPanel");
-  hp.style.display = hp.style.display==="none" ? "block" : "none";
-};
-
-function addHistory(code){
-  const ts = new Date().toLocaleTimeString();
-  history.push({ts,code});
-  const div = document.createElement("div");
-  div.textContent = `[${ts}] ${code.slice(0,40)}...`;
-  div.style.cursor = "pointer";
-  div.onclick = ()=> editor.setValue(code,-1);
-  document.getElementById("historyPanel").prepend(div);
+/* ---------- Pip Install ---------- */
+async function installPackage(){
+  const pkg = pipInput.value.trim();
+  if(!pkg){alert("Enter a package name"); return;}
+  outputDiv.textContent=`Installing ${pkg}...`;
+  try{
+    await pyodide.loadPackage(pkg);
+    outputDiv.textContent=`✅ ${pkg} installed successfully.`;
+  }catch(err){outputDiv.textContent=`❌ Failed to install ${pkg}: ${err}`;}
 }
+
+/* ---------- Find & Replace ---------- */
+function findReplace(){
+  const findText = findInput.value;
+  const replaceText = replaceInput.value;
+  if(!findText) return;
+  const cursor = editor.getSearchCursor(findText);
+  editor.operation(()=>{
+    while(cursor.findNext()){cursor.replace(replaceText);}
+  });
+}
+
+/* ---------- Initialize ---------- */
+addTab();
 </script>
-
 </body>
 </html>
